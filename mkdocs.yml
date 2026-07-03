@@ -37,6 +37,7 @@ nav:
       - Script: api/script.md
       - Network: api/network.md
       - Input: api/input.md
+      - Storage: api/storage.md
       - Events: api/events.md
       - RemoteValue: api/remote-value.md
       - Exceptions: api/exceptions.md

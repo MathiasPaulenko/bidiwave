@@ -10,6 +10,7 @@ from bidiwave.modules.input import InputModule
 from bidiwave.modules.network import NetworkModule
 from bidiwave.modules.script import ScriptModule
 from bidiwave.modules.session import SessionModule
+from bidiwave.modules.storage import StorageModule
 from bidiwave.protocol.capabilities import Capabilities
 from bidiwave.transport.connection import Connection, TransportConfig
 
@@ -33,6 +34,7 @@ class BiDiClient:
         self.browsing = BrowsingModule(connection, script_module=self.script)
         self.network = NetworkModule(connection)
         self.input = InputModule(connection)
+        self.storage = StorageModule(connection)
         self._capabilities: Capabilities | None = None
 
     @classmethod

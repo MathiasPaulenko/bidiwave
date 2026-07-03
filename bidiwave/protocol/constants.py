@@ -23,6 +23,9 @@ NETWORK_PROVIDE_RESPONSE = "network.provideResponse"
 INPUT_PERFORM_ACTIONS = "input.performActions"
 INPUT_RELEASE_ACTIONS = "input.releaseActions"
 INPUT_SET_FILES = "input.setFiles"
+STORAGE_GET_COOKIES = "storage.getCookies"
+STORAGE_SET_COOKIE = "storage.setCookie"
+STORAGE_DELETE_COOKIES = "storage.deleteCookies"
 
 # Event types
 LOG_ENTRY_ADDED = "log.entryAdded"

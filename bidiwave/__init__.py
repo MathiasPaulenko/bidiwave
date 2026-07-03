@@ -21,6 +21,7 @@ from bidiwave.exceptions import (
 from bidiwave.modules.browsing import BrowsingContext
 from bidiwave.modules.input import InputModule
 from bidiwave.modules.network import NetworkModule
+from bidiwave.modules.storage import StorageModule
 from bidiwave.protocol.capabilities import Capabilities
 from bidiwave.protocol.events import (
     NetworkBeforeRequestSentEvent,
@@ -39,7 +40,13 @@ from bidiwave.protocol.remote_value import (
     StringValue,
     UndefinedValue,
 )
-from bidiwave.protocol.results import InputSource, KeyAction, PointerAction, WheelAction
+from bidiwave.protocol.results import (
+    Cookie,
+    InputSource,
+    KeyAction,
+    PointerAction,
+    WheelAction,
+)
 from bidiwave.transport.connection import TransportConfig
 
 __version__ = "1.2.1"
@@ -84,5 +91,7 @@ __all__ = [
     "KeyAction",
     "PointerAction",
     "WheelAction",
+    "StorageModule",
+    "Cookie",
     "__version__",
 ]
