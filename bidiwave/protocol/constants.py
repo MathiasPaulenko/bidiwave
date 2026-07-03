@@ -61,6 +61,10 @@ NETWORK_BEFORE_REQUEST_SENT = "network.beforeRequestSent"
 NETWORK_RESPONSE_COMPLETED = "network.responseCompleted"
 NETWORK_FETCH_ERROR = "network.fetchError"
 NETWORK_AUTH_REQUIRED = "network.authRequired"
+NETWORK_RESPONSE_STARTED = "network.responseStarted"
+SCRIPT_REALM_CREATED = "script.realmCreated"
+SCRIPT_REALM_DESTROYED = "script.realmDestroyed"
+BROWSING_USER_PROMPT_OPENED = "browsingContext.userPromptOpened"
 STORAGE_COOKIE_CHANGED = "storage.cookieChanged"
 
 # Error codes

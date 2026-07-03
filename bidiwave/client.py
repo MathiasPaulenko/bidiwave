@@ -115,6 +115,22 @@ class BiDiClient:
         """Convenience for network.authRequired."""
         return self._dispatcher.on("network.authRequired", handler)  # type: ignore[return-value]
 
+    def on_response_started(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for network.responseStarted."""
+        return self._dispatcher.on("network.responseStarted", handler)  # type: ignore[return-value]
+
+    def on_realm_created(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for script.realmCreated."""
+        return self._dispatcher.on("script.realmCreated", handler)  # type: ignore[return-value]
+
+    def on_realm_destroyed(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for script.realmDestroyed."""
+        return self._dispatcher.on("script.realmDestroyed", handler)  # type: ignore[return-value]
+
+    def on_user_prompt_opened(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.userPromptOpened."""
+        return self._dispatcher.on("browsingContext.userPromptOpened", handler)  # type: ignore[return-value]
+
     async def set_auto_prompt(
         self,
         accept: bool = True,

@@ -29,9 +29,13 @@ from bidiwave.modules.preload import PreloadModule
 from bidiwave.modules.storage import StorageModule
 from bidiwave.protocol.capabilities import Capabilities
 from bidiwave.protocol.events import (
+    BrowsingContextUserPromptOpenedEvent,
     NetworkBeforeRequestSentEvent,
     NetworkFetchErrorEvent,
     NetworkResponseCompletedEvent,
+    NetworkResponseStartedEvent,
+    ScriptRealmCreatedEvent,
+    ScriptRealmDestroyedEvent,
 )
 from bidiwave.protocol.remote_value import (
     ArrayValue,
@@ -59,7 +63,7 @@ from bidiwave.protocol.results import (
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.6.0"
+__version__ = "1.6.1"
 
 __all__ = [
     "AddPreloadScriptResult",
@@ -102,7 +106,11 @@ __all__ = [
     "NetworkModule",
     "NetworkBeforeRequestSentEvent",
     "NetworkResponseCompletedEvent",
+    "NetworkResponseStartedEvent",
     "NetworkFetchErrorEvent",
+    "ScriptRealmCreatedEvent",
+    "ScriptRealmDestroyedEvent",
+    "BrowsingContextUserPromptOpenedEvent",
     "InputModule",
     "InputSource",
     "KeyAction",

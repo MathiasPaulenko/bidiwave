@@ -135,6 +135,57 @@ class NetworkFetchErrorEvent(BaseModel):
     error_text: str = Field(alias="errorText")
 
 
+class NetworkResponseStartedEvent(BaseModel):
+    """network.responseStarted event — emitted when a response starts.
+
+    Unlike responseCompleted, this fires when headers are received but
+    the body may not be fully downloaded yet.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str | None = None
+    navigation: str | None = None
+    redirect_count: int = Field(default=0, alias="redirectCount")
+    request: NetworkRequestData
+    response: NetworkResponseData
+
+
+class ScriptRealmCreatedEvent(BaseModel):
+    """script.realmCreated event — emitted when a new realm is created."""
+
+    model_config = ConfigDict(extra="allow")
+
+    realm: str
+    origin: str
+    type: str
+    context: str | None = None
+    sandbox: str | None = None
+
+
+class ScriptRealmDestroyedEvent(BaseModel):
+    """script.realmDestroyed event — emitted when a realm is destroyed."""
+
+    model_config = ConfigDict(extra="allow")
+
+    realm: str
+
+
+class BrowsingContextUserPromptOpenedEvent(BaseModel):
+    """browsingContext.userPromptOpened event — emitted when a dialog opens.
+
+    Dialog types: alert, confirm, prompt, beforeunload.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str
+    handler: str | None = None
+    message: str = ""
+    default_value: str = Field(default="", alias="defaultValue")
+    type: str = "alert"
+
+
 def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
     """Factory that returns the correct event model based on method."""
     match method:
@@ -146,10 +197,18 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return BrowsingContextDestroyedEvent.model_validate(params)
         case "browsingContext.navigationStarted":
             return BrowsingContextNavigatedEvent.model_validate(params)
+        case "browsingContext.userPromptOpened":
+            return BrowsingContextUserPromptOpenedEvent.model_validate(params)
         case "script.message":
             return ScriptMessageEvent.model_validate(params)
+        case "script.realmCreated":
+            return ScriptRealmCreatedEvent.model_validate(params)
+        case "script.realmDestroyed":
+            return ScriptRealmDestroyedEvent.model_validate(params)
         case "network.beforeRequestSent":
             return NetworkBeforeRequestSentEvent.model_validate(params)
+        case "network.responseStarted":
+            return NetworkResponseStartedEvent.model_validate(params)
         case "network.responseCompleted":
             return NetworkResponseCompletedEvent.model_validate(params)
         case "network.fetchError":
