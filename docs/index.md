@@ -138,4 +138,3 @@ asyncio.run(main())
 
 - [Changelog](reference/changelog.md) — version history
 - [Protocol Reference](reference/protocol-reference.md) — BiDi commands and events
-- [Spike Notes](reference/spike-notes.md) — initial BiDi validation findings

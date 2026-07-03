@@ -73,7 +73,6 @@ nav:
   - Reference:
       - Protocol Reference: reference/protocol-reference.md
       - Changelog: reference/changelog.md
-      - Spike Notes: reference/spike-notes.md
 
 plugins:
   - search
