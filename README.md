@@ -9,13 +9,25 @@ WebDriver BiDi for Python — talk to any browser via W3C standard.
 
 ## Features
 
-- **W3C WebDriver BiDi** — standard, not proprietary CDP
+- **W3C WebDriver BiDi** — standard protocol, not proprietary CDP
 - **Cross-browser** — Chrome, Firefox, Edge (Safari when BiDi support lands)
 - **Async-first** — native `async/await` with `asyncio`
-- **Event streaming** — console logs, navigation, network, contexts in real time
-- **Input simulation** — clicks, keyboard, scroll, drag & drop via `input.performActions`
-- **Network interception** — block, modify and mock HTTP requests
-- **Type-safe** — Pydantic v2 models, type narrowing with `match`
+- **Browsing** — contexts, navigation, screenshots, viewport control with DPR,
+  element waiting, CSS/XPath locators, PDF printing, dialog handling
+- **Script** — evaluate JS, call functions, typed `RemoteValue` with `match`
+  pattern narrowing, preload scripts with channel communication, realm inspection
+- **Input simulation** — clicks, keyboard, scroll, drag & drop, file upload
+- **Network interception** — block, modify, mock requests, cache overrides,
+  response body retrieval, authentication handling
+- **Storage** — get, set, delete cookies with full attribute support, cookie
+  change monitoring
+- **Emulation** — geolocation, network conditions, timezone, user agent override
+- **Permissions** — grant or deny browser permissions without user dialogs
+- **Preload scripts** — inject JS before page load for polyfills or monitoring
+- **CDP bridge** — access Chrome DevTools Protocol for browser-specific features
+- **Event streaming** — 21 event types with async handlers and error isolation
+- **Type-safe** — Pydantic v2 models, full type hints, `mypy` clean
+- **Resilient** — automatic reconnection with exponential backoff
 - **Lightweight** — no Selenium, no Playwright required
 
 ## Install
@@ -31,9 +43,7 @@ import asyncio
 from bidiwave import BiDiClient, StringValue
 
 async def main():
-    async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
         async with await client.browsing.open("https://example.com") as page:
             # Evaluate JS
             result = await page.evaluate("document.title")
@@ -69,7 +79,7 @@ async with await BiDiClient.connect(url) as client:
 ```python
 async with await BiDiClient.connect(url) as client:
     async with await client.browsing.open("https://example.com") as page:
-        ctx = page.context
+        ctx = page.id
 
         # Click at coordinates
         await client.input.click(ctx, x=100, y=200)
@@ -103,28 +113,134 @@ async with await BiDiClient.connect(url) as client:
     await client.network.remove_intercept(intercept.intercept_id)
 ```
 
+## Cookies & storage
+
+```python
+from bidiwave import Cookie
+
+async with await BiDiClient.connect(url) as client:
+    async with await client.browsing.open("https://example.com") as page:
+        # Set a session cookie
+        await client.storage.set_cookie(
+            page.id,
+            cookie=Cookie(
+                name="session",
+                value="abc123",
+                domain="example.com",
+                http_only=True,
+                secure=True,
+            ),
+        )
+
+        # Read all cookies
+        cookies = await client.storage.get_cookies(page.id)
+        for c in cookies:
+            print(f"{c.name}={c.value}")
+
+        # Delete one cookie
+        await client.storage.delete_cookie(page.id, "session")
+```
+
+## Emulation & permissions
+
+```python
+from bidiwave import ViewportSize
+
+async with await BiDiClient.connect(url) as client:
+    async with await client.browsing.open("https://example.com") as page:
+        ctx = page.id
+
+        # Simulate iPhone viewport
+        await client.browsing.set_viewport(
+            ctx,
+            viewport=ViewportSize(width=375, height=812),
+            device_pixel_ratio=3.0,
+        )
+
+        # Simulate Tokyo location on 3G
+        await client.emulation.set_geolocation_override(
+            coordinates={"latitude": 35.6762, "longitude": 139.6503, "accuracy": 1.0},
+            contexts=[ctx],
+        )
+        await client.emulation.set_network_conditions(
+            network_conditions={
+                "offline": False,
+                "download_throughput": 50000,
+                "upload_throughput": 25000,
+                "latency": 400,
+            },
+            contexts=[ctx],
+        )
+
+        # Grant geolocation permission
+        await client.permissions.set_permission(
+            descriptor={"name": "geolocation"},
+            state="granted",
+            contexts=[ctx],
+        )
+```
+
+## Preload scripts
+
+```python
+async with await BiDiClient.connect(url) as client:
+    # Inject a script that runs before every page load
+    result = await client.preload.add_preload_script(
+        function_declaration="() => { window.__testMode = true; }",
+    )
+
+    async with await client.browsing.open("https://example.com") as page:
+        value = await page.evaluate("window.__testMode")
+        print(f"Test mode: {value}")
+
+    await client.preload.remove_preload_script(result.script)
+```
+
 ## Launch a browser with BiDi
 
-### Chrome
+### Chrome / Edge
 
 ```bash
-google-chrome --headless=new --remote-debugging-port=9222 --enable-bidi
+# Chrome — requires ChromeDriver as BiDi proxy
+chromedriver --port=9515
+
+# Edge — requires EdgeDriver
+msedgedriver --port=9516
 ```
 
 ### Firefox
+
+Firefox implements BiDi natively — no driver needed:
 
 ```bash
 firefox --headless --remote-debugging-port=9223 --no-remote
 ```
 
+See [Browser Setup](https://mathiaspaulenko.github.io/bidiwave/guides/browser-setup/)
+for detailed instructions.
+
 ## Documentation
 
-- [Quick Start](https://bidiwave.readthedocs.io/quick-start/)
-- [API Reference](https://bidiwave.readthedocs.io/api/)
-- [Network](https://bidiwave.readthedocs.io/api/network/)
-- [Input](https://bidiwave.readthedocs.io/api/input/)
-- [Cookbook](https://bidiwave.readthedocs.io/cookbook/)
-- [Error Handling](https://bidiwave.readthedocs.io/error-handling/)
+Full documentation at **[mathiaspaulenko.github.io/bidiwave](https://mathiaspaulenko.github.io/bidiwave/)**
+
+- [Installation](https://mathiaspaulenko.github.io/bidiwave/getting-started/installation/)
+- [Quick Start](https://mathiaspaulenko.github.io/bidiwave/getting-started/quick-start/)
+- [Browsing](https://mathiaspaulenko.github.io/bidiwave/usage/browsing/)
+- [Script](https://mathiaspaulenko.github.io/bidiwave/usage/script/)
+- [Network Interception](https://mathiaspaulenko.github.io/bidiwave/usage/network/)
+- [Input Simulation](https://mathiaspaulenko.github.io/bidiwave/usage/input/)
+- [Cookies & Storage](https://mathiaspaulenko.github.io/bidiwave/usage/storage/)
+- [Emulation](https://mathiaspaulenko.github.io/bidiwave/usage/emulation/)
+- [Permissions](https://mathiaspaulenko.github.io/bidiwave/usage/permissions/)
+- [Preload Scripts](https://mathiaspaulenko.github.io/bidiwave/usage/preload/)
+- [CDP](https://mathiaspaulenko.github.io/bidiwave/usage/cdp/)
+- [Events](https://mathiaspaulenko.github.io/bidiwave/usage/events/)
+- [Configuration](https://mathiaspaulenko.github.io/bidiwave/usage/configuration/)
+- [Cookbook](https://mathiaspaulenko.github.io/bidiwave/guides/cookbook/)
+- [Error Handling](https://mathiaspaulenko.github.io/bidiwave/guides/error-handling/)
+- [API Reference](https://mathiaspaulenko.github.io/bidiwave/api/client/)
+- [Protocol Reference](https://mathiaspaulenko.github.io/bidiwave/reference/protocol-reference/)
+- [Changelog](https://mathiaspaulenko.github.io/bidiwave/reference/changelog/)
 
 ## License
 
