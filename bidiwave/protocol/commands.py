@@ -89,3 +89,82 @@ class SubscribeParams(BaseModel):
 
     events: list[str]
     contexts: list[str] | None = None
+
+
+class AddPreloadScriptParams(BaseModel):
+    """Parameters for preload.addPreloadScript."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    function_declaration: str
+    arguments: list[dict[str, Any]] | None = None
+    contexts: list[str] | None = None
+    sandbox: str | None = None
+
+
+class RemovePreloadScriptParams(BaseModel):
+    """Parameters for preload.removePreloadScript."""
+
+    model_config = ConfigDict(extra="allow")
+
+    script: str
+
+
+class SetGeolocationParams(BaseModel):
+    """Parameters for emulation.setGeolocationOverride."""
+
+    model_config = ConfigDict(extra="allow")
+
+    coordinates: dict[str, float] | None = None
+    contexts: list[str] | None = None
+
+
+class SetNetworkConditionsParams(BaseModel):
+    """Parameters for emulation.setNetworkConditions."""
+
+    model_config = ConfigDict(extra="allow")
+
+    offline: bool | None = None
+    download_throughput: int | None = None
+    upload_throughput: int | None = None
+    latency: int | None = None
+    contexts: list[str] | None = None
+
+
+class SetTimezoneParams(BaseModel):
+    """Parameters for emulation.setTimezoneOverride."""
+
+    model_config = ConfigDict(extra="allow")
+
+    timezone: str
+    contexts: list[str] | None = None
+
+
+class SetUserAgentParams(BaseModel):
+    """Parameters for emulation.setUserAgentOverride."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    user_agent: str
+    accept_language: str | None = None
+    platform: str | None = None
+    contexts: list[str] | None = None
+
+
+class SetPermissionParams(BaseModel):
+    """Parameters for permissions.setPermission."""
+
+    model_config = ConfigDict(extra="allow")
+
+    descriptor: dict[str, Any]
+    state: Literal["granted", "denied", "prompt"]
+    contexts: list[str] | None = None
+    origin: str | None = None
+
+
+class GetViewportParams(BaseModel):
+    """Parameters for browsingContext.getViewport."""
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str

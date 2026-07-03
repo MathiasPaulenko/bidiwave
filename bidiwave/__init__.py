@@ -20,8 +20,12 @@ from bidiwave.exceptions import (
 )
 from bidiwave.modules.browsing import BrowsingContext
 from bidiwave.modules.cdp import CDPModule
+from bidiwave.modules.emulation import EmulationModule
 from bidiwave.modules.input import InputModule
+from bidiwave.modules.log import LogModule
 from bidiwave.modules.network import NetworkModule
+from bidiwave.modules.permissions import PermissionsModule
+from bidiwave.modules.preload import PreloadModule
 from bidiwave.modules.storage import StorageModule
 from bidiwave.protocol.capabilities import Capabilities
 from bidiwave.protocol.events import (
@@ -42,6 +46,7 @@ from bidiwave.protocol.remote_value import (
     UndefinedValue,
 )
 from bidiwave.protocol.results import (
+    AddPreloadScriptResult,
     Cookie,
     InputSource,
     KeyAction,
@@ -49,13 +54,15 @@ from bidiwave.protocol.results import (
     PointerAction,
     RealmInfo,
     UserContextInfo,
+    Viewport,
     WheelAction,
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.5.1"
+__version__ = "1.6.0"
 
 __all__ = [
+    "AddPreloadScriptResult",
     "ArrayValue",
     "AsyncHandler",
     "BiDiClient",
@@ -69,16 +76,20 @@ __all__ = [
     "ClientConfig",
     "CommandError",
     "ConnectionError",
+    "EmulationModule",
     "EventDispatcher",
     "HandleValue",
     "InvalidArgumentError",
     "JavaScriptError",
+    "LogModule",
     "NoSuchFrameError",
     "NoSuchWindowError",
     "NullValue",
     "NumberValue",
     "ObjectValue",
     "Page",
+    "PermissionsModule",
+    "PreloadModule",
     "ProtocolError",
     "RemoteValue",
     "SessionError",
@@ -87,6 +98,7 @@ __all__ = [
     "TimeoutError",
     "TransportConfig",
     "UndefinedValue",
+    "Viewport",
     "NetworkModule",
     "NetworkBeforeRequestSentEvent",
     "NetworkResponseCompletedEvent",

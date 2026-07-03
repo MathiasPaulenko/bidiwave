@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-07-03
+
+### Added
+
+- `PreloadModule` — `add_script()` and `remove_script()` for injecting scripts before page load
+- `EmulationModule` — `set_geolocation()`, `set_network_conditions()`, `set_timezone()`, `set_user_agent()` for device environment emulation
+- `PermissionsModule` — `set_permission()` for controlling browser permissions (geolocation, notifications, etc.)
+- `LogModule` — `clear()` for clearing the log buffer
+- `BrowsingModule.get_viewport()` — returns `Viewport` with width, height, and device pixel ratio
+- `Viewport` and `AddPreloadScriptResult` result models
+- 14 new unit tests (total: 194)
+
 ## [1.5.1] - 2025-07-03
 
 ### Changed

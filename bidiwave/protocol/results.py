@@ -200,3 +200,30 @@ class CDPGetSessionResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     session: str | None = None
+
+
+class AddPreloadScriptResult(BaseModel):
+    """Result of preload.addPreloadScript."""
+
+    model_config = ConfigDict(extra="allow")
+
+    script: str
+
+
+class Viewport(BaseModel):
+    """Viewport dimensions (browsingContext.getViewport)."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    width: int
+    height: int
+    device_pixel_ratio: float = Field(default=1.0, alias="devicePixelRatio")
+
+
+class GetViewportResult(BaseModel):
+    """Result of browsingContext.getViewport."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    viewport: Viewport
+    device_pixel_ratio: float = Field(default=1.0, alias="devicePixelRatio")

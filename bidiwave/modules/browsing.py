@@ -14,6 +14,7 @@ from bidiwave.protocol.constants import (
     BROWSING_CREATE_USER_CONTEXT,
     BROWSING_GET_TREE,
     BROWSING_GET_USER_CONTEXTS,
+    BROWSING_GET_VIEWPORT,
     BROWSING_HANDLE_USER_PROMPT,
     BROWSING_LOCATE_NODES,
     BROWSING_NAVIGATE,
@@ -25,11 +26,13 @@ from bidiwave.protocol.constants import (
 )
 from bidiwave.protocol.results import (
     GetUserContextsResult,
+    GetViewportResult,
     LocateNodesResult,
     Navigation,
     PrintResult,
     Screenshot,
     UserContextInfo,
+    Viewport,
 )
 from bidiwave.transport.connection import Connection
 
@@ -355,6 +358,25 @@ class BrowsingModule:
         await self._connection.send_command(
             BROWSING_SET_VIEWPORT, params
         )
+
+    async def get_viewport(
+        self,
+        context: BrowsingContext | str,
+    ) -> Viewport:
+        """Gets the current viewport and device pixel ratio of a context.
+
+        Args:
+            context: BrowsingContext or context ID.
+
+        Returns:
+            Viewport with width, height, and device pixel ratio.
+        """
+        ctx_id = context.id if hasattr(context, "id") else context
+        result = await self._connection.send_command(
+            BROWSING_GET_VIEWPORT, {"context": ctx_id}
+        )
+        parsed = GetViewportResult.model_validate(result)
+        return parsed.viewport
 
     async def open(
         self,

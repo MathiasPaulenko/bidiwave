@@ -9,8 +9,12 @@ from bidiwave.events.dispatcher import EventDispatcher
 from bidiwave.events.handlers import AsyncHandler, Subscription
 from bidiwave.modules.browsing import BrowsingModule
 from bidiwave.modules.cdp import CDPModule
+from bidiwave.modules.emulation import EmulationModule
 from bidiwave.modules.input import InputModule
+from bidiwave.modules.log import LogModule
 from bidiwave.modules.network import NetworkModule
+from bidiwave.modules.permissions import PermissionsModule
+from bidiwave.modules.preload import PreloadModule
 from bidiwave.modules.script import ScriptModule
 from bidiwave.modules.session import SessionModule
 from bidiwave.modules.storage import StorageModule
@@ -39,6 +43,10 @@ class BiDiClient:
         self.input = InputModule(connection)
         self.storage = StorageModule(connection)
         self.cdp = CDPModule(connection)
+        self.preload = PreloadModule(connection)
+        self.emulation = EmulationModule(connection)
+        self.permissions = PermissionsModule(connection)
+        self.log = LogModule(connection)
         self._capabilities: Capabilities | None = None
         self._auto_prompt_accept: bool | None = None
         self._auto_prompt_text: str | None = None
