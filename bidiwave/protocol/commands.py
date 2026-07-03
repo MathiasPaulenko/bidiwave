@@ -189,3 +189,20 @@ class RemoveCacheOverrideParams(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     cache: str
+
+
+class SetCacheOverrideParams(BaseModel):
+    """Parameters for network.setCacheOverride.
+
+    Unlike addCacheOverride which returns an ID for later removal,
+    setCacheOverride replaces all existing overrides in a single call.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    contexts: list[str] | None = None
+    url: str
+    method: str = "GET"
+    status_code: int = Field(default=200, alias="statusCode")
+    headers: list[dict[str, str]] | None = None
+    body: str | None = None

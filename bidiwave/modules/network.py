@@ -15,6 +15,7 @@ from bidiwave.protocol.constants import (
     NETWORK_PROVIDE_RESPONSE,
     NETWORK_REMOVE_CACHE_OVERRIDE,
     NETWORK_REMOVE_INTERCEPT,
+    NETWORK_SET_CACHE_OVERRIDE,
 )
 from bidiwave.protocol.results import AddCacheOverrideResult, InterceptResult
 from bidiwave.transport.connection import Connection
@@ -256,4 +257,41 @@ class NetworkModule:
         """
         await self._connection.send_command(
             NETWORK_REMOVE_CACHE_OVERRIDE, {"cache": cache_id}
+        )
+
+    async def set_cache_override(
+        self,
+        url: str,
+        method: str = "GET",
+        status_code: int = 200,
+        headers: list[dict[str, str]] | None = None,
+        body: str | None = None,
+        contexts: list[str] | None = None,
+    ) -> None:
+        """Sets a cache override, replacing all existing overrides.
+
+        Unlike add_cache_override which returns an ID for later removal,
+        set_cache_override replaces all existing overrides in a single call.
+
+        Args:
+            url: URL to match.
+            method: HTTP method to match (default GET).
+            status_code: HTTP status code for the cached response.
+            headers: Response headers.
+            body: Response body in base64.
+            contexts: Context IDs to apply to. None = all.
+        """
+        params: dict[str, Any] = {
+            "url": url,
+            "method": method,
+            "statusCode": status_code,
+        }
+        if headers is not None:
+            params["headers"] = headers
+        if body is not None:
+            params["body"] = body
+        if contexts is not None:
+            params["contexts"] = contexts
+        await self._connection.send_command(
+            NETWORK_SET_CACHE_OVERRIDE, params
         )
