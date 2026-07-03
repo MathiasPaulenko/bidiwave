@@ -1,4 +1,4 @@
-"""Módulo storage del protocolo BiDi."""
+"""Storage module for the WebDriver BiDi protocol."""
 
 from __future__ import annotations
 
@@ -17,14 +17,14 @@ if TYPE_CHECKING:
 
 
 class StorageModule:
-    """Módulo para manejar cookies del browser.
+    """Module for managing browser cookies.
 
-    Comandos:
-        - get_cookies — obtiene cookies de un context
-        - set_cookie — crea o actualiza una cookie
-        - delete_cookies — elimina cookies
+    Commands:
+        - get_cookies — gets cookies from a context
+        - set_cookie — creates or updates a cookie
+        - delete_cookies — deletes cookies
 
-    Ejemplo:
+    Example:
         cookies = await client.storage.get_cookies(context)
         for cookie in cookies:
             print(f"{cookie.name}={cookie.value}")
@@ -42,13 +42,13 @@ class StorageModule:
         self,
         context: BrowsingContext | str,
     ) -> list[Cookie]:
-        """Obtiene todas las cookies de un browsing context.
+        """Gets all cookies from a browsing context.
 
         Args:
-            context: BrowsingContext o context ID.
+            context: BrowsingContext or context ID.
 
         Returns:
-            Lista de Cookie.
+            List of Cookie.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         result = await self._connection.send_command(
@@ -62,11 +62,11 @@ class StorageModule:
         context: BrowsingContext | str,
         cookie: Cookie,
     ) -> None:
-        """Crea o actualiza una cookie en un browsing context.
+        """Creates or updates a cookie in a browsing context.
 
         Args:
-            context: BrowsingContext o context ID.
-            cookie: Cookie a establecer.
+            context: BrowsingContext or context ID.
+            cookie: Cookie to set.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {
@@ -82,15 +82,15 @@ class StorageModule:
         domain: str | None = None,
         path: str | None = None,
     ) -> None:
-        """Elimina cookies de un browsing context.
+        """Deletes cookies from a browsing context.
 
-        Si no se especifica name, domain o path, elimina todas las cookies.
+        If name, domain or path are not specified, deletes all cookies.
 
         Args:
-            context: BrowsingContext o context ID.
-            name: Nombre de la cookie a eliminar. None = todas.
-            domain: Dominio de las cookies a eliminar.
-            path: Path de las cookies a eliminar.
+            context: BrowsingContext or context ID.
+            name: Name of the cookie to delete. None = all.
+            domain: Domain of cookies to delete.
+            path: Path of cookies to delete.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id}

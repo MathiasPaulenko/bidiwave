@@ -1,4 +1,4 @@
-"""Queue de eventos con backpressure configurable."""
+"""Event queue with configurable backpressure."""
 
 import asyncio
 import contextlib
@@ -9,12 +9,12 @@ logger = logging.getLogger("bidiwave.events")
 
 
 class EventQueue:
-    """Queue de eventos con backpressure configurable.
+    """Event queue with configurable backpressure.
 
     Drop policies:
-    - "oldest": descarta el evento más antiguo cuando se llena
-    - "newest": no encola el evento más reciente cuando se llena
-    - "block": bloquea put() hasta que haya espacio
+    - "oldest": discards the oldest event when the queue is full
+    - "newest": does not enqueue the newest event when the queue is full
+    - "block": blocks put() until there is space
     """
 
     def __init__(

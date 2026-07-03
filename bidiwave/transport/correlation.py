@@ -1,11 +1,11 @@
-"""Correlación de comandos con respuestas via ID."""
+"""Correlation of commands with responses via ID."""
 
 import asyncio
 from typing import Any
 
 
 class Correlator:
-    """Asocia comandos con sus respuestas via ID."""
+    """Associates commands with their responses via ID."""
 
     def __init__(self) -> None:
         self._next_id: int = 0

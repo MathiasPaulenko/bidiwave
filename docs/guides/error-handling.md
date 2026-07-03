@@ -1,74 +1,74 @@
-# Guía de errores — bidiwave
+# Error handling guide — bidiwave
 
-## Jerarquía de excepciones
+## Exception hierarchy
 
 ```text
 BiDiError (base)
-├── ConnectionError          # WebSocket desconectado o inalcanzable
-├── TimeoutError             # Timeout esperando respuesta o navegación
-├── CapabilityError          # Browser no soporta la capability
-├── ProtocolError            # Mensaje del protocolo inválido o inesperado
-├── SessionError             # Sesión inválida o expirada
-└── CommandError             # Browser rechazó el comando
-    ├── InvalidArgumentError # Argumento inválido
-    ├── NoSuchFrameError     # Context no encontrado
-    └── JavaScriptError      # Error al evaluar JS
+├── ConnectionError          # WebSocket disconnected or unreachable
+├── TimeoutError             # Timeout waiting for response or navigation
+├── CapabilityError          # Browser does not support the capability
+├── ProtocolError            # Invalid or unexpected protocol message
+├── SessionError             # Invalid or expired session
+└── CommandError             # Browser rejected the command
+    ├── InvalidArgumentError # Invalid argument
+    ├── NoSuchFrameError     # Context not found
+    └── JavaScriptError      # Error evaluating JS
 ```
 
-## Errores por escenario
+## Errors by scenario
 
-### Conexión
+### Connection
 
-| Escenario | Excepción | Causa común | Solución |
+| Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
-| Browser no responde | `ConnectionError` | Browser no lanzado, puerto incorrecto | Verificar que el browser está corriendo con `--remote-debugging-port` |
-| WebSocket cerrado | `ConnectionError` | Browser crasheó o fue cerrado | Reconnect automático, o reconectar manual |
-| Timeout al conectar | `TimeoutError` | Firewall, red lenta | Aumentar `timeout` en `BiDiClient.connect()` |
+| Browser not responding | `ConnectionError` | Browser not launched, wrong port | Verify the browser is running with `--remote-debugging-port` |
+| WebSocket closed | `ConnectionError` | Browser crashed or was closed | Automatic reconnect, or reconnect manually |
+| Timeout on connect | `TimeoutError` | Firewall, slow network | Increase `timeout` in `BiDiClient.connect()` |
 
-### Sesión
+### Session
 
-| Escenario | Excepción | Causa común | Solución |
+| Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
-| `session.new` falla | `SessionError` | Capabilities no soportadas | Verificar `alwaysMatch` en capabilities |
-| Sesión expirada | `SessionError` | Sesión cerrada por el browser | Crear nueva sesión |
-| `session.subscribe` falla | `CommandError` | Event type no soportado | Verificar `client.capabilities` |
+| `session.new` fails | `SessionError` | Unsupported capabilities | Verify `alwaysMatch` in capabilities |
+| Session expired | `SessionError` | Session closed by the browser | Create a new session |
+| `session.subscribe` fails | `CommandError` | Unsupported event type | Verify `client.capabilities` |
 
-### Navegación
+### Navigation
 
-| Escenario | Excepción | Causa común | Solución |
+| Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
-| URL inválida | `CommandError` | URL malformada | Validar URL antes de navegar |
-| Timeout de carga | `TimeoutError` | Página lenta o colgada | Usar `wait="none"` o `wait="interactive"`, o aumentar timeout |
-| Context cerrado | `CommandError` | Context fue cerrado por otro proceso | Verificar que el context existe antes de navegar |
-| Screenshot falla | `CommandError` | Context no visible (headless sin GPU) | Usar `--headless=new` en Chrome |
+| Invalid URL | `CommandError` | Malformed URL | Validate URL before navigating |
+| Load timeout | `TimeoutError` | Slow or hanging page | Use `wait="none"` or `wait="interactive"`, or increase timeout |
+| Context closed | `CommandError` | Context was closed by another process | Verify the context exists before navigating |
+| Screenshot fails | `CommandError` | Context not visible (headless without GPU) | Use `--headless=new` in Chrome |
 
 ### Script
 
-| Escenario | Excepción | Causa común | Solución |
+| Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
-| Error de JS | `CommandError` | Expresión inválida | Capturar errores en JS: `try { ... } catch(e) { return e.message }` |
-| Promise no resuelta | `TimeoutError` | `await_promise=True` y Promise colgada | Usar timeout en JS: `Promise.race([promise, timeout(5000)])` |
-| Handle inválido | `CommandError` | Handle ya liberado o context cerrado | No reusar handles tras `disown()` o `close()` |
+| JS error | `CommandError` | Invalid expression | Catch errors in JS: `try { ... } catch(e) { return e.message }` |
+| Promise not resolved | `TimeoutError` | `await_promise=True` and Promise hung | Use timeout in JS: `Promise.race([promise, timeout(5000)])` |
+| Invalid handle | `CommandError` | Handle already released or context closed | Don't reuse handles after `disown()` or `close()` |
 
-### Eventos
+### Events
 
-| Escenario | Excepción | Causa común | Solución |
+| Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
-| Handler falla | (silencioso) | Excepción en handler async | El handler se ejecuta en error isolation. Loguear errores dentro del handler |
-| Eventos perdidos | (silencioso) | Queue llena, drop policy activo | Aumentar `max_queue` o usar `drop_policy="block"` |
-| No llegan eventos | (silencioso) | No se suscribió o context cerrado | Verificar `session.subscribe()` y que el context esté activo |
+| Handler fails | (silent) | Exception in async handler | The handler runs in error isolation. Log errors inside the handler |
+| Lost events | (silent) | Queue full, drop policy active | Increase `max_queue` or use `drop_policy="block"` |
+| No events received | (silent) | Not subscribed or context closed | Verify `session.subscribe()` and that the context is active |
 
-### Reconexión
+### Reconnection
 
-| Escenario | Excepción | Causa común | Solución |
+| Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
-| Reconnect falla | `ConnectionError` | Browser cerrado | Manejar `on_reconnect` failure, relanzar browser |
-| Sesión perdida tras reconnect | `SessionError` | La sesión BiDi no sobrevive reconexión | Crear nueva sesión en `on_reconnect` handler |
-| Handlers duplicados tras reconnect | (silencioso) | Re-registrar handlers en cada reconnect | Los handlers se mantienen en memoria, no re-registrar |
+| Reconnect fails | `ConnectionError` | Browser closed | Handle `on_reconnect` failure, relaunch browser |
+| Session lost after reconnect | `SessionError` | BiDi session does not survive reconnection | Create new session in `on_reconnect` handler |
+| Duplicate handlers after reconnect | (silent) | Re-registering handlers on each reconnect | Handlers are kept in memory, no need to re-register |
 
-## Patrones de manejo de errores
+## Error handling patterns
 
-### Retry con backoff
+### Retry with backoff
 
 ```python
 async def navigate_with_retry(client, ctx, url, max_retries=3):
@@ -99,11 +99,11 @@ async def safe_navigate(client, ctx, url):
 ```python
 async def safe_screenshot(client, ctx):
     if not client.capabilities.supports_browsing:
-        raise CapabilityError("Browser no soporta browsing.captureScreenshot")
+        raise CapabilityError("Browser does not support browsing.captureScreenshot")
     return await client.browsing.screenshot(ctx)
 ```
 
-### Promise con timeout en JS
+### Promise with timeout in JS
 
 ```python
 result = await client.script.evaluate(
@@ -118,7 +118,7 @@ result = await client.script.evaluate(
 
 ## Logging
 
-bidiwave usa el módulo `logging` estándar de Python. Configurar para ver mensajes:
+bidiwave uses Python's standard `logging` module. Configure to see messages:
 
 ```python
 import logging
@@ -126,9 +126,9 @@ logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("bidiwave").setLevel(logging.DEBUG)
 ```
 
-Niveles:
+Levels:
 
-- `DEBUG` — todos los mensajes enviados/recibidos, correlación de IDs
-- `INFO` — conexiones, reconexiones, suscripciones
-- `WARNING` — eventos descartados (backpressure), handlers fallidos
-- `ERROR` — errores de protocolo, comandos rechazados
+- `DEBUG` — all messages sent/received, ID correlation
+- `INFO` — connections, reconnections, subscriptions
+- `WARNING` — events dropped (backpressure), failed handlers
+- `ERROR` — protocol errors, rejected commands

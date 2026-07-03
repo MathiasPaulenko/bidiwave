@@ -22,6 +22,8 @@ htmlcov/
 *.swp
 *.swo
 site/
+CONTEXT.md
+spike.py
 
 # Driver binaries (downloaded on demand)
 bin/

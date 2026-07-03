@@ -1,4 +1,4 @@
-"""Módulo script del protocolo BiDi."""
+"""Script module for the WebDriver BiDi protocol."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class ScriptModule:
-    """Módulo para ejecutar JavaScript en el browser."""
+    """Module for executing JavaScript in the browser."""
 
     def __init__(self, connection: Connection) -> None:
         self._connection = connection
@@ -77,15 +77,15 @@ class ScriptModule:
         context: BrowsingContext | str | None = None,
         type: str | None = None,
     ) -> list[RealmInfo]:
-        """Obtiene información sobre los realms disponibles.
+        """Gets information about available realms.
 
         Args:
-            context: Filtrar por context ID. None = todos los realms.
-            type: Filtrar por tipo de realm ("window", "dedicated-worker",
-                "shared-worker", "service-worker"). None = todos.
+            context: Filter by context ID. None = all realms.
+            type: Filter by realm type ("window", "dedicated-worker",
+                "shared-worker", "service-worker"). None = all.
 
         Returns:
-            Lista de RealmInfo.
+            List of RealmInfo.
         """
         params: dict[str, Any] = {}
         if context is not None:

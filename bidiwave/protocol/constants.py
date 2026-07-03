@@ -1,4 +1,4 @@
-"""Constantes del protocolo WebDriver BiDi."""
+"""WebDriver BiDi protocol constants."""
 
 # Command methods
 SESSION_NEW = "session.new"

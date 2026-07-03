@@ -10,7 +10,7 @@ from bidiwave import StringValue
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
 async def test_hello_world(client: object, context: object) -> None:
-    """Ciclo completo: navegar, evaluar JS, verificar título."""
+    """Full cycle: navigate, evaluate JS, verify title."""
     await client.browsing.navigate(context, "https://example.com", wait="complete")
 
     result = await client.script.evaluate(context, "document.title")

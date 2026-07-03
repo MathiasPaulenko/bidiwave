@@ -1,4 +1,4 @@
-"""Modelos de retorno tipados para los módulos."""
+"""Typed result models for modules."""
 
 from typing import Any, Literal
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class Session(BaseModel):
-    """Resultado de session.new."""
+    """Result of session.new."""
 
     model_config = ConfigDict(extra="allow")
     session_id: str
@@ -14,7 +14,7 @@ class Session(BaseModel):
 
 
 class SessionStatus(BaseModel):
-    """Resultado de session.status."""
+    """Result of session.status."""
 
     model_config = ConfigDict(extra="allow")
     ready: bool
@@ -22,7 +22,7 @@ class SessionStatus(BaseModel):
 
 
 class Navigation(BaseModel):
-    """Resultado de browsing.navigate."""
+    """Result of browsing.navigate."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -33,21 +33,21 @@ class Navigation(BaseModel):
 
 
 class Screenshot(BaseModel):
-    """Resultado de browsing.captureScreenshot."""
+    """Result of browsing.captureScreenshot."""
 
     model_config = ConfigDict(extra="allow")
     data: str
 
 
 class InterceptResult(BaseModel):
-    """Resultado de network.addIntercept."""
+    """Result of network.addIntercept."""
 
     model_config = ConfigDict(extra="allow")
     intercept: str
 
 
 class InputSource(BaseModel):
-    """Fuente de input para input.performActions (un dispositivo virtual)."""
+    """Input source for input.performActions (a virtual device)."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -57,7 +57,7 @@ class InputSource(BaseModel):
 
 
 class KeyAction(BaseModel):
-    """Una acción de teclado individual."""
+    """An individual keyboard action."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -67,7 +67,7 @@ class KeyAction(BaseModel):
 
 
 class PointerAction(BaseModel):
-    """Una acción de puntero individual (mouse/touch)."""
+    """An individual pointer action (mouse/touch)."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -101,7 +101,7 @@ class PointerAction(BaseModel):
 
 
 class WheelAction(BaseModel):
-    """Una acción de scroll individual."""
+    """An individual scroll action."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -115,7 +115,7 @@ class WheelAction(BaseModel):
 
 
 class Cookie(BaseModel):
-    """Cookie del browser (storage.getCookies / storage.setCookie)."""
+    """Browser cookie (storage.getCookies / storage.setCookie)."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -135,7 +135,7 @@ class Cookie(BaseModel):
 
 
 class GetCookiesResult(BaseModel):
-    """Resultado de storage.getCookies."""
+    """Result of storage.getCookies."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -143,7 +143,7 @@ class GetCookiesResult(BaseModel):
 
 
 class PrintResult(BaseModel):
-    """Resultado de browsingContext.print."""
+    """Result of browsingContext.print."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -151,7 +151,7 @@ class PrintResult(BaseModel):
 
 
 class LocateNodesResult(BaseModel):
-    """Resultado de browsingContext.locateNodes."""
+    """Result of browsingContext.locateNodes."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -159,7 +159,7 @@ class LocateNodesResult(BaseModel):
 
 
 class RealmInfo(BaseModel):
-    """Información de un realm (script.getRealms)."""
+    """Information about a realm (script.getRealms)."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -171,7 +171,7 @@ class RealmInfo(BaseModel):
 
 
 class GetRealmsResult(BaseModel):
-    """Resultado de script.getRealms."""
+    """Result of script.getRealms."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -179,7 +179,7 @@ class GetRealmsResult(BaseModel):
 
 
 class UserContextInfo(BaseModel):
-    """Información de un user context (perfil aislado)."""
+    """Information about a user context (isolated profile)."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -187,7 +187,7 @@ class UserContextInfo(BaseModel):
 
 
 class GetUserContextsResult(BaseModel):
-    """Resultado de browser.getUserContexts."""
+    """Result of browser.getUserContexts."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -195,7 +195,7 @@ class GetUserContextsResult(BaseModel):
 
 
 class CDPGetSessionResult(BaseModel):
-    """Resultado de browser.cdp.getSession."""
+    """Result of browser.cdp.getSession."""
 
     model_config = ConfigDict(extra="allow")
 

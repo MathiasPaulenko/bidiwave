@@ -1,4 +1,4 @@
-"""Capabilities del browser reportadas via BiDi."""
+"""Browser capabilities reported via BiDi."""
 
 from typing import Any
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Capabilities(BaseModel):
-    """Capabilities del browser detectadas via session.status."""
+    """Browser capabilities detected via session.status."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -21,7 +21,7 @@ class Capabilities(BaseModel):
 
 
 def detect_capabilities(status_response: dict[str, Any]) -> Capabilities:
-    """Parsea la respuesta de session.new/status y detecta capabilities."""
+    """Parses the session.new/status response and detects capabilities."""
     result = status_response.get("result", status_response)
     caps_data = result.get("capabilities", result)
 

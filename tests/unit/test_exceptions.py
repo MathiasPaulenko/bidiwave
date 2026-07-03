@@ -1,4 +1,4 @@
-"""Tests de la jerarquía de excepciones y map_error."""
+"""Tests for the exception hierarchy and map_error."""
 
 from bidiwave.exceptions import (
     BiDiError,

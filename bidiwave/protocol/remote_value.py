@@ -1,4 +1,4 @@
-"""RemoteValue — modelos para valores remotos del protocolo BiDi."""
+"""RemoteValue — models for remote values of the BiDi protocol."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from pydantic import BaseModel, ConfigDict
 
 
 class RemoteValue(BaseModel):
-    """Base para todos los valores remotos del protocolo BiDi."""
+    """Base for all remote values of the BiDi protocol."""
 
     model_config = ConfigDict(extra="allow")
     type: str
 
     @classmethod
     def parse(cls, data: dict[str, Any]) -> RemoteValue:
-        """Factory que retorna el subtipo correcto según type."""
-        # script.evaluate/callFunction retornan {type: "success", result: {...}}
+        """Factory that returns the correct subtype based on type."""
+        # script.evaluate/callFunction return {type: "success", result: {...}}
         if data.get("type") == "success" and "result" in data:
             data = data["result"]
         type_name = data.get("type", "")
@@ -84,7 +84,7 @@ class ArrayValue(RemoteValue):
 
 
 class HandleValue(RemoteValue):
-    """Para functions, symbols y objetos con referencias circulares."""
+    """For functions, symbols and objects with circular references."""
 
     type: str
     handle: str

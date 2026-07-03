@@ -1,4 +1,4 @@
-"""Módulo CDP bridge del protocolo BiDi."""
+"""CDP bridge module for the WebDriver BiDi protocol."""
 
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ from bidiwave.transport.connection import Connection
 
 
 class CDPModule:
-    """Módulo para enviar comandos CDP directamente (Chrome-only).
+    """Module for sending CDP commands directly (Chrome-only).
 
-    Permite acceder a APIs de Chrome DevTools Protocol que aún
-    no están cubiertas por WebDriver BiDi.
+    Allows access to Chrome DevTools Protocol APIs that are not
+    yet covered by WebDriver BiDi.
 
-    Ejemplo:
+    Example:
         cdp_session = await client.cdp.get_session()
         result = await client.cdp.send_command("Page.reload", {})
     """
@@ -27,10 +27,10 @@ class CDPModule:
         self._connection = connection
 
     async def get_session(self) -> str | None:
-        """Obtiene el ID de la sesión CDP actual.
+        """Gets the current CDP session ID.
 
         Returns:
-            ID de la sesión CDP o None si no hay una activa.
+            CDP session ID or None if no active session.
         """
         result = await self._connection.send_command(
             BROWSER_CDP_GET_SESSION, {}
@@ -43,14 +43,14 @@ class CDPModule:
         cmd: str,
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Envía un comando CDP directamente al browser.
+        """Sends a CDP command directly to the browser.
 
         Args:
-            cmd: Nombre del comando CDP (ej. "Page.reload", "Network.enable").
-            params: Parámetros del comando.
+            cmd: CDP command name (e.g. "Page.reload", "Network.enable").
+            params: Command parameters.
 
         Returns:
-            Resultado del comando CDP como dict.
+            CDP command result as dict.
         """
         send_params: dict[str, Any] = {"cmd": cmd}
         if params is not None:

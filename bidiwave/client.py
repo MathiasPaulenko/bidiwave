@@ -1,4 +1,4 @@
-"""BiDiClient — API pública de bidiwave."""
+"""BiDiClient — public API for bidiwave."""
 
 from __future__ import annotations
 
@@ -19,9 +19,9 @@ from bidiwave.transport.connection import Connection, TransportConfig
 
 
 class BiDiClient:
-    """Cliente WebDriver BiDi.
+    """WebDriver BiDi client.
 
-    Ejemplo:
+    Example:
         async with await BiDiClient.connect("ws://localhost:9222/session") as client:
             await client.session.new()
             async with await client.browsing.create_context() as ctx:
@@ -68,43 +68,43 @@ class BiDiClient:
         return self._capabilities
 
     def on(self, event_type: str, handler: AsyncHandler) -> Subscription:
-        """Registra un handler para un event type."""
+        """Registers a handler for an event type."""
         return self._dispatcher.on(event_type, handler)  # type: ignore[return-value]
 
     def off(self, subscription: Subscription) -> None:
-        """Desuscribe un handler."""
+        """Unsubscribes a handler."""
         self._dispatcher.off(subscription)
 
     async def on_log_entry(self, handler: AsyncHandler) -> Subscription:
-        """Conveniencia para suscribirse a console logs."""
+        """Convenience for subscribing to console logs."""
         return self._dispatcher.on("log.entryAdded", handler)  # type: ignore[return-value]
 
     def on_context_created(self, handler: AsyncHandler) -> Subscription:
-        """Conveniencia para browsingContext.contextCreated."""
+        """Convenience for browsingContext.contextCreated."""
         return self._dispatcher.on("browsingContext.contextCreated", handler)  # type: ignore[return-value]
 
     def on_context_destroyed(self, handler: AsyncHandler) -> Subscription:
-        """Conveniencia para browsingContext.contextDestroyed."""
+        """Convenience for browsingContext.contextDestroyed."""
         return self._dispatcher.on("browsingContext.contextDestroyed", handler)  # type: ignore[return-value]
 
     def on_request(self, handler: AsyncHandler) -> Subscription:
-        """Conveniencia para network.beforeRequestSent."""
+        """Convenience for network.beforeRequestSent."""
         return self._dispatcher.on("network.beforeRequestSent", handler)  # type: ignore[return-value]
 
     def on_response(self, handler: AsyncHandler) -> Subscription:
-        """Conveniencia para network.responseCompleted."""
+        """Convenience for network.responseCompleted."""
         return self._dispatcher.on("network.responseCompleted", handler)  # type: ignore[return-value]
 
     def on_fetch_error(self, handler: AsyncHandler) -> Subscription:
-        """Conveniencia para network.fetchError."""
+        """Convenience for network.fetchError."""
         return self._dispatcher.on("network.fetchError", handler)  # type: ignore[return-value]
 
     def on_cookie_changed(self, handler: AsyncHandler) -> Subscription:
-        """Conveniencia para storage.cookieChanged."""
+        """Convenience for storage.cookieChanged."""
         return self._dispatcher.on("storage.cookieChanged", handler)  # type: ignore[return-value]
 
     def on_auth_required(self, handler: AsyncHandler) -> Subscription:
-        """Conveniencia para network.authRequired."""
+        """Convenience for network.authRequired."""
         return self._dispatcher.on("network.authRequired", handler)  # type: ignore[return-value]
 
     async def set_auto_prompt(
@@ -112,14 +112,14 @@ class BiDiClient:
         accept: bool = True,
         user_text: str | None = None,
     ) -> None:
-        """Habilita el manejo automático de dialogs (alert/confirm/prompt).
+        """Enables automatic dialog handling (alert/confirm/prompt).
 
-        Suscribe a browsingContext.userPromptOpened y maneja cada dialog
-        automáticamente con los parámetros indicados.
+        Subscribes to browsingContext.userPromptOpened and handles each dialog
+        automatically with the given parameters.
 
         Args:
-            accept: True para aceptar, False para dismiss.
-            user_text: Texto para prompts (opcional).
+            accept: True to accept, False to dismiss.
+            user_text: Text for prompts (optional).
         """
         self._auto_prompt_accept = accept
         self._auto_prompt_text = user_text
@@ -142,7 +142,7 @@ class BiDiClient:
         await self.session.subscribe(["browsingContext.userPromptOpened"])
 
     async def disable_auto_prompt(self) -> None:
-        """Desactiva el manejo automático de dialogs."""
+        """Disables automatic dialog handling."""
         if self._auto_prompt_sub is not None:
             self.off(self._auto_prompt_sub)
             self._auto_prompt_sub = None
@@ -150,11 +150,11 @@ class BiDiClient:
         self._auto_prompt_text = None
 
     def on_reconnect(self, handler: AsyncHandler) -> None:
-        """Registra un handler que se ejecuta tras reconectar."""
+        """Registers a handler that runs after reconnection."""
         self._connection.on_reconnect(handler)
 
     def on_disconnect(self, handler: AsyncHandler) -> None:
-        """Registra un handler que se ejecuta al desconectar."""
+        """Registers a handler that runs on disconnection."""
         self._connection.on_disconnect(handler)
 
     async def close(self) -> None:

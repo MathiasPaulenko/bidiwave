@@ -1,4 +1,4 @@
-"""Módulo session del protocolo BiDi."""
+"""Session module for the WebDriver BiDi protocol."""
 
 from typing import Any
 
@@ -14,7 +14,7 @@ from bidiwave.transport.connection import Connection
 
 
 class SessionModule:
-    """Módulo para gestionar la sesión BiDi."""
+    """Module for managing the BiDi session."""
 
     def __init__(self, connection: Connection) -> None:
         self._connection = connection
@@ -36,7 +36,7 @@ class SessionModule:
         return SessionStatus.model_validate(result)
 
     async def end(self) -> None:
-        """Cierra la sesión BiDi actual."""
+        """Closes the current BiDi session."""
         await self._connection.send_command(SESSION_END, {})
 
     async def subscribe(
@@ -44,7 +44,7 @@ class SessionModule:
         events: list[str],
         contexts: list[str] | None = None,
     ) -> None:
-        """Suscribe a eventos del browser."""
+        """Subscribes to browser events."""
         params: dict[str, Any] = {"events": events}
         if contexts:
             params["contexts"] = contexts
@@ -55,7 +55,7 @@ class SessionModule:
         events: list[str],
         contexts: list[str] | None = None,
     ) -> None:
-        """Desuscribe de eventos."""
+        """Unsubscribes from events."""
         params: dict[str, Any] = {"events": events}
         if contexts:
             params["contexts"] = contexts

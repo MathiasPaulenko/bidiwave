@@ -1,12 +1,12 @@
-"""Configuración global de pytest — markers y opciones."""
+"""Global pytest configuration — markers and options."""
 
 import pytest
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    config.addinivalue_line("markers", "unit: tests unitarios sin browser")
-    config.addinivalue_line("markers", "integration: tests con browser real")
-    config.addinivalue_line("markers", "contract: tests contra spec W3C")
-    config.addinivalue_line("markers", "slow: tests lentos (>1s)")
-    config.addinivalue_line("markers", "chrome: tests específicos de Chrome")
-    config.addinivalue_line("markers", "firefox: tests específicos de Firefox")
+    config.addinivalue_line("markers", "unit: unit tests without browser")
+    config.addinivalue_line("markers", "integration: tests with a real browser")
+    config.addinivalue_line("markers", "contract: tests against W3C spec")
+    config.addinivalue_line("markers", "slow: slow tests (>1s)")
+    config.addinivalue_line("markers", "chrome: Chrome-specific tests")
+    config.addinivalue_line("markers", "firefox: Firefox-specific tests")

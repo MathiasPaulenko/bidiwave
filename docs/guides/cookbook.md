@@ -1,8 +1,8 @@
 # Cookbook — bidiwave
 
-## Ejemplo 1: Console logger
+## Example 1: Console logger
 
-Capturar todos los console logs de una página.
+Capture all console logs from a page.
 
 ```python
 import asyncio
@@ -26,7 +26,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Ejemplo 2: Screenshot de página completa
+## Example 2: Full page screenshot
 
 ```python
 import asyncio
@@ -38,12 +38,12 @@ async def main():
             screenshot = await page.screenshot()
             with open("screenshot.png", "wb") as f:
                 f.write(screenshot)
-            print("Screenshot guardado en screenshot.png")
+            print("Screenshot saved to screenshot.png")
 
 asyncio.run(main())
 ```
 
-## Ejemplo 3: Extraer datos de una página
+## Example 3: Extract data from a page
 
 ```python
 import asyncio
@@ -72,7 +72,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Ejemplo 4: Múltiples tabs en paralelo
+## Example 4: Multiple tabs in parallel
 
 ```python
 import asyncio
@@ -103,7 +103,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Ejemplo 5: Esperar a que un elemento aparezca
+## Example 5: Wait for an element to appear
 
 ```python
 import asyncio
@@ -113,12 +113,12 @@ async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
         async with await client.browsing.open("https://example.com") as page:
             found = await page.wait_for_selector("h1", timeout=5)
-            print(f"Elemento encontrado: {found}")
+            print(f"Element found: {found}")
 
 asyncio.run(main())
 ```
 
-## Ejemplo 6: Reconnect handling
+## Example 6: Reconnect handling
 
 ```python
 import asyncio
@@ -128,13 +128,13 @@ async def main():
     config = ClientConfig(max_retries=5)
     async with await BiDiClient.connect("ws://localhost:9222/session", config=config) as client:
         async def on_reconnect():
-            print("Reconectado. Recreando sesión...")
+            print("Reconnected. Recreating session...")
             await client.session.subscribe(["log.entryAdded"])
 
         client.on_reconnect(on_reconnect)
 
         async def on_disconnect():
-            print("Conexión perdida. Reintentando...")
+            print("Connection lost. Retrying...")
 
         client.on_disconnect(on_disconnect)
 
@@ -144,7 +144,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Ejemplo 7: Capability-aware code
+## Example 7: Capability-aware code
 
 ```python
 import asyncio
@@ -158,15 +158,15 @@ async def main():
         print(f"Network: {client.capabilities.supports_network}")
 
         if client.capabilities.supports_network:
-            # Usar network module
+            # Use network module
             ...
         else:
-            print("Network no soportado en este browser")
+            print("Network not supported on this browser")
 
 asyncio.run(main())
 ```
 
-## Ejemplo 8: Simular input del usuario
+## Example 8: Simulate user input
 
 ```python
 import asyncio
@@ -177,16 +177,16 @@ async def main():
         async with await client.browsing.open("https://example.com") as page:
             ctx = page.context
 
-            # Click en un elemento
+            # Click an element
             await client.input.click(ctx, x=100, y=200)
 
-            # Escribir texto
+            # Type text
             await client.input.type_text(ctx, "Hello, world!")
 
-            # Presionar Enter
+            # Press Enter
             await client.input.press_key(ctx, "Enter")
 
-            # Scroll hacia abajo 500px
+            # Scroll down 500px
             await client.input.scroll(ctx, delta_y=500)
 
             # Drag and drop
@@ -195,7 +195,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Ejemplo 9: Bloquear requests de red
+## Example 9: Block network requests
 
 ```python
 import asyncio
@@ -203,7 +203,7 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        # Bloquear todas las requests a dominios de ads
+        # Block all requests to ad domains
         intercept = await client.network.add_intercept(
             phases=["beforeRequestSent"],
             url_patterns=["*ads.example.com*", "*doubleclick.net*"],
@@ -212,13 +212,13 @@ async def main():
         async with await client.browsing.open("https://example.com") as page:
             await asyncio.sleep(3)
 
-        # Eliminar el intercept
+        # Remove the intercept
         await client.network.remove_intercept(intercept.intercept_id)
 
 asyncio.run(main())
 ```
 
-## Ejemplo 10: Monitorear requests de red
+## Example 10: Monitor network requests
 
 ```python
 import asyncio
@@ -254,7 +254,7 @@ async def main():
 asyncio.run(main())
 ```
 
-## Ejemplo 11: Mockear una respuesta HTTP
+## Example 11: Mock an HTTP response
 
 ```python
 import asyncio
@@ -262,13 +262,13 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        # Intercept en beforeRequestSent
+        # Intercept at beforeRequestSent
         intercept = await client.network.add_intercept(
             phases=["beforeRequestSent"],
             url_patterns=["*api.example.com/data*"],
         )
 
-        # Cuando se intercepte, proveer una respuesta sintética
+        # When intercepted, provide a synthetic response
         async def on_request(event):
             await client.network.provide_response(
                 request=event.request.request,

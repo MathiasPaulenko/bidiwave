@@ -1,8 +1,8 @@
-"""Excepciones de bidiwave."""
+"""bidiwave exceptions."""
 
 
 class BiDiError(Exception):
-    """Base para todos los errores de bidiwave."""
+    """Base for all bidiwave errors."""
 
     def __init__(self, message: str = "", code: str = "") -> None:
         super().__init__(message)
@@ -11,46 +11,46 @@ class BiDiError(Exception):
 
 
 class ConnectionError(BiDiError):
-    """Error de conexión WebSocket."""
+    """WebSocket connection error."""
 
 
 class TimeoutError(BiDiError):
-    """Timeout esperando respuesta o navegación."""
+    """Timeout waiting for response or navigation."""
 
 
 class CapabilityError(BiDiError):
-    """El browser no soporta la capability requerida."""
+    """The browser does not support the required capability."""
 
 
 class ProtocolError(BiDiError):
-    """Mensaje del protocolo inválido o inesperado."""
+    """Invalid or unexpected protocol message."""
 
 
 class SessionError(BiDiError):
-    """Sesión inválida o expirada."""
+    """Invalid or expired session."""
 
 
 class CommandError(BiDiError):
-    """El browser rechazó un comando."""
+    """The browser rejected a command."""
 
     def __init__(self, code: str, message: str) -> None:
         super().__init__(message=message, code=code)
 
 
 class InvalidArgumentError(CommandError):
-    """Argumento inválido."""
+    """Invalid argument."""
 
 
 class NoSuchFrameError(CommandError):
-    """Context no encontrado."""
+    """Context not found."""
 
 
 class NoSuchWindowError(CommandError):
-    """Window no encontrado."""
+    """Window not found."""
 
 
 class JavaScriptError(CommandError):
-    """Error al evaluar JavaScript."""
+    """Error evaluating JavaScript."""
 
 
 ERROR_CODE_MAP: dict[str, type[CommandError]] = {
@@ -62,6 +62,6 @@ ERROR_CODE_MAP: dict[str, type[CommandError]] = {
 
 
 def map_error(code: str, message: str) -> CommandError:
-    """Mapea un código de error BiDi a la excepción correcta."""
+    """Maps a BiDi error code to the correct exception."""
     error_cls = ERROR_CODE_MAP.get(code, CommandError)
     return error_cls(code=code, message=message)

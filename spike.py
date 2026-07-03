@@ -1,8 +1,8 @@
-"""Spike: validar que WebDriver BiDi funciona con Chrome y Edge.
+"""Spike: validate that WebDriver BiDi works with Chrome and Edge.
 
-Usa ChromeDriver/EdgeDriver como proxy BiDi.
+Uses ChromeDriver/EdgeDriver as a BiDi proxy.
 
-Uso:
+Usage:
     python spike.py --browser chrome
     python spike.py --browser edge
 """
@@ -27,7 +27,7 @@ DRIVERS = {
 
 
 def launch_driver(driver_path: str, port: int) -> subprocess.Popen:
-    """Lanzar ChromeDriver/EdgeDriver en el puerto indicado."""
+    """Launch ChromeDriver/EdgeDriver on the given port."""
     return subprocess.Popen(
         [driver_path, f"--port={port}"],
         stdout=subprocess.DEVNULL,
@@ -36,9 +36,9 @@ def launch_driver(driver_path: str, port: int) -> subprocess.Popen:
 
 
 def create_webdriver_session(port: int) -> dict:
-    """Crear sesión WebDriver clásica pidiendo webSocketUrl (BiDi).
+    """Create a classic WebDriver session requesting webSocketUrl (BiDi).
 
-    Retorna el JSON completo de la respuesta.
+    Returns the full JSON response.
     """
     payload = json.dumps(
         {
@@ -62,8 +62,8 @@ def create_webdriver_session(port: int) -> dict:
 
 
 async def spike_bidi(bidi_url: str, browser: str) -> None:
-    """Conectar a BiDi y enviar session.status para validar."""
-    print(f"Conectando a BiDi WebSocket: {bidi_url} ...")
+    """Connect to BiDi and send session.status to validate."""
+    print(f"Connecting to BiDi WebSocket: {bidi_url} ...")
 
     async with websockets.connect(bidi_url) as ws:
         command = {"id": 1, "method": "session.status", "params": {}}
@@ -79,11 +79,11 @@ async def spike_bidi(bidi_url: str, browser: str) -> None:
             result = response.get("result", {})
             print(f"  ready: {result.get('ready')}")
             print(f"  message: {result.get('message')}")
-            print(f"\n✅ {browser} BiDi funciona correctamente")
+            print(f"\n✅ {browser} BiDi works correctly")
         else:
             error = response.get("error", {})
             print(f"  error: {error}")
-            print(f"\n❌ {browser} BiDi falló")
+            print(f"\n❌ {browser} BiDi failed")
             sys.exit(1)
 
 
@@ -97,17 +97,17 @@ async def main() -> None:
     port = args.port or default_port
 
     proc = launch_driver(driver_path, port)
-    print(f"Lanzando {args.browser}Driver en puerto {port} ...")
+    print(f"Launching {args.browser}Driver on port {port} ...")
     await asyncio.sleep(2)
 
     try:
-        print("Creando sesión WebDriver con webSocketUrl=True ...")
+        print("Creating WebDriver session with webSocketUrl=True ...")
         session_resp = create_webdriver_session(port)
         print(f"  status: {session_resp.get('value', {}).get('sessionId', 'N/A')}")
 
         bidi_url = session_resp.get("value", {}).get("capabilities", {}).get("webSocketUrl", "")
         if not bidi_url:
-            print("❌ No se obtuvo webSocketUrl de la respuesta del driver")
+            print("❌ No webSocketUrl obtained from driver response")
             print(f"  raw: {json.dumps(session_resp, indent=2)[:500]}")
             sys.exit(1)
 
@@ -115,7 +115,7 @@ async def main() -> None:
         await spike_bidi(bidi_url, args.browser)
 
     except urllib.error.URLError as e:
-        print(f"❌ Error HTTP al crear sesión: {e}")
+        print(f"❌ HTTP error creating session: {e}")
         sys.exit(1)
     finally:
         proc.terminate()

@@ -1,4 +1,4 @@
-"""Page object — capa de conveniencia sobre BrowsingContext."""
+"""Page object — convenience layer over BrowsingContext."""
 
 from __future__ import annotations
 
@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 
 
 class Page:
-    """Wrapper de conveniencia sobre un BrowsingContext.
+    """Convenience wrapper over a BrowsingContext.
 
-    Ejemplo:
+    Example:
         async with await client.browsing.open("https://example.com") as page:
             title = await page.evaluate("document.title")
             await page.wait_for_selector("h1")

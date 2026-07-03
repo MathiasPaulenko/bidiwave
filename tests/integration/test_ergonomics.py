@@ -10,7 +10,7 @@ from bidiwave import StringValue
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
 async def test_page_object(client: object) -> None:
-    """Page object funciona end-to-end."""
+    """Page object works end-to-end."""
     async with await client.browsing.open("https://example.com") as page:
         title = await page.evaluate("document.title")
         assert isinstance(title, StringValue)
@@ -26,7 +26,7 @@ async def test_page_object(client: object) -> None:
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
 async def test_wait_for_selector(client: object, context: object) -> None:
-    """wait_for_selector funciona con timeout."""
+    """wait_for_selector works with timeout."""
     await client.browsing.navigate(context, "https://example.com", wait="complete")
     found = await client.browsing.wait_for_selector(context, "h1", timeout=5)
     assert found is True
@@ -35,7 +35,7 @@ async def test_wait_for_selector(client: object, context: object) -> None:
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
 async def test_wait_for_function(client: object, context: object) -> None:
-    """wait_for_function funciona con timeout."""
+    """wait_for_function works with timeout."""
     await client.browsing.navigate(context, "https://example.com", wait="complete")
     result = await client.browsing.wait_for_function(
         context,
@@ -48,7 +48,7 @@ async def test_wait_for_function(client: object, context: object) -> None:
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
 async def test_type_narrowing_match(client: object, context: object) -> None:
-    """match con subtipos de RemoteValue funciona."""
+    """match with RemoteValue subtypes works."""
     await client.browsing.navigate(context, "https://example.com", wait="complete")
     result = await client.script.evaluate(context, "document.title")
 

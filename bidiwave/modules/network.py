@@ -1,4 +1,4 @@
-"""Módulo network del protocolo BiDi."""
+"""Network module for the WebDriver BiDi protocol."""
 
 from __future__ import annotations
 
@@ -21,18 +21,18 @@ InterceptPhase = Literal["beforeRequestSent", "responseStarted", "authRequired"]
 
 
 class NetworkModule:
-    """Módulo para monitorear e interceptar requests de red.
+    """Module for monitoring and intercepting network requests.
 
-    Comandos:
-        - add_intercept / remove_intercept — interceptación de requests
-        - continue_request / continue_response — continuar un request/response interceptado
-        - fail_request — fallar un request interceptado
-        - provide_response — proveer una respuesta sintética
+    Commands:
+        - add_intercept / remove_intercept — request interception
+        - continue_request / continue_response — continue an intercepted request/response
+        - fail_request — fail an intercepted request
+        - provide_response — provide a synthetic response
 
-    Eventos (vía subscribe):
-        - network.beforeRequestSent — antes de enviar un request
-        - network.responseCompleted — cuando un response se completa
-        - network.fetchError — cuando un request falla
+    Events (via subscribe):
+        - network.beforeRequestSent — before a request is sent
+        - network.responseCompleted — when a response completes
+        - network.fetchError — when a request fails
     """
 
     def __init__(self, connection: Connection) -> None:
@@ -44,15 +44,15 @@ class NetworkModule:
         contexts: list[str] | None = None,
         url_patterns: list[str] | None = None,
     ) -> InterceptResult:
-        """Registra un intercept para bloquear requests en las fases indicadas.
+        """Registers an intercept to block requests at the given phases.
 
         Args:
-            phases: Fases en las que interceptar (beforeRequestSent, responseStarted, authRequired).
-            contexts: Lista de context IDs donde aplicar. None = todos.
-            url_patterns: Patrones de URL a interceptar. None = todas.
+            phases: Phases to intercept at (beforeRequestSent, responseStarted, authRequired).
+            contexts: List of context IDs to apply to. None = all.
+            url_patterns: URL patterns to intercept. None = all.
 
         Returns:
-            InterceptResult con el ID del intercept.
+            InterceptResult with the intercept ID.
         """
         params: dict[str, Any] = {"phases": phases}
         if contexts:
@@ -63,10 +63,10 @@ class NetworkModule:
         return InterceptResult.model_validate(result)
 
     async def remove_intercept(self, intercept: str) -> None:
-        """Elimina un intercept previamente registrado.
+        """Removes a previously registered intercept.
 
         Args:
-            intercept: ID del intercept a eliminar.
+            intercept: ID of the intercept to remove.
         """
         await self._connection.send_command(
             NETWORK_REMOVE_INTERCEPT, {"intercept": intercept}
@@ -80,14 +80,14 @@ class NetworkModule:
         headers: list[dict[str, str]] | None = None,
         cookies: list[dict[str, Any]] | None = None,
     ) -> None:
-        """Continúa un request interceptado, opcionalmente modificando sus parámetros.
+        """Continues an intercepted request, optionally modifying its parameters.
 
         Args:
-            request: ID del request a continuar.
-            url: URL modificada (opcional).
-            method: método HTTP modificado (opcional).
-            headers: headers modificados (opcional).
-            cookies: cookies modificadas (opcional).
+            request: ID of the request to continue.
+            url: Modified URL (optional).
+            method: Modified HTTP method (optional).
+            headers: Modified headers (optional).
+            cookies: Modified cookies (optional).
         """
         params: dict[str, Any] = {"request": request}
         if url is not None:
@@ -108,14 +108,14 @@ class NetworkModule:
         headers: list[dict[str, str]] | None = None,
         body: str | None = None,
     ) -> None:
-        """Continúa un response interceptado, opcionalmente modificándolo.
+        """Continues an intercepted response, optionally modifying it.
 
         Args:
-            request: ID del request.
-            status_code: código de status HTTP (opcional).
-            reason_phrase: reason phrase (opcional).
-            headers: headers del response (opcional).
-            body: body del response en base64 (opcional).
+            request: ID of the request.
+            status_code: HTTP status code (optional).
+            reason_phrase: Reason phrase (optional).
+            headers: Response headers (optional).
+            body: Response body in base64 (optional).
         """
         params: dict[str, Any] = {"request": request}
         if status_code is not None:
@@ -133,11 +133,11 @@ class NetworkModule:
         request: str,
         error: str = "Failed",
     ) -> None:
-        """Falla un request interceptado.
+        """Fails an intercepted request.
 
         Args:
-            request: ID del request.
-            error: Mensaje de error.
+            request: ID of the request.
+            error: Error message.
         """
         await self._connection.send_command(
             NETWORK_FAIL_REQUEST, {"request": request, "error": error}
@@ -151,14 +151,14 @@ class NetworkModule:
         headers: list[dict[str, str]] | None = None,
         body: str | None = None,
     ) -> None:
-        """Provee una respuesta sintética sin hacer el request real.
+        """Provides a synthetic response without making the actual request.
 
         Args:
-            request: ID del request.
-            status_code: código de status HTTP.
-            reason_phrase: reason phrase.
-            headers: headers del response.
-            body: body del response en base64.
+            request: ID of the request.
+            status_code: HTTP status code.
+            reason_phrase: Reason phrase.
+            headers: Response headers.
+            body: Response body in base64.
         """
         params: dict[str, Any] = {
             "request": request,
@@ -177,15 +177,15 @@ class NetworkModule:
         action: Literal["default", "cancel", "provideCredentials"],
         credentials: dict[str, str] | None = None,
     ) -> None:
-        """Continúa un request interceptado en fase authRequired.
+        """Continues an intercepted request in the authRequired phase.
 
         Args:
-            request: ID del request.
-            action: "default" (usar credenciales del browser),
-                "cancel" (cancelar la auth), o
-                "provideCredentials" (usar credentials provistas).
-            credentials: Dict con "type" ("password"), "username", "password".
-                Solo usado con action="provideCredentials".
+            request: ID of the request.
+            action: "default" (use browser credentials),
+                "cancel" (cancel auth), or
+                "provideCredentials" (use provided credentials).
+            credentials: Dict with "type" ("password"), "username", "password".
+                Only used with action="provideCredentials".
         """
         params: dict[str, Any] = {"request": request, "action": action}
         if credentials is not None:
@@ -193,9 +193,9 @@ class NetworkModule:
         await self._connection.send_command(NETWORK_CONTINUE_WITH_AUTH, params)
 
     async def cancel_auth(self, request: str) -> None:
-        """Cancela un request interceptado en fase authRequired.
+        """Cancels an intercepted request in the authRequired phase.
 
-        Atajo para continue_with_auth(request, action="cancel").
+        Shortcut for continue_with_auth(request, action="cancel").
         """
         await self._connection.send_command(
             NETWORK_CANCEL_AUTH, {"request": request}

@@ -1,4 +1,4 @@
-"""Modelos Pydantic v2 para comandos WebDriver BiDi."""
+"""Pydantic v2 models for WebDriver BiDi commands."""
 
 from typing import Any, Literal
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Command(BaseModel):
-    """Comando base del protocolo BiDi."""
+    """Base command for the BiDi protocol."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -16,7 +16,7 @@ class Command(BaseModel):
 
 
 class NewSessionParams(BaseModel):
-    """Parámetros para session.new."""
+    """Parameters for session.new."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -24,7 +24,7 @@ class NewSessionParams(BaseModel):
 
 
 class NavigateParams(BaseModel):
-    """Parámetros para browsing.navigate."""
+    """Parameters for browsing.navigate."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -34,7 +34,7 @@ class NavigateParams(BaseModel):
 
 
 class EvaluateParams(BaseModel):
-    """Parámetros para script.evaluate."""
+    """Parameters for script.evaluate."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -44,7 +44,7 @@ class EvaluateParams(BaseModel):
 
 
 class ScreenshotParams(BaseModel):
-    """Parámetros para browsingContext.captureScreenshot."""
+    """Parameters for browsingContext.captureScreenshot."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -54,7 +54,7 @@ class ScreenshotParams(BaseModel):
 
 
 class CallFunctionParams(BaseModel):
-    """Parámetros para script.callFunction."""
+    """Parameters for script.callFunction."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -65,7 +65,7 @@ class CallFunctionParams(BaseModel):
 
 
 class DisownParams(BaseModel):
-    """Parámetros para script.disown."""
+    """Parameters for script.disown."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -74,7 +74,7 @@ class DisownParams(BaseModel):
 
 
 class GetTreeParams(BaseModel):
-    """Parámetros para browsingContext.getTree."""
+    """Parameters for browsingContext.getTree."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -83,7 +83,7 @@ class GetTreeParams(BaseModel):
 
 
 class SubscribeParams(BaseModel):
-    """Parámetros para session.subscribe."""
+    """Parameters for session.subscribe."""
 
     model_config = ConfigDict(extra="allow")
 

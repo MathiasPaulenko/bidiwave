@@ -53,7 +53,7 @@ from bidiwave.protocol.results import (
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"
 
 __all__ = [
     "ArrayValue",

@@ -1,4 +1,4 @@
-"""Modelos de eventos del protocolo WebDriver BiDi."""
+"""Event models for the WebDriver BiDi protocol."""
 
 from typing import Any, Literal
 
@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class Event(BaseModel):
-    """Base para todos los eventos BiDi."""
+    """Base for all BiDi events."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -16,7 +16,7 @@ class Event(BaseModel):
 
 
 class LogEntryAddedEvent(BaseModel):
-    """Evento log.entryAdded — un console log del browser."""
+    """log.entryAdded event — a console log from the browser."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -29,7 +29,7 @@ class LogEntryAddedEvent(BaseModel):
 
 
 class BrowsingContextCreatedEvent(BaseModel):
-    """Evento browsingContext.contextCreated."""
+    """browsingContext.contextCreated event."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -40,7 +40,7 @@ class BrowsingContextCreatedEvent(BaseModel):
 
 
 class BrowsingContextDestroyedEvent(BaseModel):
-    """Evento browsingContext.contextDestroyed."""
+    """browsingContext.contextDestroyed event."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -48,7 +48,7 @@ class BrowsingContextDestroyedEvent(BaseModel):
 
 
 class BrowsingContextNavigatedEvent(BaseModel):
-    """Evento browsingContext.navigationStarted."""
+    """browsingContext.navigationStarted event."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -59,7 +59,7 @@ class BrowsingContextNavigatedEvent(BaseModel):
 
 
 class ScriptMessageEvent(BaseModel):
-    """Evento script.message — emitido cuando un script usa script.channel."""
+    """script.message event — emitted when a script uses script.channel."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -70,7 +70,7 @@ class ScriptMessageEvent(BaseModel):
 
 
 class NetworkRequestData(BaseModel):
-    """Datos de un request de red."""
+    """Network request data."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -85,7 +85,7 @@ class NetworkRequestData(BaseModel):
 
 
 class NetworkResponseData(BaseModel):
-    """Datos de una respuesta de red."""
+    """Network response data."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -100,7 +100,7 @@ class NetworkResponseData(BaseModel):
 
 
 class NetworkBeforeRequestSentEvent(BaseModel):
-    """Evento network.beforeRequestSent — emitido antes de enviar un request."""
+    """network.beforeRequestSent event — emitted before sending a request."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -113,7 +113,7 @@ class NetworkBeforeRequestSentEvent(BaseModel):
 
 
 class NetworkResponseCompletedEvent(BaseModel):
-    """Evento network.responseCompleted — emitido cuando un response se completa."""
+    """network.responseCompleted event — emitted when a response completes."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -125,7 +125,7 @@ class NetworkResponseCompletedEvent(BaseModel):
 
 
 class NetworkFetchErrorEvent(BaseModel):
-    """Evento network.fetchError — emitido cuando un request falla."""
+    """network.fetchError event — emitted when a request fails."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -136,7 +136,7 @@ class NetworkFetchErrorEvent(BaseModel):
 
 
 def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
-    """Factory que retorna el modelo de evento correcto según method."""
+    """Factory that returns the correct event model based on method."""
     match method:
         case "log.entryAdded":
             return LogEntryAddedEvent.model_validate(params)

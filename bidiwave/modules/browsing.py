@@ -1,4 +1,4 @@
-"""Módulo browsing del protocolo BiDi."""
+"""Browsing module for the WebDriver BiDi protocol."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class BrowsingContext:
-    """Representa un context (tab/window) del browser."""
+    """Represents a browsing context (tab/window)."""
 
     id: str
     url: str = ""
@@ -55,7 +55,7 @@ class BrowsingContext:
 
 
 class BrowsingModule:
-    """Módulo para gestionar contexts, navegación y capturas."""
+    """Module for managing browsing contexts, navigation and screenshots."""
 
     def __init__(
         self,
@@ -83,10 +83,10 @@ class BrowsingModule:
         )
 
     async def create_user_context(self) -> UserContextInfo:
-        """Crea un user context aislado (perfil con cookies propias).
+        """Creates an isolated user context (profile with its own cookies).
 
         Returns:
-            UserContextInfo con el ID del user context creado.
+            UserContextInfo with the ID of the created user context.
         """
         result = await self._connection.send_command(
             BROWSING_CREATE_USER_CONTEXT, {}
@@ -94,20 +94,20 @@ class BrowsingModule:
         return UserContextInfo.model_validate(result)
 
     async def remove_user_context(self, user_context: str) -> None:
-        """Elimina un user context y todos sus browsing contexts.
+        """Removes a user context and all its browsing contexts.
 
         Args:
-            user_context: ID del user context a eliminar.
+            user_context: ID of the user context to remove.
         """
         await self._connection.send_command(
             BROWSING_REMOVE_USER_CONTEXT, {"userContext": user_context}
         )
 
     async def get_user_contexts(self) -> list[UserContextInfo]:
-        """Lista todos los user contexts disponibles.
+        """Lists all available user contexts.
 
         Returns:
-            Lista de UserContextInfo.
+            List of UserContextInfo.
         """
         result = await self._connection.send_command(
             BROWSING_GET_USER_CONTEXTS, {}
@@ -164,7 +164,7 @@ class BrowsingModule:
         selector: str,
         timeout: float = 10.0,
     ) -> bool:
-        """Espera a que un elemento exista en el DOM."""
+        """Waits for an element to exist in the DOM."""
         ctx_id = context.id if hasattr(context, "id") else context
         # Use evaluate instead of callFunction (driver bug with primitive args)
         expression = (
@@ -200,7 +200,7 @@ class BrowsingModule:
         expression: str,
         timeout: float = 10.0,
     ) -> Any:
-        """Espera a que una función JS retorne true."""
+        """Waits for a JS function to return true."""
         ctx_id = context.id if hasattr(context, "id") else context
 
         async def check() -> Any:
@@ -227,7 +227,7 @@ class BrowsingModule:
         wait: Literal["none", "interactive", "complete"] = "complete",
         ignore_cache: bool | None = None,
     ) -> Navigation:
-        """Recarga el context actual."""
+        """Reloads the current context."""
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id, "wait": wait}
         if ignore_cache is not None:
@@ -242,7 +242,7 @@ class BrowsingModule:
         context: BrowsingContext | str,
         direction: Literal["back", "forward"],
     ) -> Navigation:
-        """Navega hacia atrás o adelante en el historial."""
+        """Navigates back or forward in history."""
         ctx_id = context.id if hasattr(context, "id") else context
         result = await self._connection.send_command(
             BROWSING_TRAVERSE_HISTORY,
@@ -256,7 +256,7 @@ class BrowsingModule:
         accept: bool | None = None,
         user_text: str | None = None,
     ) -> None:
-        """Acepta o rechaza un dialog (alert, confirm, prompt)."""
+        """Accepts or dismisses a dialog (alert, confirm, prompt)."""
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id}
         if accept is not None:
@@ -278,7 +278,7 @@ class BrowsingModule:
         scale: float = 1.0,
         shrink_to_fit: bool = True,
     ) -> PrintResult:
-        """Exporta el context a PDF y retorna los datos base64."""
+        """Exports the context to PDF and returns base64 data."""
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {
             "context": ctx_id,
@@ -303,16 +303,16 @@ class BrowsingModule:
         max_node_count: int | None = None,
         start_nodes: list[dict[str, Any]] | None = None,
     ) -> LocateNodesResult:
-        """Localiza elementos en el DOM usando un locator.
+        """Locates elements in the DOM using a locator.
 
         Args:
-            context: BrowsingContext o context ID.
-            locator: Diccionario con el tipo de locator, ej:
+            context: BrowsingContext or context ID.
+            locator: Dict with the locator type, e.g.:
                 {"type": "css", "value": "div.product"}
                 {"type": "xpath", "value": "//div[@id='foo']"}
                 {"type": "innerText", "value": "Click me"}
-            max_node_count: Número máximo de nodos a retornar.
-            start_nodes: Nodos desde donde buscar (ej. iframes).
+            max_node_count: Maximum number of nodes to return.
+            start_nodes: Nodes to search from (e.g. iframes).
         """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id, "locator": locator}
@@ -326,7 +326,7 @@ class BrowsingModule:
         return LocateNodesResult.model_validate(result)
 
     async def activate(self, context: BrowsingContext | str) -> None:
-        """Activa un browsing context (lo trae al frente)."""
+        """Activates a browsing context (brings it to front)."""
         ctx_id = context.id if hasattr(context, "id") else context
         await self._connection.send_command(
             BROWSING_ACTIVATE, {"context": ctx_id}
@@ -338,13 +338,13 @@ class BrowsingModule:
         viewport: dict[str, int] | None = None,
         device_pixel_ratio: float | None = None,
     ) -> None:
-        """Establece el viewport y device pixel ratio de un context.
+        """Sets the viewport and device pixel ratio of a context.
 
         Args:
-            context: BrowsingContext o context ID.
-            viewport: Dict con "width" y "height" en CSS pixels.
-                Pasar None para resetear al viewport original.
-            device_pixel_ratio: Ratio de pixels físicos a CSS pixels.
+            context: BrowsingContext or context ID.
+            viewport: Dict with "width" and "height" in CSS pixels.
+                Pass None to reset to the original viewport.
+            device_pixel_ratio: Ratio of physical pixels to CSS pixels.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id}
@@ -361,7 +361,7 @@ class BrowsingModule:
         url: str,
         wait: Literal["none", "interactive", "complete"] = "complete",
     ) -> Page:
-        """Crea un context, navega a la URL y retorna un Page object."""
+        """Creates a context, navigates to the URL and returns a Page object."""
         from bidiwave.convenience.page import Page
 
         ctx = await self.create_context()

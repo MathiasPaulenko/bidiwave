@@ -1,11 +1,11 @@
-"""Serialización de mensajes BiDi."""
+"""Serialization of BiDi messages."""
 
 import json
 from typing import Any
 
 
 def serialize_command(command_id: int, method: str, params: dict[str, Any]) -> str:
-    """Serializa un comando a JSON string."""
+    """Serializes a command to a JSON string."""
     return json.dumps(
         {
             "id": command_id,
@@ -16,6 +16,6 @@ def serialize_command(command_id: int, method: str, params: dict[str, Any]) -> s
 
 
 def deserialize_message(raw: str) -> dict[str, Any]:
-    """Deserializa un mensaje JSON del browser."""
+    """Deserializes a JSON message from the browser."""
     result: dict[str, Any] = json.loads(raw)
     return result

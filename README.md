@@ -9,14 +9,14 @@ WebDriver BiDi for Python — talk to any browser via W3C standard.
 
 ## Features
 
-- **W3C WebDriver BiDi** — estándar, no CDP propietario
-- **Cross-browser** — Chrome, Firefox, Edge (Safari cuando soporte BiDi)
-- **Async-first** — `async/await` nativo con `asyncio`
-- **Event streaming** — console logs, navegación, network, contexts en tiempo real
+- **W3C WebDriver BiDi** — standard, not proprietary CDP
+- **Cross-browser** — Chrome, Firefox, Edge (Safari when BiDi support lands)
+- **Async-first** — native `async/await` with `asyncio`
+- **Event streaming** — console logs, navigation, network, contexts in real time
 - **Input simulation** — clicks, keyboard, scroll, drag & drop via `input.performActions`
-- **Network interception** — bloquear, modificar y mockear requests HTTP
-- **Type-safe** — Pydantic v2 models, type narrowing con `match`
-- **Sin dependencias pesadas** — no requiere Selenium, no requiere Playwright
+- **Network interception** — block, modify and mock HTTP requests
+- **Type-safe** — Pydantic v2 models, type narrowing with `match`
+- **Lightweight** — no Selenium, no Playwright required
 
 ## Install
 
@@ -35,7 +35,7 @@ async def main():
         await client.session.new()
 
         async with await client.browsing.open("https://example.com") as page:
-            # Evaluar JS
+            # Evaluate JS
             result = await page.evaluate("document.title")
             match result:
                 case StringValue(value=title):
@@ -103,7 +103,7 @@ async with await BiDiClient.connect(url) as client:
     await client.network.remove_intercept(intercept.intercept_id)
 ```
 
-## Lanzar un browser con BiDi
+## Launch a browser with BiDi
 
 ### Chrome
 

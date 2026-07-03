@@ -19,7 +19,7 @@ DRIVER_PORT = 9516
 
 
 def _wait_for_port(port: int, timeout: float = 30.0) -> bool:
-    """Espera a que EdgeDriver esté disponible."""
+    """Wait for EdgeDriver to become available."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -33,7 +33,7 @@ def _wait_for_port(port: int, timeout: float = 30.0) -> bool:
 
 
 def _create_webdriver_session(port: int = DRIVER_PORT) -> str:
-    """Crea una sesión WebDriver y retorna la URL del WebSocket BiDi."""
+    """Creates a WebDriver session and returns the BiDi WebSocket URL."""
     payload = json.dumps(
         {
             "capabilities": {
@@ -61,7 +61,7 @@ def _create_webdriver_session(port: int = DRIVER_PORT) -> str:
 
 @pytest.fixture(scope="session")
 def _edgedriver_proc() -> Iterator[subprocess.Popen[bytes]]:
-    """Lanza EdgeDriver una vez por sesión."""
+    """Launches EdgeDriver once per session."""
     with contextlib.suppress(Exception):
         subprocess.run(
             ["taskkill", "/F", "/IM", "msedgedriver.exe"],
@@ -82,7 +82,7 @@ def _edgedriver_proc() -> Iterator[subprocess.Popen[bytes]]:
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             proc.kill()
-        pytest.fail(f"EdgeDriver no arrancó en el puerto {DRIVER_PORT}")
+        pytest.fail(f"EdgeDriver did not start on port {DRIVER_PORT}")
 
     yield proc
 
@@ -102,13 +102,13 @@ def _edgedriver_proc() -> Iterator[subprocess.Popen[bytes]]:
 
 @pytest.fixture
 def chrome_bidi(_edgedriver_proc: subprocess.Popen[bytes]) -> str:
-    """Crea una nueva sesión WebDriver por test y retorna la URL BiDi."""
+    """Creates a new WebDriver session per test and returns the BiDi URL."""
     return _create_webdriver_session()
 
 
 @pytest_asyncio.fixture
 async def client(request: pytest.FixtureRequest) -> Any:
-    """BiDiClient conectado. Usa indirect parametrization para seleccionar browser."""
+    """Connected BiDiClient. Uses indirect parametrization to select browser."""
     from bidiwave import BiDiClient, ClientConfig
 
     fixture_name = request.param
@@ -122,7 +122,7 @@ async def client(request: pytest.FixtureRequest) -> Any:
 
 @pytest_asyncio.fixture
 async def context(client: Any) -> Any:
-    """BrowsingContext creado y limpiado automáticamente."""
+    """BrowsingContext created and cleaned up automatically."""
     ctx = await client.browsing.create_context()
     yield ctx
     with contextlib.suppress(Exception):
@@ -130,7 +130,7 @@ async def context(client: Any) -> Any:
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Marcar todos los tests en integration/ con @pytest.mark.integration."""
+    """Mark all tests in integration/ with @pytest.mark.integration."""
     for item in items:
         if "integration" in str(item.fspath):
             item.add_marker(pytest.mark.integration)

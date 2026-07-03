@@ -10,7 +10,7 @@ import pytest
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
 async def test_console_log_event(client: object, context: object) -> None:
-    """log.entryAdded se captura en tiempo real."""
+    """log.entryAdded is captured in real time."""
     logs: list[str] = []
 
     async def on_log(entry: object) -> None:
@@ -30,7 +30,7 @@ async def test_console_log_event(client: object, context: object) -> None:
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
 async def test_context_created_event(client: object) -> None:
-    """browsingContext.contextCreated se captura al crear un context."""
+    """browsingContext.contextCreated is captured when creating a context."""
     events: list[object] = []
 
     async def on_created(event: object) -> None:
@@ -53,7 +53,7 @@ async def test_context_created_event(client: object) -> None:
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
 async def test_context_destroyed_event(client: object) -> None:
-    """browsingContext.contextDestroyed se captura al cerrar un context."""
+    """browsingContext.contextDestroyed is captured when closing a context."""
     events: list[object] = []
 
     async def on_destroyed(event: object) -> None:

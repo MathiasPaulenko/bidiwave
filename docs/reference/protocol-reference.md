@@ -1,10 +1,10 @@
-# Referencia del protocolo WebDriver BiDi
+# WebDriver BiDi protocol reference
 
-## Comandos v1
+## Commands v1
 
 ### session.new
 
-Crea una nueva sesión BiDi.
+Creates a new BiDi session.
 
 ```json
 {
@@ -41,7 +41,7 @@ Response:
 
 ### session.status
 
-Retorna el estado de la sesión actual.
+Returns the status of the current session.
 
 ```json
 {
@@ -53,7 +53,7 @@ Retorna el estado de la sesión actual.
 
 ### session.subscribe
 
-Suscribe a eventos.
+Subscribes to events.
 
 ```json
 {
@@ -68,7 +68,7 @@ Suscribe a eventos.
 
 ### browsing.createContext
 
-Crea un nuevo context (tab).
+Creates a new context (tab).
 
 ```json
 {
@@ -82,7 +82,7 @@ Crea un nuevo context (tab).
 
 ### browsing.navigate
 
-Navega a una URL.
+Navigates to a URL.
 
 ```json
 {
@@ -98,7 +98,7 @@ Navega a una URL.
 
 ### browsing.close
 
-Cierra un context.
+Closes a context.
 
 ```json
 {
@@ -112,7 +112,7 @@ Cierra un context.
 
 ### browsing.getTree
 
-Retorna el árbol de contexts.
+Returns the context tree.
 
 ```json
 {
@@ -126,7 +126,7 @@ Retorna el árbol de contexts.
 
 ### browsing.captureScreenshot
 
-Captura screenshot del context.
+Captures a screenshot of the context.
 
 ```json
 {
@@ -153,7 +153,7 @@ Response:
 
 ### script.evaluate
 
-Evalúa una expresión JS.
+Evaluates a JS expression.
 
 ```json
 {
@@ -171,7 +171,7 @@ Evalúa una expresión JS.
 
 ### script.callFunction
 
-Llama una función JS.
+Calls a JS function.
 
 ```json
 {
@@ -192,7 +192,7 @@ Llama una función JS.
 
 ### script.disown
 
-Libera una referencia (handle) de un objeto remoto.
+Releases a reference (handle) to a remote object.
 
 ```json
 {
@@ -207,11 +207,11 @@ Libera una referencia (handle) de un objeto remoto.
 }
 ```
 
-## Eventos v1
+## Events v1
 
 ### log.entryAdded
 
-Emitido cuando hay un console.log o error JS.
+Emitted when there is a console.log or JS error.
 
 ```json
 {
@@ -236,7 +236,7 @@ Types: `console`, `javascript`
 
 ### browsing.contextCreated
 
-Emitido cuando se crea un nuevo context.
+Emitted when a new context is created.
 
 ```json
 {
@@ -253,7 +253,7 @@ Emitido cuando se crea un nuevo context.
 
 ### browsing.contextDestroyed
 
-Emitido cuando se cierra un context.
+Emitted when a context is closed.
 
 ```json
 {
@@ -267,7 +267,7 @@ Emitido cuando se cierra un context.
 
 ### browsing.contextNavigated
 
-Emitido durante la navegación.
+Emitted during navigation.
 
 ```json
 {
@@ -286,7 +286,7 @@ Status: `pending`, `complete`, `canceled`
 
 ### script.message
 
-Emitido cuando un script envía un mensaje via `script.channel`.
+Emitted when a script sends a message via `script.channel`.
 
 ```json
 {
@@ -306,26 +306,26 @@ Emitido cuando un script envía un mensaje via `script.channel`.
 }
 ```
 
-## Códigos de error
+## Error codes
 
-| Code | Descripción |
+| Code | Description |
 |---|---|
-| `invalid argument` | Parámetro inválido |
-| `invalid session` | Sesión no válida o expirada |
-| `session not created` | No se pudo crear la sesión |
-| `session not found` | Sesión no encontrada |
-| `unknown command` | Comando no soportado por el browser |
-| `unsupported operation` | Operación no soportada |
-| `javascript error` | Error al evaluar JS |
-| `no such frame` | Context no encontrado |
-| `no such window` | Window no encontrada |
-| `timeout` | Timeout del browser |
-| `unable to capture screen` | No se pudo capturar screenshot |
+| `invalid argument` | Invalid parameter |
+| `invalid session` | Invalid or expired session |
+| `session not created` | Could not create the session |
+| `session not found` | Session not found |
+| `unknown command` | Command not supported by the browser |
+| `unsupported operation` | Operation not supported |
+| `javascript error` | Error evaluating JS |
+| `no such frame` | Context not found |
+| `no such window` | Window not found |
+| `timeout` | Browser timeout |
+| `unable to capture screen` | Could not capture screenshot |
 
-## Mapeo a modelos Pydantic
+## Mapping to Pydantic models
 
-Cada comando y evento tiene un modelo Pydantic correspondiente en `protocol/`. Los nombres de los modelos siguen el patrón:
+Each command and event has a corresponding Pydantic model in `protocol/`. Model names follow the pattern:
 
-- Comando: `session.new` → `NewSessionParams`
-- Evento: `log.entryAdded` → `LogEntryAddedEvent`
-- Response: siempre `SuccessResponse` o `ErrorResponse`
+- Command: `session.new` → `NewSessionParams`
+- Event: `log.entryAdded` → `LogEntryAddedEvent`
+- Response: always `SuccessResponse` or `ErrorResponse`

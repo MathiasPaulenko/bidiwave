@@ -1,4 +1,4 @@
-"""EventDispatcher — distribuye eventos a handlers suscritos."""
+"""EventDispatcher — dispatches events to subscribed handlers."""
 
 import logging
 from collections.abc import Callable
@@ -11,12 +11,12 @@ logger = logging.getLogger("bidiwave.events")
 
 
 class EventDispatcher:
-    """Distribuye eventos a handlers registrados.
+    """Dispatches events to registered handlers.
 
-    Características:
-    - Múltiples handlers por event type
-    - Error isolation: un handler que falla no afecta a otros
-    - off() para desuscribirse
+    Features:
+    - Multiple handlers per event type
+    - Error isolation: a failing handler does not affect others
+    - off() to unsubscribe
     - Fluent API: dispatcher.on("a", h1).on("b", h2)
     - Decorator mode: @dispatcher.on("a")
     """
@@ -29,17 +29,17 @@ class EventDispatcher:
         event_type: str,
         handler: AsyncHandler | None = None,
     ) -> Self | Subscription | Callable[[AsyncHandler], AsyncHandler]:
-        """Registra un handler para un event type.
+        """Registers a handler for an event type.
 
-        Si handler es None, actúa como decorator.
-        Si handler es proporcionado, registra y retorna Subscription.
+        If handler is None, acts as a decorator.
+        If handler is provided, registers and returns a Subscription.
 
         Args:
-            event_type: Tipo de evento (ej: "log.entryAdded").
-            handler: Función async que recibe el evento.
+            event_type: Event type (e.g: "log.entryAdded").
+            handler: Async function that receives the event.
 
         Returns:
-            Subscription si handler es proporcionado, decorator si no.
+            Subscription if handler is provided, decorator if not.
         """
         if handler is not None:
             if event_type not in self._handlers:
@@ -66,7 +66,7 @@ class EventDispatcher:
         return decorator
 
     def off(self, subscription: Subscription) -> None:
-        """Desuscribe un handler."""
+        """Unsubscribes a handler."""
         handlers = self._handlers.get(subscription.event_type, [])
         if subscription.handler in handlers:
             handlers.remove(subscription.handler)
@@ -79,9 +79,9 @@ class EventDispatcher:
                 del self._handlers[subscription.event_type]
 
     async def dispatch(self, method: str, params: dict[str, Any]) -> None:
-        """Dispatcha un evento a todos los handlers suscritos.
+        """Dispatches an event to all subscribed handlers.
 
-        Si un handler falla, se loguea el error pero no se propaga
+        If a handler fails, the error is logged but not propagated
         (error isolation).
         """
         event = parse_event(method, params)

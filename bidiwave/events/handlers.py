@@ -1,4 +1,4 @@
-"""Tipos y utilidades para handlers de eventos."""
+"""Types and utilities for event handlers."""
 
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ if TYPE_CHECKING:
     from bidiwave.events.dispatcher import EventDispatcher
 
 AsyncHandler = Callable[[Any], Awaitable[None]]
-"""Tipo para un handler async que recibe un evento."""
+"""Type for an async handler that receives an event."""
 
 
 @dataclass
 class Subscription:
-    """Handle para desuscribirse de un evento."""
+    """Handle to unsubscribe from an event."""
 
     event_type: str
     handler: AsyncHandler

@@ -1,4 +1,4 @@
-"""Conexión WebSocket al endpoint BiDi del browser."""
+"""WebSocket connection to the browser's BiDi endpoint."""
 
 import asyncio
 import logging
@@ -19,7 +19,7 @@ logger = logging.getLogger("bidiwave.transport")
 
 
 class TransportConfig(BaseModel):
-    """Configuración del transporte."""
+    """Transport configuration."""
 
     timeout: float = 30.0
     max_retries: int = 3
@@ -30,7 +30,7 @@ class TransportConfig(BaseModel):
 
 
 class Connection:
-    """Conexión WebSocket al endpoint BiDi del browser."""
+    """WebSocket connection to the browser's BiDi endpoint."""
 
     def __init__(
         self,
@@ -69,7 +69,7 @@ class Connection:
         return await asyncio.wait_for(future, timeout=self._config.timeout)
 
     async def _reconnect(self) -> bool:
-        """Intenta reconectar con backoff exponencial. Retorna True si tuvo éxito."""
+        """Attempts to reconnect with exponential backoff. Returns True on success."""
         self._reconnecting = True
         delay = self._config.retry_delay
 

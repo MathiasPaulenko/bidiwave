@@ -1,4 +1,4 @@
-"""Módulo input del protocolo BiDi."""
+"""Input module for the WebDriver BiDi protocol."""
 
 from __future__ import annotations
 
@@ -19,14 +19,14 @@ PointerType = Literal["mouse", "pen", "touch"]
 
 
 class InputModule:
-    """Módulo para simular input del usuario (teclado, mouse, scroll).
+    """Module for simulating user input (keyboard, mouse, scroll).
 
-    Comandos:
-        - perform_actions — ejecuta una secuencia de acciones de input
-        - release_actions — cancela todas las acciones en curso
-        - set_files — selecciona archivos en un <input type="file">
+    Commands:
+        - perform_actions — executes a sequence of input actions
+        - release_actions — cancels all in-progress actions
+        - set_files — selects files on an <input type="file">
 
-    Ejemplo:
+    Example:
         actions = [
             InputSource(
                 type="pointer",
@@ -49,12 +49,12 @@ class InputModule:
         context: BrowsingContext | str,
         actions: list[InputSource],
     ) -> None:
-        """Ejecuta una secuencia de acciones de input en un context.
+        """Executes a sequence of input actions in a context.
 
         Args:
-            context: BrowsingContext o context ID donde ejecutar las acciones.
-            actions: Lista de InputSource, cada una representando un
-                dispositivo virtual (teclado, mouse, wheel) con sus acciones.
+            context: BrowsingContext or context ID where to execute actions.
+            actions: List of InputSource, each representing a
+                virtual device (keyboard, mouse, wheel) with its actions.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {
@@ -67,10 +67,10 @@ class InputModule:
         self,
         context: BrowsingContext | str,
     ) -> None:
-        """Cancela todas las acciones de input en curso para un context.
+        """Cancels all in-progress input actions for a context.
 
         Args:
-            context: BrowsingContext o context ID.
+            context: BrowsingContext or context ID.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         await self._connection.send_command(
@@ -83,12 +83,12 @@ class InputModule:
         element: str,
         files: list[str],
     ) -> None:
-        """Selecciona archivos en un elemento <input type="file">.
+        """Selects files on an <input type="file"> element.
 
         Args:
-            context: BrowsingContext o context ID.
-            element: Shared ID del elemento input file.
-            files: Lista de rutas absolutas de archivos a seleccionar.
+            context: BrowsingContext or context ID.
+            element: Shared ID of the file input element.
+            files: List of absolute file paths to select.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {
@@ -106,14 +106,14 @@ class InputModule:
         button: int = 0,
         duration: int = 0,
     ) -> None:
-        """Conveniencia: click en coordenadas (x, y).
+        """Convenience: click at coordinates (x, y).
 
         Args:
-            context: BrowsingContext o context ID.
-            x: Coordenada X relativa al viewport.
-            y: Coordenada Y relativa al viewport.
-            button: 0 = izquierdo, 1 = medio, 2 = derecho.
-            duration: Duración del press en ms.
+            context: BrowsingContext or context ID.
+            x: X coordinate relative to the viewport.
+            y: Y coordinate relative to the viewport.
+            button: 0 = left, 1 = middle, 2 = right.
+            duration: Press duration in ms.
         """
         actions = [
             InputSource(
@@ -139,12 +139,12 @@ class InputModule:
         x: int | float,
         y: int | float,
     ) -> None:
-        """Conveniencia: doble click en coordenadas (x, y).
+        """Convenience: double click at coordinates (x, y).
 
         Args:
-            context: BrowsingContext o context ID.
-            x: Coordenada X relativa al viewport.
-            y: Coordenada Y relativa al viewport.
+            context: BrowsingContext or context ID.
+            x: X coordinate relative to the viewport.
+            y: Y coordinate relative to the viewport.
         """
         actions = [
             InputSource(
@@ -166,11 +166,11 @@ class InputModule:
         context: BrowsingContext | str,
         text: str,
     ) -> None:
-        """Conveniencia: escribe texto tecla por tecla.
+        """Convenience: types text key by key.
 
         Args:
-            context: BrowsingContext o context ID.
-            text: Texto a escribir.
+            context: BrowsingContext or context ID.
+            text: Text to type.
         """
         key_actions: list[dict[str, Any]] = []
         for char in text:
@@ -185,14 +185,14 @@ class InputModule:
         context: BrowsingContext | str,
         key: str,
     ) -> None:
-        """Conveniencia: presiona y suelta una tecla.
+        """Convenience: presses and releases a key.
 
-        Usa el formato de key del protocolo (ej: "Enter", "Tab", "Escape",
-        o un caracter literal como "a").
+        Uses the protocol key format (e.g: "Enter", "Tab", "Escape",
+        or a literal character like "a").
 
         Args:
-            context: BrowsingContext o context ID.
-            key: Tecla a presionar (ej: "Enter", "a", "Escape").
+            context: BrowsingContext or context ID.
+            key: Key to press (e.g: "Enter", "a", "Escape").
         """
         actions = [
             InputSource(
@@ -215,15 +215,15 @@ class InputModule:
         y: int = 0,
         duration: int | None = None,
     ) -> None:
-        """Conveniencia: scroll del mouse wheel.
+        """Convenience: mouse wheel scroll.
 
         Args:
-            context: BrowsingContext o context ID.
-            delta_x: Cantidad de scroll horizontal (positivo = derecha).
-            delta_y: Cantidad de scroll vertical (positivo = abajo).
-            x: Coordenada X del puntero durante el scroll.
-            y: Coordenada Y del puntero durante el scroll.
-            duration: Duración del scroll en ms.
+            context: BrowsingContext or context ID.
+            delta_x: Horizontal scroll amount (positive = right).
+            delta_y: Vertical scroll amount (positive = down).
+            x: X coordinate of the pointer during scroll.
+            y: Y coordinate of the pointer during scroll.
+            duration: Scroll duration in ms.
         """
         wheel_action: dict[str, Any] = {
             "type": "scroll",
@@ -248,15 +248,15 @@ class InputModule:
         end_y: int | float,
         duration: int = 100,
     ) -> None:
-        """Conveniencia: drag and drop desde (start_x, start_y) hasta (end_x, end_y).
+        """Convenience: drag and drop from (start_x, start_y) to (end_x, end_y).
 
         Args:
-            context: BrowsingContext o context ID.
-            start_x: Coordenada X inicial.
-            start_y: Coordenada Y inicial.
-            end_x: Coordenada X final.
-            end_y: Coordenada Y final.
-            duration: Duración del movimiento en ms.
+            context: BrowsingContext or context ID.
+            start_x: Initial X coordinate.
+            start_y: Initial Y coordinate.
+            end_x: Final X coordinate.
+            end_y: Final Y coordinate.
+            duration: Movement duration in ms.
         """
         actions = [
             InputSource(
