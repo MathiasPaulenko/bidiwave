@@ -29,6 +29,7 @@ from bidiwave.modules.preload import PreloadModule
 from bidiwave.modules.storage import StorageModule
 from bidiwave.protocol.capabilities import Capabilities
 from bidiwave.protocol.events import (
+    BrowsingContextDOMContentLoadedEvent,
     BrowsingContextFragmentNavigatedEvent,
     BrowsingContextLoadEvent,
     BrowsingContextNavigationCompletedEvent,
@@ -39,6 +40,7 @@ from bidiwave.protocol.events import (
     NetworkFetchErrorEvent,
     NetworkResponseCompletedEvent,
     NetworkResponseStartedEvent,
+    NetworkSamplingStateChangedEvent,
     ScriptRealmCreatedEvent,
     ScriptRealmDestroyedEvent,
 )
@@ -69,7 +71,7 @@ from bidiwave.protocol.results import (
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.6.3"
+__version__ = "1.6.4"
 
 __all__ = [
     "AddPreloadScriptResult",
@@ -122,7 +124,9 @@ __all__ = [
     "BrowsingContextNavigationCompletedEvent",
     "BrowsingContextFragmentNavigatedEvent",
     "BrowsingContextLoadEvent",
+    "BrowsingContextDOMContentLoadedEvent",
     "NetworkAuthRequiredEvent",
+    "NetworkSamplingStateChangedEvent",
     "InputModule",
     "InputSource",
     "KeyAction",

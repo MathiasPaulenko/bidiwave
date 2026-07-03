@@ -71,6 +71,8 @@ NETWORK_DATA_RECEIVED = "network.dataReceived"
 BROWSING_NAVIGATION_COMPLETED = "browsingContext.navigationCompleted"
 BROWSING_FRAGMENT_NAVIGATED = "browsingContext.fragmentNavigated"
 BROWSING_LOAD = "browsingContext.load"
+BROWSING_DOM_CONTENT_LOADED = "browsingContext.domContentLoaded"
+NETWORK_SAMPLING_STATE_CHANGED = "network.samplingStateChanged"
 STORAGE_COOKIE_CHANGED = "storage.cookieChanged"
 
 # Error codes

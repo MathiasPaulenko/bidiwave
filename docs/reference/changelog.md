@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.4] - 2025-07-04
+
+### Added
+
+- `BrowsingContextDOMContentLoadedEvent` — fires when DOM is parsed but resources still loading (before load)
+- `NetworkSamplingStateChangedEvent` — fires when network sampling mode changes (all/none)
+- `parse_event` factory updated with 2 new event types
+- Convenience handlers: `on_dom_content_loaded()`, `on_sampling_state_changed()`
+- 3 new unit tests (total: 217)
+
 ## [1.6.3] - 2025-07-04
 
 ### Added

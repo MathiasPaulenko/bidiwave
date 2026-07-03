@@ -259,6 +259,33 @@ class BrowsingContextLoadEvent(BaseModel):
     url: str
 
 
+class BrowsingContextDOMContentLoadedEvent(BaseModel):
+    """browsingContext.domContentLoaded event — emitted when DOM is ready.
+
+    Fires when the document's DOMContentLoaded event occurs, meaning the
+    DOM is fully parsed but external resources (images, stylesheets) may
+    still be loading. This fires before browsingContext.load.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str
+    url: str
+
+
+class NetworkSamplingStateChangedEvent(BaseModel):
+    """network.samplingStateChanged event — emitted when network sampling changes.
+
+    Sampling determines which requests emit events. When sampling is enabled,
+    only a subset of requests trigger network events.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str | None = None
+    sampling: Literal["all", "none"] = "all"
+
+
 def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
     """Factory that returns the correct event model based on method."""
     match method:
@@ -274,6 +301,8 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return BrowsingContextNavigationCompletedEvent.model_validate(params)
         case "browsingContext.fragmentNavigated":
             return BrowsingContextFragmentNavigatedEvent.model_validate(params)
+        case "browsingContext.domContentLoaded":
+            return BrowsingContextDOMContentLoadedEvent.model_validate(params)
         case "browsingContext.load":
             return BrowsingContextLoadEvent.model_validate(params)
         case "browsingContext.userPromptOpened":
@@ -294,6 +323,8 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return NetworkDataReceivedEvent.model_validate(params)
         case "network.authRequired":
             return NetworkAuthRequiredEvent.model_validate(params)
+        case "network.samplingStateChanged":
+            return NetworkSamplingStateChangedEvent.model_validate(params)
         case "network.fetchError":
             return NetworkFetchErrorEvent.model_validate(params)
         case _:
