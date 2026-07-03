@@ -7,17 +7,20 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
 from bidiwave.protocol.constants import (
+    BROWSING_ACTIVATE,
     BROWSING_CAPTURE_SCREENSHOT,
     BROWSING_CLOSE,
     BROWSING_CREATE_CONTEXT,
     BROWSING_GET_TREE,
     BROWSING_HANDLE_USER_PROMPT,
+    BROWSING_LOCATE_NODES,
     BROWSING_NAVIGATE,
     BROWSING_PRINT,
     BROWSING_RELOAD,
+    BROWSING_SET_VIEWPORT,
     BROWSING_TRAVERSE_HISTORY,
 )
-from bidiwave.protocol.results import Navigation, PrintResult, Screenshot
+from bidiwave.protocol.results import LocateNodesResult, Navigation, PrintResult, Screenshot
 from bidiwave.transport.connection import Connection
 
 if TYPE_CHECKING:
@@ -245,6 +248,66 @@ class BrowsingModule:
             params["pageRanges"] = page_ranges
         result = await self._connection.send_command(BROWSING_PRINT, params)
         return PrintResult.model_validate(result)
+
+    async def locate_nodes(
+        self,
+        context: BrowsingContext | str,
+        locator: dict[str, Any],
+        max_node_count: int | None = None,
+        start_nodes: list[dict[str, Any]] | None = None,
+    ) -> LocateNodesResult:
+        """Localiza elementos en el DOM usando un locator.
+
+        Args:
+            context: BrowsingContext o context ID.
+            locator: Diccionario con el tipo de locator, ej:
+                {"type": "css", "value": "div.product"}
+                {"type": "xpath", "value": "//div[@id='foo']"}
+                {"type": "innerText", "value": "Click me"}
+            max_node_count: Número máximo de nodos a retornar.
+            start_nodes: Nodos desde donde buscar (ej. iframes).
+        """
+        ctx_id = context.id if hasattr(context, "id") else context
+        params: dict[str, Any] = {"context": ctx_id, "locator": locator}
+        if max_node_count is not None:
+            params["maxNodeCount"] = max_node_count
+        if start_nodes is not None:
+            params["startNodes"] = start_nodes
+        result = await self._connection.send_command(
+            BROWSING_LOCATE_NODES, params
+        )
+        return LocateNodesResult.model_validate(result)
+
+    async def activate(self, context: BrowsingContext | str) -> None:
+        """Activa un browsing context (lo trae al frente)."""
+        ctx_id = context.id if hasattr(context, "id") else context
+        await self._connection.send_command(
+            BROWSING_ACTIVATE, {"context": ctx_id}
+        )
+
+    async def set_viewport(
+        self,
+        context: BrowsingContext | str,
+        viewport: dict[str, int] | None = None,
+        device_pixel_ratio: float | None = None,
+    ) -> None:
+        """Establece el viewport y device pixel ratio de un context.
+
+        Args:
+            context: BrowsingContext o context ID.
+            viewport: Dict con "width" y "height" en CSS pixels.
+                Pasar None para resetear al viewport original.
+            device_pixel_ratio: Ratio de pixels físicos a CSS pixels.
+        """
+        ctx_id = context.id if hasattr(context, "id") else context
+        params: dict[str, Any] = {"context": ctx_id}
+        if viewport is not None:
+            params["viewport"] = viewport
+        if device_pixel_ratio is not None:
+            params["devicePixelRatio"] = device_pixel_ratio
+        await self._connection.send_command(
+            BROWSING_SET_VIEWPORT, params
+        )
 
     async def open(
         self,

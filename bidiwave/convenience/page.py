@@ -128,6 +128,31 @@ class Page:
     async def close(self) -> None:
         await self._browsing.close(self._context)
 
+    async def activate(self) -> None:
+        await self._browsing.activate(self._context)
+
+    async def set_viewport(
+        self,
+        width: int,
+        height: int,
+        device_pixel_ratio: float | None = None,
+    ) -> None:
+        await self._browsing.set_viewport(
+            self._context,
+            viewport={"width": width, "height": height},
+            device_pixel_ratio=device_pixel_ratio,
+        )
+
+    async def locate_nodes(
+        self,
+        locator: dict[str, Any],
+        max_node_count: int | None = None,
+    ) -> list[dict[str, Any]]:
+        result = await self._browsing.locate_nodes(
+            self._context, locator, max_node_count=max_node_count
+        )
+        return result.nodes
+
     async def __aenter__(self) -> Page:
         return self
 

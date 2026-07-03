@@ -6,8 +6,10 @@ from typing import Any, Literal
 
 from bidiwave.protocol.constants import (
     NETWORK_ADD_INTERCEPT,
+    NETWORK_CANCEL_AUTH,
     NETWORK_CONTINUE_REQUEST,
     NETWORK_CONTINUE_RESPONSE,
+    NETWORK_CONTINUE_WITH_AUTH,
     NETWORK_FAIL_REQUEST,
     NETWORK_PROVIDE_RESPONSE,
     NETWORK_REMOVE_INTERCEPT,
@@ -168,3 +170,33 @@ class NetworkModule:
         if body is not None:
             params["body"] = body
         await self._connection.send_command(NETWORK_PROVIDE_RESPONSE, params)
+
+    async def continue_with_auth(
+        self,
+        request: str,
+        action: Literal["default", "cancel", "provideCredentials"],
+        credentials: dict[str, str] | None = None,
+    ) -> None:
+        """Continúa un request interceptado en fase authRequired.
+
+        Args:
+            request: ID del request.
+            action: "default" (usar credenciales del browser),
+                "cancel" (cancelar la auth), o
+                "provideCredentials" (usar credentials provistas).
+            credentials: Dict con "type" ("password"), "username", "password".
+                Solo usado con action="provideCredentials".
+        """
+        params: dict[str, Any] = {"request": request, "action": action}
+        if credentials is not None:
+            params["credentials"] = credentials
+        await self._connection.send_command(NETWORK_CONTINUE_WITH_AUTH, params)
+
+    async def cancel_auth(self, request: str) -> None:
+        """Cancela un request interceptado en fase authRequired.
+
+        Atajo para continue_with_auth(request, action="cancel").
+        """
+        await self._connection.send_command(
+            NETWORK_CANCEL_AUTH, {"request": request}
+        )

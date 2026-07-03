@@ -44,12 +44,14 @@ from bidiwave.protocol.results import (
     Cookie,
     InputSource,
     KeyAction,
+    LocateNodesResult,
     PointerAction,
+    RealmInfo,
     WheelAction,
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 __all__ = [
     "ArrayValue",
@@ -89,7 +91,9 @@ __all__ = [
     "InputModule",
     "InputSource",
     "KeyAction",
+    "LocateNodesResult",
     "PointerAction",
+    "RealmInfo",
     "WheelAction",
     "StorageModule",
     "Cookie",

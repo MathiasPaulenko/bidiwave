@@ -4,8 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from bidiwave.protocol.constants import SCRIPT_CALL_FUNCTION, SCRIPT_DISOWN, SCRIPT_EVALUATE
+from bidiwave.protocol.constants import (
+    SCRIPT_CALL_FUNCTION,
+    SCRIPT_DISOWN,
+    SCRIPT_EVALUATE,
+    SCRIPT_GET_REALMS,
+)
 from bidiwave.protocol.remote_value import RemoteValue
+from bidiwave.protocol.results import GetRealmsResult, RealmInfo
 from bidiwave.transport.connection import Connection
 
 if TYPE_CHECKING:
@@ -57,3 +63,28 @@ class ScriptModule:
             "handles": handles,
         }
         await self._connection.send_command(SCRIPT_DISOWN, params)
+
+    async def get_realms(
+        self,
+        context: BrowsingContext | str | None = None,
+        type: str | None = None,
+    ) -> list[RealmInfo]:
+        """Obtiene información sobre los realms disponibles.
+
+        Args:
+            context: Filtrar por context ID. None = todos los realms.
+            type: Filtrar por tipo de realm ("window", "dedicated-worker",
+                "shared-worker", "service-worker"). None = todos.
+
+        Returns:
+            Lista de RealmInfo.
+        """
+        params: dict[str, Any] = {}
+        if context is not None:
+            ctx_id = context.id if hasattr(context, "id") else context
+            params["context"] = ctx_id
+        if type is not None:
+            params["type"] = type
+        result = await self._connection.send_command(SCRIPT_GET_REALMS, params)
+        parsed = GetRealmsResult.model_validate(result)
+        return parsed.realms

@@ -148,3 +148,31 @@ class PrintResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     data: str
+
+
+class LocateNodesResult(BaseModel):
+    """Resultado de browsingContext.locateNodes."""
+
+    model_config = ConfigDict(extra="allow")
+
+    nodes: list[dict[str, Any]] = []
+
+
+class RealmInfo(BaseModel):
+    """Información de un realm (script.getRealms)."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    realm: str
+    origin: str
+    type: str
+    context: str | None = None
+    sandbox: str | None = None
+
+
+class GetRealmsResult(BaseModel):
+    """Resultado de script.getRealms."""
+
+    model_config = ConfigDict(extra="allow")
+
+    realms: list[RealmInfo] = []
