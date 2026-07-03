@@ -34,7 +34,7 @@ from bidiwave.protocol.remote_value import (
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 __all__ = [
     "ArrayValue",
