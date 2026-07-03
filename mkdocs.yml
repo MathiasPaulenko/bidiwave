@@ -44,6 +44,10 @@ nav:
       - Input Simulation: usage/input.md
       - Network Interception: usage/network.md
       - Cookies & Storage: usage/storage.md
+      - Emulation: usage/emulation.md
+      - Permissions: usage/permissions.md
+      - Preload Scripts: usage/preload.md
+      - CDP: usage/cdp.md
       - Configuration: usage/configuration.md
   - Guides:
       - Browser Setup: guides/browser-setup.md

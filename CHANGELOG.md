@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2025-07-04
+
+### Documentation
+
+- Comprehensive usage docs for all new modules: Emulation, Permissions, Preload, CDP
+- Updated browsing.md with viewport (ViewportSize + DPR), activate, locateNodes, all 9 event types
+- Updated network.md with cache overrides, response body, authentication, 5 new event types
+- Updated storage.md with delete_cookie and cookieChanged event
+- Updated script.md with add_preload_script (channels), get_realms, realm events
+- Added 7 new cookbook recipes (viewport, cache override, emulation, preload, cookies, response body, CDP)
+- Enriched all API pages with method summaries and code examples
+- Updated index.md with full feature list and documentation links
+- Updated mkdocs.yml nav with 4 new usage pages
+
 ## [1.7.1] - 2025-07-04
 
 ### Documentation

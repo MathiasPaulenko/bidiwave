@@ -246,6 +246,149 @@ await client.network.remove_intercept(intercept.intercept)
     If you forget to remove an intercept, all matching requests will remain
     blocked forever. Always clean up in a `finally` block or use `async with`.
 
+## Cache overrides
+
+Cache overrides let you serve cached responses without hitting the network.
+This is useful for testing, mocking, and performance optimization.
+
+### Add / remove pattern
+
+Register a cache override for a specific URL pattern:
+
+```python
+# Add a cache override — returns a cache ID
+cache = await client.network.add_cache_override(
+    url="https://example.com/api",
+    method="GET",
+    status_code=200,
+    body="eyJkYXRhIjogInRlc3QifQ==",  # base64-encoded
+)
+# cache.cache = "cache-id-1"
+
+# Remove it later
+await client.network.remove_cache_override(cache.cache)
+```
+
+### Set pattern (replace all)
+
+Replaces ALL existing cache overrides in a single call:
+
+```python
+await client.network.set_cache_override(
+    url="https://example.com/api",
+    method="GET",
+    status_code=204,
+)
+```
+
+!!! note "set vs add"
+    `set_cache_override` replaces all existing overrides. Use
+    `add_cache_override` when you want to add without removing existing ones.
+
+### Cache override parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `url` | `str` | (required) | URL pattern to match |
+| `method` | `str \| None` | `None` | HTTP method to match (`GET`, `POST`, etc.) |
+| `status_code` | `int \| None` | `None` | HTTP status code to serve |
+| `headers` | `list[dict] \| None` | `None` | Response headers |
+| `body` | `str \| None` | `None` | Response body (base64-encoded) |
+
+## Response body
+
+Retrieve the body of a completed response by request ID:
+
+```python
+# First, capture the request ID from a network event
+async def on_response(event):
+    request_id = event.request.request
+    # Fetch the body
+    body_result = await client.network.response_body(request_id)
+    print(f"Body size: {body_result.total_size} bytes")
+    # body_result.body is base64-encoded content
+    import base64
+    content = base64.b64decode(body_result.body)
+    print(f"Content: {content[:200]}")
+
+client.on_response(on_response)
+await client.session.subscribe(["network.responseCompleted"])
+```
+
+!!! warning "Response must be complete"
+    `response_body` only works after the response is fully received.
+    Use it in `network.responseCompleted` event handlers, not in
+    `network.responseStarted`.
+
+## Authentication
+
+Handle `network.authRequired` events when the server requires authentication:
+
+### Continue with credentials
+
+```python
+async def on_auth(event):
+    await client.network.continue_with_auth(
+        request=event.request.request,
+        credentials={
+            "type": "password",
+            "username": "user",
+            "password": "pass",
+        },
+    )
+
+client.on_auth_required(on_auth)
+await client.session.subscribe(["network.authRequired"])
+```
+
+### Cancel auth challenge
+
+```python
+async def on_auth(event):
+    # Cancel the auth challenge — request will fail
+    await client.network.cancel_auth(request=event.request.request)
+
+client.on_auth_required(on_auth)
+await client.session.subscribe(["network.authRequired"])
+```
+
+### Auth parameters
+
+| Method | Parameter | Type | Description |
+| ------ | --------- | ---- | ----------- |
+| `continue_with_auth` | `request` | `str` | Request ID from the event |
+| `continue_with_auth` | `credentials` | `dict` | `{"type": "password", "username": "...", "password": "..."}` |
+| `cancel_auth` | `request` | `str` | Request ID from the event |
+
+## Additional network events
+
+Beyond `beforeRequestSent` and `responseCompleted`, the network module
+supports these events:
+
+| Event | Fired when | Handler receives |
+| ----- | ---------- | ---------------- |
+| `network.responseStarted` | Response headers arrive (body not yet received) | `NetworkResponseStartedEvent` |
+| `network.dataReceived` | Response body data chunk received | `NetworkDataReceivedEvent` |
+| `network.fetchError` | Request failed with a network error | `NetworkFetchErrorEvent` |
+| `network.authRequired` | Server requires authentication | `NetworkAuthRequiredEvent` |
+| `network.samplingStateChanged` | Network sampling mode changed | `NetworkSamplingStateChangedEvent` |
+
+```python
+# Monitor data received (useful for progress tracking)
+async def on_data(event):
+    print(f"Data received: {event.data_length} bytes")
+
+client.on_data_received(on_data)
+await client.session.subscribe(["network.dataReceived"])
+
+# Track fetch errors
+async def on_error(event):
+    print(f"Fetch error: {event.error_text} for {event.request.url}")
+
+client.on("network.fetchError", on_error)
+await client.session.subscribe(["network.fetchError"])
+```
+
 ## API reference
 
 See [Network API](../api/network.md) for the complete `NetworkModule`

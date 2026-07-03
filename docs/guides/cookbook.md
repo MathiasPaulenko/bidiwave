@@ -286,3 +286,223 @@ async def main():
 
 asyncio.run(main())
 ```
+
+## Example 12: Set viewport for mobile testing
+
+```python
+import asyncio
+from bidiwave import BiDiClient, ViewportSize
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        async with await client.browsing.open("https://example.com") as page:
+            # Simulate iPhone 14 Pro viewport
+            await client.browsing.set_viewport(
+                page.id,
+                viewport=ViewportSize(width=393, height=852),
+                device_pixel_ratio=3.0,
+            )
+
+            # Take a mobile screenshot
+            screenshot = await page.screenshot()
+            with open("mobile.png", "wb") as f:
+                f.write(screenshot)
+
+asyncio.run(main())
+```
+
+## Example 13: Cache override for offline testing
+
+```python
+import asyncio
+import base64
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        # Serve a cached response without hitting the network
+        body = base64.b64encode(b'{"status": "cached"}').decode()
+        cache = await client.network.add_cache_override(
+            url="https://api.example.com/status",
+            method="GET",
+            status_code=200,
+            body=body,
+        )
+
+        async with await client.browsing.open("https://example.com") as page:
+            result = await page.evaluate(
+                "fetch('https://api.example.com/status').then(r => r.json())",
+                await_promise=True,
+            )
+            print(f"Response from cache: {result.value}")
+
+        await client.network.remove_cache_override(cache.cache)
+
+asyncio.run(main())
+```
+
+## Example 14: Emulate a mobile device
+
+```python
+import asyncio
+from bidiwave import BiDiClient, ViewportSize
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        async with await client.browsing.open("https://example.com") as page:
+            ctx = page.id
+
+            # Set mobile viewport
+            await client.browsing.set_viewport(
+                ctx,
+                viewport=ViewportSize(width=375, height=812),
+                device_pixel_ratio=3.0,
+            )
+
+            # Simulate Tokyo location
+            await client.emulation.set_geolocation_override(
+                coordinates={"latitude": 35.6762, "longitude": 139.6503, "accuracy": 1.0},
+                contexts=[ctx],
+            )
+
+            # Simulate 3G network
+            await client.emulation.set_network_conditions(
+                network_conditions={
+                    "offline": False,
+                    "download_throughput": 50000,
+                    "upload_throughput": 25000,
+                    "latency": 400,
+                },
+                contexts=[ctx],
+            )
+
+            # Set Tokyo timezone
+            await client.emulation.set_timezone_override(
+                timezone="Asia/Tokyo",
+                contexts=[ctx],
+            )
+
+            # Set mobile user agent
+            await client.emulation.set_user_agent_override(
+                user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+                accept_language="ja-JP",
+                contexts=[ctx],
+            )
+
+            # Grant geolocation permission
+            await client.permissions.set_permission(
+                descriptor={"name": "geolocation"},
+                state="granted",
+                contexts=[ctx],
+            )
+
+            # Now test the page under these conditions
+            result = await page.evaluate("navigator.userAgent")
+            print(f"UA: {result.value}")
+
+asyncio.run(main())
+```
+
+## Example 15: Inject a preload script
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        # Inject a preload script that intercepts console.log
+        result = await client.preload.add_preload_script(
+            function_declaration="""() => {
+                const origLog = console.log;
+                window.__logs = [];
+                console.log = function(...args) {
+                    window.__logs.push(args.join(' '));
+                    origLog.apply(console, args);
+                };
+            }""",
+        )
+
+        async with await client.browsing.open("https://example.com") as page:
+            await page.evaluate("console.log('test message')")
+            logs = await page.evaluate("window.__logs")
+            print(f"Captured logs: {logs.value}")
+
+        await client.preload.remove_preload_script(result.script)
+
+asyncio.run(main())
+```
+
+## Example 16: Monitor cookie changes
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        async def on_cookie_changed(event):
+            if event.type == "added":
+                print(f"Cookie added: {event.cookie.name}={event.cookie.value}")
+            elif event.type == "deleted":
+                print(f"Cookie deleted: {event.cookie.name}")
+            elif event.type == "changed":
+                print(f"Cookie changed: {event.cookie.name}={event.cookie.value}")
+
+        client.on("storage.cookieChanged", on_cookie_changed)
+        await client.session.subscribe(["storage.cookieChanged"])
+
+        async with await client.browsing.open("https://example.com") as page:
+            await asyncio.sleep(5)
+
+asyncio.run(main())
+```
+
+## Example 17: Retrieve response body
+
+```python
+import asyncio
+import base64
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        async def on_response(event):
+            # Get the response body
+            body_result = await client.network.response_body(event.request.request)
+            content = base64.b64decode(body_result.body)
+            print(f"Response from {event.request.url}: {len(content)} bytes")
+
+        client.on_response(on_response)
+        await client.session.subscribe(["network.responseCompleted"])
+
+        async with await client.browsing.open("https://example.com") as page:
+            await asyncio.sleep(3)
+
+asyncio.run(main())
+```
+
+## Example 18: CDP performance metrics
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        # Enable Performance domain via CDP
+        await client.cdp.send_command(method="Performance.enable", params={})
+
+        async with await client.browsing.open("https://example.com") as page:
+            await asyncio.sleep(2)
+
+            # Get performance metrics
+            metrics = await client.cdp.send_command(
+                method="Performance.getMetrics",
+                params={},
+            )
+            for metric in metrics.result["metrics"]:
+                print(f"{metric['name']}: {metric['value']}")
+
+asyncio.run(main())
+```

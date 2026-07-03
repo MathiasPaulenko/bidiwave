@@ -145,6 +145,52 @@ await client.storage.delete_cookies(ctx, domain="example.com", path="/app")
 When `name`, `domain`, and `path` are all `None`, **all cookies** in the
 context are deleted.
 
+## Delete a single cookie
+
+For targeted deletion of one cookie by name, use `delete_cookie`:
+
+```python
+# Delete one specific cookie by name
+await client.storage.delete_cookie(ctx, "session")
+```
+
+Unlike `delete_cookies` (which accepts filters for name, domain, and path),
+`delete_cookie` is a simpler API that deletes exactly one cookie matching
+the given name. Use `delete_cookies` when you need to filter by domain or
+path, and `delete_cookie` for simple name-based deletion.
+
+### delete_cookie parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `context` | `BrowsingContext \| str` | (required) | Context to delete from |
+| `name` | `str` | (required) | Name of the cookie to delete |
+
+## Cookie change events
+
+Subscribe to cookie changes in real time:
+
+```python
+async def on_cookie_changed(event):
+    if event.type == "added":
+        print(f"Cookie added: {event.cookie.name}={event.cookie.value}")
+    elif event.type == "deleted":
+        print(f"Cookie deleted: {event.cookie.name}")
+    elif event.type == "changed":
+        print(f"Cookie changed: {event.cookie.name}={event.cookie.value}")
+
+client.on("storage.cookieChanged", on_cookie_changed)
+await client.session.subscribe(["storage.cookieChanged"])
+```
+
+### Event fields
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `context` | `str \| None` | Browsing context ID |
+| `type` | `str` | `"added"`, `"deleted"`, or `"changed"` |
+| `cookie` | `Cookie` | The cookie that was added, deleted, or changed |
+
 ## Use cases
 
 ### Session injection

@@ -192,6 +192,120 @@ match element:
     result = await client.script.evaluate(ctx, "2 + 3")
     ```
 
+## Preload scripts
+
+Preload scripts run **before** the page's own scripts. They're useful for
+injecting polyfills, overriding globals, or monitoring page behavior from
+the very start.
+
+### script.addPreloadScript (with channels)
+
+Unlike `preload.addPreloadScript`, `script.addPreloadScript` supports
+**channels** for bidirectional communication between the preload script
+and the client via `script.message` events:
+
+```python
+result = await client.script.add_preload_script(
+    function_declaration="(channel) => { channel('hello from page'); }",
+    arguments=[{"type": "channel", "value": {"channel": "my-channel"}}],
+    contexts=["context-id-1"],
+)
+print(result.script)  # preload script ID
+print(result.channel) # channel name for communication
+```
+
+### Receiving messages from preload scripts
+
+```python
+async def on_message(event):
+    print(f"Message from preload: {event.data}")
+
+client.on("script.message", on_message)
+await client.session.subscribe(["script.message"])
+```
+
+### preload.addPreloadScript (without channels)
+
+For simpler use cases where you don't need bidirectional communication:
+
+```python
+result = await client.preload.add_preload_script(
+    function_declaration="() => { window.myPolyfill = true; }",
+    contexts=["context-id-1"],
+)
+# result.script = "preload-script-id"
+
+# Remove when done
+await client.preload.remove_preload_script(result.script)
+```
+
+### add_preload_script parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `function_declaration` | `str` | (required) | JS function to execute |
+| `arguments` | `list[dict] \| None` | `None` | Arguments (supports channel type) |
+| `contexts` | `list[str] \| None` | `None` | Context IDs to scope the script |
+| `user_contexts` | `list[str] \| None` | `None` | User context IDs to scope |
+
+## Realms
+
+Realms are JavaScript execution environments. Each browsing context has
+at least one realm (the main world). Iframes and service workers have
+their own realms.
+
+### Get all realms
+
+```python
+realms = await client.script.get_realms()
+for realm in realms:
+    print(f"Realm: {realm.realm} (type={realm.type}, context={realm.context})")
+```
+
+### Filter by context
+
+```python
+realms = await client.script.get_realms(context="context-id-1")
+```
+
+### Filter by realm type
+
+```python
+# Only main realms
+realms = await client.script.get_realms(realm_type="window")
+
+# Service worker realms
+realms = await client.script.get_realms(realm_type="service-worker")
+```
+
+| Realm type | Description |
+| ---------- | ----------- |
+| `"window"` | Main page realm (one per browsing context) |
+| `"dedicated-worker"` | Web Worker realm |
+| `"shared-worker"` | SharedWorker realm |
+| `"service-worker"` | Service Worker realm |
+| `"worker"` | Generic worker realm |
+
+## Script events
+
+| Event | Fired when | Handler receives |
+| ----- | ---------- | ---------------- |
+| `script.realmCreated` | A new JavaScript realm is created | `ScriptRealmCreatedEvent` |
+| `script.realmDestroyed` | A realm is destroyed (context closed, worker terminated) | `ScriptRealmDestroyedEvent` |
+| `script.message` | A preload script sends a message via channel | `ScriptMessageEvent` |
+
+```python
+async def on_realm_created(event):
+    print(f"Realm created: {event.realm} (type={event.type})")
+
+async def on_realm_destroyed(event):
+    print(f"Realm destroyed: {event.realm}")
+
+client.on_realm_created(on_realm_created)
+client.on_realm_destroyed(on_realm_destroyed)
+await client.session.subscribe(["script.realmCreated", "script.realmDestroyed"])
+```
+
 ## Page convenience methods
 
 The `Page` object provides shortcuts for `evaluate` and `call_function`:
@@ -208,4 +322,5 @@ async with await client.browsing.open("https://example.com") as page:
 ## API reference
 
 See [Script API](../api/script.md) for the complete `ScriptModule` reference,
+[Preload API](../api/preload.md) for the `PreloadModule` reference,
 and [RemoteValue API](../api/remote-value.md) for all `RemoteValue` subtypes.

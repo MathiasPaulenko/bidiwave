@@ -25,15 +25,26 @@ standard API with real-time event streaming.
 ## Features
 
 - **Browsing** — create tabs/windows, navigate, take screenshots, wait
-  for elements with `MutationObserver`-based selectors or JS expressions
+  for elements with `MutationObserver`-based selectors or JS expressions,
+  control viewport with device pixel ratio, locate nodes via CSS/XPath
 - **Script** — evaluate JavaScript, call functions with arguments, handle
-  remote values via typed `RemoteValue` subclasses
+  remote values via typed `RemoteValue` subclasses, inject preload scripts
+  with channel-based communication, inspect realms
 - **Input** — simulate mouse clicks, keyboard typing, scrolling,
   drag-and-drop, and file uploads with action sequences
 - **Network** — monitor requests/responses, intercept and block, modify
-  headers/URLs, provide synthetic responses
+  headers/URLs, provide synthetic responses, cache overrides, retrieve
+  response bodies, handle authentication challenges
 - **Storage** — get, set, and delete cookies with full attribute support
-  (HttpOnly, Secure, SameSite, expires, etc.)
+  (HttpOnly, Secure, SameSite, expires, etc.), monitor cookie changes
+- **Emulation** — override geolocation, network conditions, time zone,
+  and user agent for device simulation
+- **Permissions** — grant or deny browser permissions (geolocation, camera,
+  notifications) without user dialogs
+- **Preload** — inject scripts before page load for polyfills, monitoring,
+  or test fixtures
+- **CDP** — access Chrome DevTools Protocol for browser-specific features
+  not in the BiDi standard
 - **Events** — subscribe to browser events with async handlers, error
   isolation, and decorator support
 - **Reconnection** — automatic WebSocket reconnection with configurable
@@ -86,12 +97,16 @@ asyncio.run(main())
 
 ### Usage
 
-- [Browsing](usage/browsing.md) — contexts, navigation, screenshots, waits
-- [Script](usage/script.md) — evaluate JS, call functions, RemoteValue
+- [Browsing](usage/browsing.md) — contexts, navigation, screenshots, waits, viewport
+- [Script](usage/script.md) — evaluate JS, call functions, RemoteValue, preload scripts, realms
 - [Events](usage/events.md) — real-time event subscriptions
 - [Input Simulation](usage/input.md) — clicks, keyboard, scroll, drag
-- [Network Interception](usage/network.md) — block, modify, mock requests
-- [Cookies & Storage](usage/storage.md) — get, set, delete cookies
+- [Network Interception](usage/network.md) — block, modify, mock, cache overrides, response bodies, auth
+- [Cookies & Storage](usage/storage.md) — get, set, delete cookies, cookie change events
+- [Emulation](usage/emulation.md) — geolocation, network conditions, timezone, user agent
+- [Permissions](usage/permissions.md) — grant or deny browser permissions
+- [Preload Scripts](usage/preload.md) — inject scripts before page load
+- [CDP](usage/cdp.md) — Chrome DevTools Protocol access
 - [Configuration](usage/configuration.md) — timeouts, reconnection, logging
 
 ### Guides
@@ -109,6 +124,11 @@ asyncio.run(main())
 - [Network](api/network.md) — network interception
 - [Input](api/input.md) — input simulation
 - [Storage](api/storage.md) — cookie management
+- [Preload](api/preload.md) — preload scripts
+- [Emulation](api/emulation.md) — device emulation
+- [Permissions](api/permissions.md) — permission management
+- [Log](api/log.md) — log management
+- [CDP](api/cdp.md) — Chrome DevTools Protocol
 - [Events](api/events.md) — event dispatcher and models
 - [RemoteValue](api/remote-value.md) — typed JS return values
 - [Exceptions](api/exceptions.md) — error hierarchy

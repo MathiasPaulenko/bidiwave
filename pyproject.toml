@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bidiwave"
-version = "1.7.1"
+version = "1.7.2"
 description = "WebDriver BiDi for Python — talk to any browser via W3C standard"
 readme = "README.md"
 license = { text = "MIT" }

@@ -259,6 +259,90 @@ This is useful when you need to wait for a dynamic condition that can't
 be expressed as a simple selector — e.g., "wait until at least 5 items
 are loaded" or "wait until a global variable is set".
 
+## Viewport
+
+Control the viewport size and device pixel ratio (DPR) for a browsing context.
+This is useful for testing responsive layouts and simulating mobile devices.
+
+### Set viewport
+
+```python
+from bidiwave import ViewportSize
+
+# Using the typed ViewportSize model
+await client.browsing.set_viewport(
+    ctx,
+    viewport=ViewportSize(width=375, height=812),
+    device_pixel_ratio=3.0,  # simulate iPhone DPR
+)
+
+# Or pass a dict (automatically converted)
+await client.browsing.set_viewport(
+    ctx,
+    viewport={"width": 1920, "height": 1080},
+    device_pixel_ratio=1.0,
+)
+```
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `context` | `BrowsingContext \| str` | (required) | Context to modify |
+| `viewport` | `ViewportSize \| dict \| None` | `None` | Viewport dimensions. `None` resets to default. |
+| `device_pixel_ratio` | `float \| None` | `None` | Device pixel ratio (e.g., `2.0` for retina). `None` resets to default. |
+
+The `ViewportSize` model has two fields:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `width` | `int` | Viewport width in CSS pixels |
+| `height` | `int` | Viewport height in CSS pixels |
+
+### Get viewport
+
+Retrieve the current viewport and DPR:
+
+```python
+result = await client.browsing.get_viewport(ctx)
+print(f"Viewport: {result.viewport.width}x{result.viewport.height}")
+print(f"DPR: {result.device_pixel_ratio}")
+```
+
+## Activate
+
+Bring a browsing context to the foreground (equivalent to switching tabs):
+
+```python
+await client.browsing.activate(ctx)
+```
+
+This is useful when working with multiple tabs and you need to ensure a
+specific tab is active for screenshots or input simulation.
+
+## Locate nodes
+
+Find elements in the DOM using locator strategies:
+
+```python
+# CSS selector
+nodes = await client.browsing.locate_nodes(
+    ctx,
+    locator={"type": "css", "value": "div.product-list .item"},
+)
+
+# XPath
+nodes = await client.browsing.locate_nodes(
+    ctx,
+    locator={"type": "xpath", "value": "//button[@class='submit']"},
+)
+```
+
+### Locator types
+
+| Type | Description | Example |
+| ---- | ----------- | ------- |
+| `"css"` | CSS selector | `{"type": "css", "value": "div.content"}` |
+| `"xpath"` | XPath expression | `{"type": "xpath", "value": "//div[@id='main']"}` |
+
 ## Context tree
 
 BiDi maintains a tree of browsing contexts. A top-level context (a tab)
@@ -284,14 +368,36 @@ Browsing contexts emit events that you can subscribe to:
 | `browsingContext.contextCreated` | A new context (tab/window/iframe) was created |
 | `browsingContext.contextDestroyed` | A context was closed |
 | `browsingContext.navigationStarted` | Navigation began in a context |
+| `browsingContext.navigationCompleted` | Navigation completed successfully |
+| `browsingContext.fragmentNavigated` | Fragment navigation (#anchor) occurred |
+| `browsingContext.domContentLoaded` | DOM parsed, resources still loading |
+| `browsingContext.load` | Page fully loaded (all resources) |
+| `browsingContext.historyUpdated` | History changed (pushState, replaceState) — Chrome-specific |
+| `browsingContext.userPromptOpened` | A dialog (alert/confirm/prompt) opened |
 
 ```python
 client.on("browsingContext.contextCreated", lambda e: print(f"New tab: {e.context}"))
 client.on("browsingContext.contextDestroyed", lambda e: print(f"Tab closed: {e.context}"))
+client.on("browsingContext.navigationCompleted", lambda e: print(f"Loaded: {e.url}"))
+client.on("browsingContext.historyUpdated", lambda e: print(f"History changed: {e.url}"))
+client.on("browsingContext.userPromptOpened", lambda e: print(f"Dialog: {e.type} — {e.message}"))
 await client.session.subscribe([
     "browsingContext.contextCreated",
     "browsingContext.contextDestroyed",
+    "browsingContext.navigationCompleted",
+    "browsingContext.historyUpdated",
+    "browsingContext.userPromptOpened",
 ])
+```
+
+### Convenience handlers
+
+```python
+client.on_navigation_completed(lambda e: print(f"Nav complete: {e.url}"))
+client.on_fragment_navigated(lambda e: print(f"Fragment: {e.url}"))
+client.on_load(lambda e: print(f"Page loaded: {e.url}"))
+client.on_dom_content_loaded(lambda e: print(f"DOM ready: {e.url}"))
+client.on_history_updated(lambda e: print(f"History: {e.url}"))
 ```
 
 See [Events](events.md) for the full event system documentation.
