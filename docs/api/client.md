@@ -1,0 +1,3 @@
+# BiDiClient
+
+::: bidiwave.client.BiDiClient

@@ -3,6 +3,7 @@
 # Command methods
 SESSION_NEW = "session.new"
 SESSION_STATUS = "session.status"
+SESSION_END = "session.end"
 SESSION_SUBSCRIBE = "session.subscribe"
 SESSION_UNSUBSCRIBE = "session.unsubscribe"
 BROWSING_CREATE_CONTEXT = "browsingContext.create"

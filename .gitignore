@@ -7,18 +7,21 @@ build/
 .eggs/
 *.egg
 .venv/
+.venv-test/
 venv/
 env/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
 .coverage
+coverage.xml
 htmlcov/
 *.so
 .idea/
 .vscode/
 *.swp
 *.swo
+site/
 
 # Driver binaries (downloaded on demand)
 bin/

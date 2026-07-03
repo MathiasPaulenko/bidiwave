@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bidiwave"
-version = "0.1.0"
+version = "1.0.0"
 description = "WebDriver BiDi for Python — talk to any browser via W3C standard"
 readme = "README.md"
 license = { text = "MIT" }
@@ -12,7 +12,7 @@ requires-python = ">=3.11"
 authors = [{ name = "Mathias Paulenko" }]
 keywords = ["webdriver", "bidi", "browser", "automation", "w3c", "async"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Framework :: AsyncIO",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
@@ -55,6 +55,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "ASYNC"]
+ignore = ["ASYNC109"]
 
 [tool.mypy]
 strict = true

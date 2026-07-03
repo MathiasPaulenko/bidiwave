@@ -1,0 +1,62 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: mypy bidiwave/
+      - run: pytest tests/unit/ --cov=bidiwave --cov-report=xml --cov-fail-under=90
+      - uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+
+  integration-chrome:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/integration/ -m integration --browser=chrome
+
+  integration-firefox:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: browser-actions/setup-firefox@latest
+        with:
+          firefox-version: latest
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/integration/ -m integration --browser=firefox

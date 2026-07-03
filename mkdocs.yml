@@ -1,0 +1,67 @@
+site_name: bidiwave
+site_description: WebDriver BiDi for Python — talk to any browser via W3C standard
+site_url: https://bidiwave.readthedocs.io
+repo_url: https://github.com/MathiasPaulenko/bidiwave
+repo_name: MathiasPaulenko/bidiwave
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Quick Start: quick-start.md
+  - API Reference:
+      - BiDiClient: api/client.md
+      - Session: api/session.md
+      - Browsing: api/browsing.md
+      - Script: api/script.md
+      - Events: api/events.md
+      - RemoteValue: api/remote-value.md
+      - Exceptions: api/exceptions.md
+      - Config: api/config.md
+  - Cookbook: cookbook.md
+  - Error Handling: error-handling.md
+  - Protocol Reference: protocol-reference.md
+  - Spike Notes: spike-notes.md
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_signature_annotations: true
+            separate_signature: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true

@@ -1,0 +1,3 @@
+# Config
+
+::: bidiwave.config.ClientConfig
