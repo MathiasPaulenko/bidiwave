@@ -1,8 +1,9 @@
 site_name: bidiwave
 site_description: WebDriver BiDi for Python — talk to any browser via W3C standard
-site_url: https://bidiwave.readthedocs.io
+site_url: https://mathiaspaulenko.github.io/bidiwave/
 repo_url: https://github.com/MathiasPaulenko/bidiwave
 repo_name: MathiasPaulenko/bidiwave
+edit_uri: edit/main/docs/
 
 theme:
   name: material
@@ -10,7 +11,10 @@ theme:
     - navigation.tabs
     - navigation.sections
     - navigation.expand
+    - navigation.indexes
+    - navigation.top
     - search.suggest
+    - search.highlight
     - content.code.copy
     - content.code.annotate
   palette:
@@ -26,10 +30,26 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
 
 nav:
   - Home: index.md
-  - Quick Start: quick-start.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quick-start.md
+  - Usage:
+      - Browsing: usage/browsing.md
+      - Script: usage/script.md
+      - Events: usage/events.md
+      - Input Simulation: usage/input.md
+      - Network Interception: usage/network.md
+      - Cookies & Storage: usage/storage.md
+      - Configuration: usage/configuration.md
+  - Guides:
+      - Browser Setup: guides/browser-setup.md
+      - Cookbook: guides/cookbook.md
+      - Error Handling: guides/error-handling.md
   - API Reference:
       - BiDiClient: api/client.md
       - Session: api/session.md
@@ -42,12 +62,13 @@ nav:
       - RemoteValue: api/remote-value.md
       - Exceptions: api/exceptions.md
       - Config: api/config.md
-  - Cookbook: cookbook.md
-  - Error Handling: error-handling.md
-  - Protocol Reference: protocol-reference.md
-  - Spike Notes: spike-notes.md
+  - Reference:
+      - Protocol Reference: reference/protocol-reference.md
+      - Changelog: reference/changelog.md
+      - Spike Notes: reference/spike-notes.md
 
 plugins:
+  - search
   - mkdocstrings:
       handlers:
         python:
@@ -58,13 +79,19 @@ plugins:
             show_root_heading: true
             show_root_full_path: false
             members_order: source
+            docstring_style: google
 
 markdown_extensions:
   - admonition
-  - codehilite
-  - footnotes
+  - pymdownx.details
+  - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
-  - pymdownx.superfences
+  - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
+  - toc:
+      permalink: true
