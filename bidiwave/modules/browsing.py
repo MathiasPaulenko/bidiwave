@@ -11,9 +11,13 @@ from bidiwave.protocol.constants import (
     BROWSING_CLOSE,
     BROWSING_CREATE_CONTEXT,
     BROWSING_GET_TREE,
+    BROWSING_HANDLE_USER_PROMPT,
     BROWSING_NAVIGATE,
+    BROWSING_PRINT,
+    BROWSING_RELOAD,
+    BROWSING_TRAVERSE_HISTORY,
 )
-from bidiwave.protocol.results import Navigation, Screenshot
+from bidiwave.protocol.results import Navigation, PrintResult, Screenshot
 from bidiwave.transport.connection import Connection
 
 if TYPE_CHECKING:
@@ -166,6 +170,81 @@ class BrowsingModule:
                 await asyncio.sleep(0.1)
 
         return await asyncio.wait_for(check(), timeout=timeout)
+
+    async def reload(
+        self,
+        context: BrowsingContext | str,
+        wait: Literal["none", "interactive", "complete"] = "complete",
+        ignore_cache: bool | None = None,
+    ) -> Navigation:
+        """Recarga el context actual."""
+        ctx_id = context.id if hasattr(context, "id") else context
+        params: dict[str, Any] = {"context": ctx_id, "wait": wait}
+        if ignore_cache is not None:
+            params["ignoreCache"] = ignore_cache
+        result = await self._connection.send_command(
+            BROWSING_RELOAD, params
+        )
+        return Navigation.model_validate(result)
+
+    async def traverse_history(
+        self,
+        context: BrowsingContext | str,
+        direction: Literal["back", "forward"],
+    ) -> Navigation:
+        """Navega hacia atrás o adelante en el historial."""
+        ctx_id = context.id if hasattr(context, "id") else context
+        result = await self._connection.send_command(
+            BROWSING_TRAVERSE_HISTORY,
+            {"context": ctx_id, "direction": direction},
+        )
+        return Navigation.model_validate(result)
+
+    async def handle_user_prompt(
+        self,
+        context: BrowsingContext | str,
+        accept: bool | None = None,
+        user_text: str | None = None,
+    ) -> None:
+        """Acepta o rechaza un dialog (alert, confirm, prompt)."""
+        ctx_id = context.id if hasattr(context, "id") else context
+        params: dict[str, Any] = {"context": ctx_id}
+        if accept is not None:
+            params["accept"] = accept
+        if user_text is not None:
+            params["userText"] = user_text
+        await self._connection.send_command(
+            BROWSING_HANDLE_USER_PROMPT, params
+        )
+
+    async def print(
+        self,
+        context: BrowsingContext | str,
+        background: bool = False,
+        margin: dict[str, Any] | None = None,
+        orientation: Literal["portrait", "landscape"] = "portrait",
+        page: dict[str, Any] | None = None,
+        page_ranges: list[str] | None = None,
+        scale: float = 1.0,
+        shrink_to_fit: bool = True,
+    ) -> PrintResult:
+        """Exporta el context a PDF y retorna los datos base64."""
+        ctx_id = context.id if hasattr(context, "id") else context
+        params: dict[str, Any] = {
+            "context": ctx_id,
+            "background": background,
+            "orientation": orientation,
+            "scale": scale,
+            "shrinkToFit": shrink_to_fit,
+        }
+        if margin is not None:
+            params["margin"] = margin
+        if page is not None:
+            params["page"] = page
+        if page_ranges is not None:
+            params["pageRanges"] = page_ranges
+        result = await self._connection.send_command(BROWSING_PRINT, params)
+        return PrintResult.model_validate(result)
 
     async def open(
         self,

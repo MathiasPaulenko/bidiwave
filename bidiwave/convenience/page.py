@@ -64,6 +64,48 @@ class Page:
     ) -> Any:
         return await self._browsing.navigate(self._context, url, wait)
 
+    async def reload(
+        self,
+        wait: Literal["none", "interactive", "complete"] = "complete",
+        ignore_cache: bool | None = None,
+    ) -> Any:
+        return await self._browsing.reload(self._context, wait, ignore_cache)
+
+    async def back(self) -> Any:
+        return await self._browsing.traverse_history(self._context, "back")
+
+    async def forward(self) -> Any:
+        return await self._browsing.traverse_history(self._context, "forward")
+
+    async def handle_user_prompt(
+        self,
+        accept: bool | None = None,
+        user_text: str | None = None,
+    ) -> None:
+        await self._browsing.handle_user_prompt(self._context, accept, user_text)
+
+    async def print(
+        self,
+        background: bool = False,
+        margin: dict[str, Any] | None = None,
+        orientation: Literal["portrait", "landscape"] = "portrait",
+        page: dict[str, Any] | None = None,
+        page_ranges: list[str] | None = None,
+        scale: float = 1.0,
+        shrink_to_fit: bool = True,
+    ) -> bytes:
+        result = await self._browsing.print(
+            self._context,
+            background=background,
+            margin=margin,
+            orientation=orientation,
+            page=page,
+            page_ranges=page_ranges,
+            scale=scale,
+            shrink_to_fit=shrink_to_fit,
+        )
+        return base64.b64decode(result.data)
+
     async def screenshot(
         self,
         format: Literal["png", "jpeg"] = "png",

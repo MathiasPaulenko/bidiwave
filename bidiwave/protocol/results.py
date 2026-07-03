@@ -140,3 +140,11 @@ class GetCookiesResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     cookies: list[Cookie] = []
+
+
+class PrintResult(BaseModel):
+    """Resultado de browsingContext.print."""
+
+    model_config = ConfigDict(extra="allow")
+
+    data: str

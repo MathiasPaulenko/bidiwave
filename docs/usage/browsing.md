@@ -52,6 +52,11 @@ The `Page` object wraps a `BrowsingContext` and provides ergonomic methods:
 | `page.evaluate(expr)` | Run JavaScript and return a `RemoteValue` |
 | `page.call(fn, args)` | Call a JS function with arguments |
 | `page.navigate(url)` | Navigate to a new URL |
+| `page.reload()` | Reload the current page |
+| `page.back()` | Go back in history |
+| `page.forward()` | Go forward in history |
+| `page.handle_user_prompt()` | Accept or dismiss a dialog (alert/confirm/prompt) |
+| `page.print()` | Export the page to PDF, returns `bytes` |
 | `page.screenshot()` | Take a screenshot, returns `bytes` |
 | `page.wait_for_selector(sel)` | Wait for an element to appear in the DOM |
 | `page.wait_for_function(expr)` | Wait for a JS expression to return truthy |
@@ -97,6 +102,95 @@ possible (e.g., clicking a button that doesn't depend on images). Use
 | `url` | `str` | The URL navigated to |
 | `navigation` | `str \| None` | A navigation ID (can be used to track the navigation in events) |
 | `status` | `str` | `"complete"` or `"pending"` |
+
+## Reload
+
+Reload the current page. Supports the same `wait` strategies as
+`navigate()`:
+
+```python
+# Full reload
+await page.reload(wait="complete")
+
+# Reload ignoring cache
+await page.reload(ignore_cache=True)
+```
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `wait` | `"none" \| "interactive" \| "complete"` | `"complete"` | Wait strategy |
+| `ignore_cache` | `bool \| None` | `None` | If `True`, bypass the browser cache |
+
+## History navigation
+
+Navigate backward or forward in the browsing history:
+
+```python
+# Go back
+await page.back()
+
+# Go forward
+await page.forward()
+```
+
+These correspond to the browser's back/forward buttons. If there's no
+page to navigate to (e.g., calling `back()` on the first page in
+history), the browser stays on the current page.
+
+## Handling dialogs
+
+When a page shows a dialog (`alert`, `confirm`, or `prompt`), BiDi
+pauses script execution until you handle it. Use `handle_user_prompt()`
+to accept or dismiss it:
+
+```python
+# Accept an alert
+await page.handle_user_prompt(accept=True)
+
+# Dismiss a confirm dialog
+await page.handle_user_prompt(accept=False)
+
+# Accept a prompt and provide text
+await page.handle_user_prompt(accept=True, user_text="Hello!")
+```
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `accept` | `bool \| None` | `None` | `True` to accept, `False` to dismiss. `None` = browser default. |
+| `user_text` | `str \| None` | `None` | Text to enter in a `prompt()` dialog. Only used if `accept=True`. |
+
+!!! warning "Dialogs block execution"
+    While a dialog is open, all BiDi commands for that context are
+    blocked. Always handle the prompt before doing anything else.
+
+## Print to PDF
+
+Export the current page as a PDF:
+
+```python
+pdf = await page.print(
+    orientation="portrait",
+    scale=1.0,
+    background=False,
+)
+with open("page.pdf", "wb") as f:
+    f.write(pdf)
+```
+
+The `Page.print()` method returns raw PDF `bytes`. The `BrowsingModule.print()`
+method returns a `PrintResult` with base64-encoded data.
+
+### Print parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+| `background` | `bool` | `False` | Include background graphics |
+| `orientation` | `"portrait" \| "landscape"` | `"portrait"` | Page orientation |
+| `scale` | `float` | `1.0` | Scale factor (0.1 to 2.0) |
+| `shrink_to_fit` | `bool` | `True` | Shrink content to fit page width |
+| `margin` | `dict \| None` | `None` | Margins in inches: `{"top": 0.4, "bottom": 0.4, "left": 0.4, "right": 0.4}` |
+| `page` | `dict \| None` | `None` | Page size in inches: `{"width": 8.5, "height": 11}` |
+| `page_ranges` | `list[str] \| None` | `None` | Pages to print, e.g. `["1-3", "5"]` |
 
 ## Screenshots
 
