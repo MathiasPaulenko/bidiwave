@@ -19,3 +19,6 @@ htmlcov/
 .vscode/
 *.swp
 *.swo
+
+# Driver binaries (downloaded on demand)
+bin/

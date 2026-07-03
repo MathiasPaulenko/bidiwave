@@ -1,8 +1,10 @@
-"""Spike: validar que WebDriver BiDi funciona con Chrome y Firefox.
+"""Spike: validar que WebDriver BiDi funciona con Chrome y Edge.
+
+Usa ChromeDriver/EdgeDriver como proxy BiDi.
 
 Uso:
     python spike.py --browser chrome
-    python spike.py --browser firefox
+    python spike.py --browser edge
 """
 
 import argparse
@@ -10,94 +12,111 @@ import asyncio
 import json
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 
 import websockets
 
+CHROMEDRIVER_PATH = r"D:\Codigo\bidiwave\bin\chromedriver-win64\chromedriver.exe"
+EDGEDRIVER_PATH = r"D:\Codigo\bidiwave\bin\edgedriver\msedgedriver.exe"
 
-async def spike_bidi(url: str, browser: str) -> None:
-    """Conectar a BiDi, crear sesión, imprimir resultado."""
-    print(f"Conectando a {url} ...")
+DRIVERS = {
+    "chrome": (CHROMEDRIVER_PATH, 9515),
+    "edge": (EDGEDRIVER_PATH, 9516),
+}
 
-    async with websockets.connect(url) as ws:
-        command = {
-            "id": 1,
-            "method": "session.new",
-            "params": {
-                "capabilities": {
-                    "alwaysMatch": {
-                        "webSocketUrl": True,
-                    }
+
+def launch_driver(driver_path: str, port: int) -> subprocess.Popen:
+    """Lanzar ChromeDriver/EdgeDriver en el puerto indicado."""
+    return subprocess.Popen(
+        [driver_path, f"--port={port}"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def create_webdriver_session(port: int) -> dict:
+    """Crear sesión WebDriver clásica pidiendo webSocketUrl (BiDi).
+
+    Retorna el JSON completo de la respuesta.
+    """
+    payload = json.dumps(
+        {
+            "capabilities": {
+                "alwaysMatch": {
+                    "webSocketUrl": True,
+                    "acceptInsecureCerts": True,
                 }
-            },
+            }
         }
+    ).encode()
+
+    req = urllib.request.Request(
+        f"http://localhost:{port}/session",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    resp = urllib.request.urlopen(req)
+    return json.loads(resp.read())
+
+
+async def spike_bidi(bidi_url: str, browser: str) -> None:
+    """Conectar a BiDi y enviar session.status para validar."""
+    print(f"Conectando a BiDi WebSocket: {bidi_url} ...")
+
+    async with websockets.connect(bidi_url) as ws:
+        command = {"id": 1, "method": "session.status", "params": {}}
         await ws.send(json.dumps(command))
         print(f"→ {command['method']}")
 
         raw = await asyncio.wait_for(ws.recv(), timeout=10)
         response = json.loads(raw)
+        print(f"← raw: {json.dumps(response, indent=2)[:800]}")
         print(f"← type={response.get('type')}")
 
         if response.get("type") == "success":
             result = response.get("result", {})
-            session_id = result.get("sessionId", "N/A")
-            caps = result.get("capabilities", {})
-            print(f"  sessionId: {session_id}")
-            print(f"  browserName: {caps.get('browserName', 'N/A')}")
-            print(f"  browserVersion: {caps.get('browserVersion', 'N/A')}")
-            print(f"  platformName: {caps.get('platformName', 'N/A')}")
-            print(f"  webSocketUrl: {caps.get('webSocketUrl', 'N/A')}")
+            print(f"  ready: {result.get('ready')}")
+            print(f"  message: {result.get('message')}")
             print(f"\n✅ {browser} BiDi funciona correctamente")
-        elif response.get("type") == "error":
+        else:
             error = response.get("error", {})
-            print(f"  error code: {error.get('code')}")
-            print(f"  error message: {error.get('message')}")
+            print(f"  error: {error}")
             print(f"\n❌ {browser} BiDi falló")
             sys.exit(1)
 
 
-def launch_chrome(port: int = 9222) -> subprocess.Popen:
-    """Lanzar Chrome headless con BiDi."""
-    return subprocess.Popen(
-        [
-            "google-chrome-stable",
-            "--headless=new",
-            f"--remote-debugging-port={port}",
-            "--enable-bidi",
-            "--no-first-run",
-            "--no-default-browser-check",
-            "--disable-gpu",
-        ]
-    )
-
-
-def launch_firefox(port: int = 9223) -> subprocess.Popen:
-    """Lanzar Firefox headless con BiDi."""
-    return subprocess.Popen(
-        [
-            "firefox",
-            "--headless",
-            f"--remote-debugging-port={port}",
-            "--no-remote",
-        ]
-    )
-
-
 async def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--browser", choices=["chrome", "firefox"], required=True)
+    parser.add_argument("--browser", choices=["chrome", "edge"], required=True)
     parser.add_argument("--port", type=int, default=None)
     args = parser.parse_args()
 
-    port = args.port or (9222 if args.browser == "chrome" else 9223)
+    driver_path, default_port = DRIVERS[args.browser]
+    port = args.port or default_port
 
-    proc = launch_chrome(port) if args.browser == "chrome" else launch_firefox(port)
-
-    print(f"Esperando {args.browser} en puerto {port} ...")
-    await asyncio.sleep(3)
+    proc = launch_driver(driver_path, port)
+    print(f"Lanzando {args.browser}Driver en puerto {port} ...")
+    await asyncio.sleep(2)
 
     try:
-        bidi_url = f"ws://localhost:{port}/session"
+        print("Creando sesión WebDriver con webSocketUrl=True ...")
+        session_resp = create_webdriver_session(port)
+        print(f"  status: {session_resp.get('value', {}).get('sessionId', 'N/A')}")
+
+        bidi_url = session_resp.get("value", {}).get("capabilities", {}).get("webSocketUrl", "")
+        if not bidi_url:
+            print("❌ No se obtuvo webSocketUrl de la respuesta del driver")
+            print(f"  raw: {json.dumps(session_resp, indent=2)[:500]}")
+            sys.exit(1)
+
+        print(f"  webSocketUrl: {bidi_url}")
         await spike_bidi(bidi_url, args.browser)
+
+    except urllib.error.URLError as e:
+        print(f"❌ Error HTTP al crear sesión: {e}")
+        sys.exit(1)
     finally:
         proc.terminate()
         proc.wait(timeout=10)
