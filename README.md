@@ -12,7 +12,9 @@ WebDriver BiDi for Python — talk to any browser via W3C standard.
 - **W3C WebDriver BiDi** — estándar, no CDP propietario
 - **Cross-browser** — Chrome, Firefox, Edge (Safari cuando soporte BiDi)
 - **Async-first** — `async/await` nativo con `asyncio`
-- **Event streaming** — console logs, navegación, contexts en tiempo real
+- **Event streaming** — console logs, navegación, network, contexts en tiempo real
+- **Input simulation** — clicks, keyboard, scroll, drag & drop via `input.performActions`
+- **Network interception** — bloquear, modificar y mockear requests HTTP
 - **Type-safe** — Pydantic v2 models, type narrowing con `match`
 - **Sin dependencias pesadas** — no requiere Selenium, no requiere Playwright
 
@@ -51,8 +53,6 @@ asyncio.run(main())
 
 ```python
 async with await BiDiClient.connect(url) as client:
-    await client.session.new()
-
     async def on_log(entry):
         print(f"[{entry.level}] {entry.text}")
 
@@ -62,6 +62,45 @@ async with await BiDiClient.connect(url) as client:
     async with await client.browsing.open("https://example.com") as page:
         await page.evaluate("console.log('hello!')")
         await asyncio.sleep(2)
+```
+
+## Input simulation
+
+```python
+async with await BiDiClient.connect(url) as client:
+    async with await client.browsing.open("https://example.com") as page:
+        ctx = page.context
+
+        # Click at coordinates
+        await client.input.click(ctx, x=100, y=200)
+
+        # Type text
+        await client.input.type_text(ctx, "Hello, world!")
+
+        # Press Enter
+        await client.input.press_key(ctx, "Enter")
+
+        # Scroll down 500px
+        await client.input.scroll(ctx, delta_y=500)
+
+        # Drag and drop
+        await client.input.drag_and_drop(ctx, 100, 100, 300, 300)
+```
+
+## Network interception
+
+```python
+async with await BiDiClient.connect(url) as client:
+    # Block all requests to ads
+    intercept = await client.network.add_intercept(
+        phases=["beforeRequestSent"],
+        url_patterns=["*ads.example.com*"],
+    )
+
+    async with await client.browsing.open("https://example.com") as page:
+        await asyncio.sleep(2)
+
+    await client.network.remove_intercept(intercept.intercept_id)
 ```
 
 ## Lanzar un browser con BiDi
@@ -82,6 +121,8 @@ firefox --headless --remote-debugging-port=9223 --no-remote
 
 - [Quick Start](https://bidiwave.readthedocs.io/quick-start/)
 - [API Reference](https://bidiwave.readthedocs.io/api/)
+- [Network](https://bidiwave.readthedocs.io/api/network/)
+- [Input](https://bidiwave.readthedocs.io/api/input/)
 - [Cookbook](https://bidiwave.readthedocs.io/cookbook/)
 - [Error Handling](https://bidiwave.readthedocs.io/error-handling/)
 

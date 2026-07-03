@@ -35,6 +35,8 @@ nav:
       - Session: api/session.md
       - Browsing: api/browsing.md
       - Script: api/script.md
+      - Network: api/network.md
+      - Input: api/input.md
       - Events: api/events.md
       - RemoteValue: api/remote-value.md
       - Exceptions: api/exceptions.md

@@ -10,8 +10,6 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         logs: list[str] = []
 
         async def on_log(entry):
@@ -36,8 +34,6 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         async with await client.browsing.open("https://example.com") as page:
             screenshot = await page.screenshot()
             with open("screenshot.png", "wb") as f:
@@ -55,8 +51,6 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         async with await client.browsing.open("https://news.ycombinator.com") as page:
             result = await page.call(
                 """() => {
@@ -95,8 +89,6 @@ async def scrape_page(client, url):
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         urls = [
             "https://example.com",
             "https://example.org",
@@ -119,8 +111,6 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         async with await client.browsing.open("https://example.com") as page:
             found = await page.wait_for_selector("h1", timeout=5)
             print(f"Elemento encontrado: {found}")
@@ -137,11 +127,8 @@ from bidiwave import BiDiClient, ClientConfig
 async def main():
     config = ClientConfig(max_retries=5)
     async with await BiDiClient.connect("ws://localhost:9222/session", config=config) as client:
-        await client.session.new()
-
         async def on_reconnect():
             print("Reconectado. Recreando sesión...")
-            await client.session.new()
             await client.session.subscribe(["log.entryAdded"])
 
         client.on_reconnect(on_reconnect)
@@ -165,8 +152,6 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         print(f"Browser: {client.capabilities.browser_name} {client.capabilities.browser_version}")
         print(f"Browsing: {client.capabilities.supports_browsing}")
         print(f"Script: {client.capabilities.supports_script}")
@@ -177,6 +162,127 @@ async def main():
             ...
         else:
             print("Network no soportado en este browser")
+
+asyncio.run(main())
+```
+
+## Ejemplo 8: Simular input del usuario
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9222/session") as client:
+        async with await client.browsing.open("https://example.com") as page:
+            ctx = page.context
+
+            # Click en un elemento
+            await client.input.click(ctx, x=100, y=200)
+
+            # Escribir texto
+            await client.input.type_text(ctx, "Hello, world!")
+
+            # Presionar Enter
+            await client.input.press_key(ctx, "Enter")
+
+            # Scroll hacia abajo 500px
+            await client.input.scroll(ctx, delta_y=500)
+
+            # Drag and drop
+            await client.input.drag_and_drop(ctx, 100, 100, 300, 300)
+
+asyncio.run(main())
+```
+
+## Ejemplo 9: Bloquear requests de red
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9222/session") as client:
+        # Bloquear todas las requests a dominios de ads
+        intercept = await client.network.add_intercept(
+            phases=["beforeRequestSent"],
+            url_patterns=["*ads.example.com*", "*doubleclick.net*"],
+        )
+
+        async with await client.browsing.open("https://example.com") as page:
+            await asyncio.sleep(3)
+
+        # Eliminar el intercept
+        await client.network.remove_intercept(intercept.intercept_id)
+
+asyncio.run(main())
+```
+
+## Ejemplo 10: Monitorear requests de red
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9222/session") as client:
+        requests: list[str] = []
+
+        async def on_request(event):
+            url = event.request.url
+            method = event.request.method
+            requests.append(f"{method} {url}")
+            print(f"→ {method} {url}")
+
+        async def on_response(event):
+            status = event.response.status
+            url = event.request.url
+            print(f"← {status} {url}")
+
+        client.on_request(on_request)
+        client.on_response(on_response)
+        await client.session.subscribe([
+            "network.beforeRequestSent",
+            "network.responseCompleted",
+        ])
+
+        async with await client.browsing.open("https://example.com") as page:
+            await asyncio.sleep(3)
+
+        print(f"\nTotal requests: {len(requests)}")
+
+asyncio.run(main())
+```
+
+## Ejemplo 11: Mockear una respuesta HTTP
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9222/session") as client:
+        # Intercept en beforeRequestSent
+        intercept = await client.network.add_intercept(
+            phases=["beforeRequestSent"],
+            url_patterns=["*api.example.com/data*"],
+        )
+
+        # Cuando se intercepte, proveer una respuesta sintética
+        async def on_request(event):
+            await client.network.provide_response(
+                request=event.request.request,
+                status_code=200,
+                reason_phrase="OK",
+                body="eyJtZXNzYWdlIjogIm1vY2tlZCJ9",  # {"message": "mocked"}
+            )
+
+        client.on_request(on_request)
+
+        async with await client.browsing.open("https://example.com") as page:
+            await asyncio.sleep(3)
+
+        await client.network.remove_intercept(intercept.intercept_id)
 
 asyncio.run(main())
 ```

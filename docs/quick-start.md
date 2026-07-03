@@ -28,8 +28,6 @@ from bidiwave import BiDiClient, StringValue
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         async with await client.browsing.open("https://example.com") as page:
             result = await page.evaluate("document.title")
             match result:
@@ -47,8 +45,6 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         async def on_log(entry):
             print(f"[{entry.level}] {entry.text}")
 
@@ -70,12 +66,64 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
-        await client.session.new()
-
         async with await client.browsing.open("https://example.com") as page:
             screenshot = await page.screenshot()
             with open("screenshot.png", "wb") as f:
                 f.write(screenshot)
+
+asyncio.run(main())
+```
+
+## Input simulation
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9222/session") as client:
+        async with await client.browsing.open("https://example.com") as page:
+            # Click at coordinates
+            await client.input.click(page.context, x=100, y=200)
+
+            # Type text
+            await client.input.type_text(page.context, "Hello!")
+
+            # Press Enter
+            await client.input.press_key(page.context, "Enter")
+
+            # Scroll down
+            await client.input.scroll(page.context, delta_y=500)
+
+asyncio.run(main())
+```
+
+## Network interception
+
+```python
+import asyncio
+from bidiwave import BiDiClient
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9222/session") as client:
+        # Monitor all requests
+        client.on_request(lambda req: print(f"→ {req.request.url}"))
+        client.on_response(lambda res: print(f"← {res.response.status}"))
+        await client.session.subscribe([
+            "network.beforeRequestSent",
+            "network.responseCompleted",
+        ])
+
+        # Block requests to ads
+        intercept = await client.network.add_intercept(
+            phases=["beforeRequestSent"],
+            url_patterns=["*ads.example.com*"],
+        )
+
+        async with await client.browsing.open("https://example.com") as page:
+            await asyncio.sleep(2)
+
+        await client.network.remove_intercept(intercept.intercept_id)
 
 asyncio.run(main())
 ```
