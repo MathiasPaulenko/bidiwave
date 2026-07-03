@@ -1,0 +1,35 @@
+"""Constantes del protocolo WebDriver BiDi."""
+
+# Command methods
+SESSION_NEW = "session.new"
+SESSION_STATUS = "session.status"
+SESSION_SUBSCRIBE = "session.subscribe"
+SESSION_UNSUBSCRIBE = "session.unsubscribe"
+BROWSING_CREATE_CONTEXT = "browsingContext.create"
+BROWSING_NAVIGATE = "browsingContext.navigate"
+BROWSING_CLOSE = "browsingContext.close"
+BROWSING_GET_TREE = "browsingContext.getTree"
+BROWSING_CAPTURE_SCREENSHOT = "browsingContext.captureScreenshot"
+SCRIPT_EVALUATE = "script.evaluate"
+SCRIPT_CALL_FUNCTION = "script.callFunction"
+SCRIPT_DISOWN = "script.disown"
+
+# Event types
+LOG_ENTRY_ADDED = "log.entryAdded"
+BROWSING_CONTEXT_CREATED = "browsingContext.contextCreated"
+BROWSING_CONTEXT_DESTROYED = "browsingContext.contextDestroyed"
+BROWSING_CONTEXT_NAVIGATED = "browsingContext.navigationStarted"
+SCRIPT_MESSAGE = "script.message"
+
+# Error codes
+INVALID_ARGUMENT = "invalid argument"
+INVALID_SESSION = "invalid session"
+SESSION_NOT_CREATED = "session not created"
+SESSION_NOT_FOUND = "session not found"
+UNKNOWN_COMMAND = "unknown command"
+UNSUPPORTED_OPERATION = "unsupported operation"
+JAVASCRIPT_ERROR = "javascript error"
+NO_SUCH_FRAME = "no such frame"
+NO_SUCH_WINDOW = "no such window"
+TIMEOUT = "timeout"
+UNABLE_TO_CAPTURE_SCREEN = "unable to capture screen"
