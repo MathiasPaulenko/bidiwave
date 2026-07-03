@@ -9,7 +9,7 @@ description = "WebDriver BiDi for Python — talk to any browser via W3C standar
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
-authors = [{ name = "Mathias Paulenko" }]
+authors = [{ name = "Mathias Paulenko", email = "mathias.paulenko@outlook.com" }]
 keywords = ["webdriver", "bidi", "browser", "automation", "w3c", "async"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
