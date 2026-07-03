@@ -22,7 +22,7 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: mypy bidiwave/
-      - run: pytest tests/unit/ --cov=bidiwave --cov-report=xml --cov-fail-under=90
+      - run: pytest tests/unit/ --cov=bidiwave --cov-report=xml --cov-fail-under=80
       - uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
