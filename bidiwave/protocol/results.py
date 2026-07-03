@@ -235,3 +235,29 @@ class AddCacheOverrideResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     cache: str
+
+
+class ResponseBodyResult(BaseModel):
+    """Result of network.responseBody.
+
+    Returns the response body as base64-encoded content with
+    the total size of the body.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    body: str
+    total_size: int = Field(alias="totalSize")
+
+
+class ScriptAddPreloadScriptResult(BaseModel):
+    """Result of script.addPreloadScript.
+
+    Returns the preload script ID and optionally a channel
+    for bidirectional communication.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    script: str
+    channel: str | None = None

@@ -5,13 +5,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from bidiwave.protocol.constants import (
+    SCRIPT_ADD_PRELOAD_SCRIPT,
     SCRIPT_CALL_FUNCTION,
     SCRIPT_DISOWN,
     SCRIPT_EVALUATE,
     SCRIPT_GET_REALMS,
 )
 from bidiwave.protocol.remote_value import RemoteValue
-from bidiwave.protocol.results import GetRealmsResult, RealmInfo
+from bidiwave.protocol.results import (
+    GetRealmsResult,
+    RealmInfo,
+    ScriptAddPreloadScriptResult,
+)
 from bidiwave.transport.connection import Connection
 
 if TYPE_CHECKING:
@@ -96,3 +101,42 @@ class ScriptModule:
         result = await self._connection.send_command(SCRIPT_GET_REALMS, params)
         parsed = GetRealmsResult.model_validate(result)
         return parsed.realms
+
+    async def add_preload_script(
+        self,
+        function_declaration: str,
+        arguments: list[dict[str, Any]] | None = None,
+        contexts: list[str] | None = None,
+        user_contexts: list[str] | None = None,
+        sandbox: str | None = None,
+    ) -> ScriptAddPreloadScriptResult:
+        """Adds a preload script with optional channel support.
+
+        Unlike preload.addPreloadScript, this variant supports channels
+        for bidirectional communication between the preload script and
+        the client via script.message events.
+
+        Args:
+            function_declaration: JavaScript function to execute.
+            arguments: Arguments to pass to the function.
+            contexts: Context IDs to apply to. None = all.
+            user_contexts: User context IDs to apply to.
+            sandbox: Sandbox name to run the script in.
+
+        Returns:
+            ScriptAddPreloadScriptResult with script ID and channel.
+        """
+        params: dict[str, Any] = {
+            "functionDeclaration": function_declaration,
+            "arguments": arguments or [],
+        }
+        if contexts is not None:
+            params["contexts"] = contexts
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
+        if sandbox is not None:
+            params["sandbox"] = sandbox
+        result = await self._connection.send_command(
+            SCRIPT_ADD_PRELOAD_SCRIPT, params
+        )
+        return ScriptAddPreloadScriptResult.model_validate(result)

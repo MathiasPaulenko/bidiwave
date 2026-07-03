@@ -139,6 +139,10 @@ class BiDiClient:
         """Convenience for browsingContext.domContentLoaded."""
         return self._dispatcher.on("browsingContext.domContentLoaded", handler)  # type: ignore[return-value]
 
+    def on_history_updated(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.historyUpdated."""
+        return self._dispatcher.on("browsingContext.historyUpdated", handler)  # type: ignore[return-value]
+
     def on_sampling_state_changed(self, handler: AsyncHandler) -> Subscription:
         """Convenience for network.samplingStateChanged."""
         return self._dispatcher.on("network.samplingStateChanged", handler)  # type: ignore[return-value]

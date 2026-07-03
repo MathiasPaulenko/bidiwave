@@ -6,6 +6,7 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
+from bidiwave.protocol.commands import ViewportSize
 from bidiwave.protocol.constants import (
     BROWSING_ACTIVATE,
     BROWSING_CAPTURE_SCREENSHOT,
@@ -338,21 +339,24 @@ class BrowsingModule:
     async def set_viewport(
         self,
         context: BrowsingContext | str,
-        viewport: dict[str, int] | None = None,
+        viewport: ViewportSize | dict[str, int] | None = None,
         device_pixel_ratio: float | None = None,
     ) -> None:
         """Sets the viewport and device pixel ratio of a context.
 
         Args:
             context: BrowsingContext or context ID.
-            viewport: Dict with "width" and "height" in CSS pixels.
-                Pass None to reset to the original viewport.
+            viewport: ViewportSize or dict with "width" and "height"
+                in CSS pixels. Pass None to reset to the original viewport.
             device_pixel_ratio: Ratio of physical pixels to CSS pixels.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id}
         if viewport is not None:
-            params["viewport"] = viewport
+            if isinstance(viewport, ViewportSize):
+                params["viewport"] = viewport.model_dump()
+            else:
+                params["viewport"] = viewport
         if device_pixel_ratio is not None:
             params["devicePixelRatio"] = device_pixel_ratio
         await self._connection.send_command(

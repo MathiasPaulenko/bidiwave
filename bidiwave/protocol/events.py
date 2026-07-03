@@ -286,6 +286,19 @@ class NetworkSamplingStateChangedEvent(BaseModel):
     sampling: Literal["all", "none"] = "all"
 
 
+class BrowsingContextHistoryUpdatedEvent(BaseModel):
+    """browsingContext.historyUpdated event — emitted when history changes.
+
+    Chrome-specific event fired when the browsing context's history entries
+    are updated (e.g. pushState, replaceState, or navigation).
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str
+    url: str
+
+
 def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
     """Factory that returns the correct event model based on method."""
     match method:
@@ -305,6 +318,8 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return BrowsingContextDOMContentLoadedEvent.model_validate(params)
         case "browsingContext.load":
             return BrowsingContextLoadEvent.model_validate(params)
+        case "browsingContext.historyUpdated":
+            return BrowsingContextHistoryUpdatedEvent.model_validate(params)
         case "browsingContext.userPromptOpened":
             return BrowsingContextUserPromptOpenedEvent.model_validate(params)
         case "script.message":

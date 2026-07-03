@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from bidiwave.protocol.constants import (
+    STORAGE_DELETE_COOKIE,
     STORAGE_DELETE_COOKIES,
     STORAGE_GET_COOKIES,
     STORAGE_SET_COOKIE,
@@ -22,7 +23,8 @@ class StorageModule:
     Commands:
         - get_cookies — gets cookies from a context
         - set_cookie — creates or updates a cookie
-        - delete_cookies — deletes cookies
+        - delete_cookies — deletes cookies by filter
+        - delete_cookie — deletes a single cookie by name
 
     Example:
         cookies = await client.storage.get_cookies(context)
@@ -101,3 +103,23 @@ class StorageModule:
         if path is not None:
             params["path"] = path
         await self._connection.send_command(STORAGE_DELETE_COOKIES, params)
+
+    async def delete_cookie(
+        self,
+        context: BrowsingContext | str,
+        name: str,
+    ) -> None:
+        """Deletes a single cookie by name from a browsing context.
+
+        Unlike delete_cookies which can delete by filter, this targets
+        a specific cookie by name.
+
+        Args:
+            context: BrowsingContext or context ID.
+            name: Name of the cookie to delete.
+        """
+        ctx_id = context.id if hasattr(context, "id") else context
+        await self._connection.send_command(
+            STORAGE_DELETE_COOKIE,
+            {"context": ctx_id, "name": name},
+        )

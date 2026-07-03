@@ -206,3 +206,55 @@ class SetCacheOverrideParams(BaseModel):
     status_code: int = Field(default=200, alias="statusCode")
     headers: list[dict[str, str]] | None = None
     body: str | None = None
+
+
+class ResponseBodyParams(BaseModel):
+    """Parameters for network.responseBody.
+
+    Retrieves the body of a completed response by request ID.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    request: str
+
+
+class DeleteCookieParams(BaseModel):
+    """Parameters for storage.deleteCookie.
+
+    Deletes a single cookie by name within a browsing context.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str
+    name: str
+
+
+class ScriptAddPreloadScriptParams(BaseModel):
+    """Parameters for script.addPreloadScript.
+
+    Unlike preload.addPreloadScript, this variant supports channels
+    for bidirectional communication between the preload script and
+    the client via script.message events.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    function_declaration: str = Field(alias="functionDeclaration")
+    arguments: list[dict[str, Any]] = []
+    contexts: list[str] | None = None
+    user_contexts: list[str] | None = Field(default=None, alias="userContexts")
+    sandbox: str | None = None
+
+
+class ViewportSize(BaseModel):
+    """Viewport dimensions for browsingContext.setViewport.
+
+    Represents the CSS pixel dimensions of the viewport.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    width: int
+    height: int

@@ -15,9 +15,14 @@ from bidiwave.protocol.constants import (
     NETWORK_PROVIDE_RESPONSE,
     NETWORK_REMOVE_CACHE_OVERRIDE,
     NETWORK_REMOVE_INTERCEPT,
+    NETWORK_RESPONSE_BODY,
     NETWORK_SET_CACHE_OVERRIDE,
 )
-from bidiwave.protocol.results import AddCacheOverrideResult, InterceptResult
+from bidiwave.protocol.results import (
+    AddCacheOverrideResult,
+    InterceptResult,
+    ResponseBodyResult,
+)
 from bidiwave.transport.connection import Connection
 
 InterceptPhase = Literal["beforeRequestSent", "responseStarted", "authRequired"]
@@ -295,3 +300,20 @@ class NetworkModule:
         await self._connection.send_command(
             NETWORK_SET_CACHE_OVERRIDE, params
         )
+
+    async def response_body(self, request: str) -> ResponseBodyResult:
+        """Retrieves the body of a completed response.
+
+        Useful for debugging or inspecting response content after
+        a network.responseCompleted event.
+
+        Args:
+            request: ID of the request whose response body to fetch.
+
+        Returns:
+            ResponseBodyResult with base64-encoded body and total size.
+        """
+        result = await self._connection.send_command(
+            NETWORK_RESPONSE_BODY, {"request": request}
+        )
+        return ResponseBodyResult.model_validate(result)

@@ -28,9 +28,11 @@ from bidiwave.modules.permissions import PermissionsModule
 from bidiwave.modules.preload import PreloadModule
 from bidiwave.modules.storage import StorageModule
 from bidiwave.protocol.capabilities import Capabilities
+from bidiwave.protocol.commands import ViewportSize
 from bidiwave.protocol.events import (
     BrowsingContextDOMContentLoadedEvent,
     BrowsingContextFragmentNavigatedEvent,
+    BrowsingContextHistoryUpdatedEvent,
     BrowsingContextLoadEvent,
     BrowsingContextNavigationCompletedEvent,
     BrowsingContextUserPromptOpenedEvent,
@@ -65,13 +67,15 @@ from bidiwave.protocol.results import (
     LocateNodesResult,
     PointerAction,
     RealmInfo,
+    ResponseBodyResult,
+    ScriptAddPreloadScriptResult,
     UserContextInfo,
     Viewport,
     WheelAction,
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.6.5"
+__version__ = "1.7.0"
 
 __all__ = [
     "AddPreloadScriptResult",
@@ -125,8 +129,12 @@ __all__ = [
     "BrowsingContextFragmentNavigatedEvent",
     "BrowsingContextLoadEvent",
     "BrowsingContextDOMContentLoadedEvent",
+    "BrowsingContextHistoryUpdatedEvent",
     "NetworkAuthRequiredEvent",
     "NetworkSamplingStateChangedEvent",
+    "ResponseBodyResult",
+    "ScriptAddPreloadScriptResult",
+    "ViewportSize",
     "InputModule",
     "InputSource",
     "KeyAction",
