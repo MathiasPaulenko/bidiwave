@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-07-03
+
+## What's New
+
+### User Contexts
+- `create_user_context()` — create isolated profiles with their own cookies
+- `remove_user_context(id)` — remove a user context and all its tabs
+- `get_user_contexts()` — list all available user contexts
+- `create_context(user_context=...)` — create a tab within a specific user context
+
+### Sandbox Realms
+- `script.evaluate(context, expr, sandbox="name")` — execute JS in an isolated realm
+- `script.call_function(context, fn, args, sandbox="name")` — call functions in sandbox
+- `page.evaluate(expr, sandbox="name")` / `page.call(fn, sandbox="name")` — convenience
+
+### CDP Bridge
+- `client.cdp.get_session()` — get CDP session ID
+- `client.cdp.send_command(cmd, params)` — send CDP commands directly (Chrome-only)
+
+### Cookie Events + Auto-Prompt
+- `client.on_cookie_changed(handler)` — fired when cookies change
+- `client.on_auth_required(handler)` — fired when auth is required
+- `client.set_auto_prompt(accept=True, user_text=...)` — auto-handle dialogs
+- `client.disable_auto_prompt()` — disable auto-prompt
+
+### Also includes (v1.4.0)
+- `locate_nodes()`, `activate()`, `set_viewport()` in BrowsingModule
+- `get_realms()` in ScriptModule
+- `continue_with_auth()`, `cancel_auth()` in NetworkModule
+
+**Full Changelog**: https://github.com/MathiasPaulenko/bidiwave/compare/v1.3.0...v1.5.0
+
 ## [1.2.1] - 2025-07-03
 
 ### Fixed
