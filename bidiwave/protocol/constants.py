@@ -14,6 +14,12 @@ BROWSING_CAPTURE_SCREENSHOT = "browsingContext.captureScreenshot"
 SCRIPT_EVALUATE = "script.evaluate"
 SCRIPT_CALL_FUNCTION = "script.callFunction"
 SCRIPT_DISOWN = "script.disown"
+NETWORK_ADD_INTERCEPT = "network.addIntercept"
+NETWORK_REMOVE_INTERCEPT = "network.removeIntercept"
+NETWORK_CONTINUE_REQUEST = "network.continueRequest"
+NETWORK_CONTINUE_RESPONSE = "network.continueResponse"
+NETWORK_FAIL_REQUEST = "network.failRequest"
+NETWORK_PROVIDE_RESPONSE = "network.provideResponse"
 
 # Event types
 LOG_ENTRY_ADDED = "log.entryAdded"
@@ -21,6 +27,9 @@ BROWSING_CONTEXT_CREATED = "browsingContext.contextCreated"
 BROWSING_CONTEXT_DESTROYED = "browsingContext.contextDestroyed"
 BROWSING_CONTEXT_NAVIGATED = "browsingContext.navigationStarted"
 SCRIPT_MESSAGE = "script.message"
+NETWORK_BEFORE_REQUEST_SENT = "network.beforeRequestSent"
+NETWORK_RESPONSE_COMPLETED = "network.responseCompleted"
+NETWORK_FETCH_ERROR = "network.fetchError"
 
 # Error codes
 INVALID_ARGUMENT = "invalid argument"

@@ -34,7 +34,7 @@ from bidiwave.protocol.remote_value import (
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 __all__ = [
     "ArrayValue",
@@ -67,5 +67,9 @@ __all__ = [
     "TimeoutError",
     "TransportConfig",
     "UndefinedValue",
+    "NetworkModule",
+    "NetworkBeforeRequestSentEvent",
+    "NetworkResponseCompletedEvent",
+    "NetworkFetchErrorEvent",
     "__version__",
 ]

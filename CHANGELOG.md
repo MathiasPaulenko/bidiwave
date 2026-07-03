@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-07-03
+
+### Added
+
+- `NetworkModule` — interceptación y monitoreo de requests de red
+  - `add_intercept()` / `remove_intercept()` — bloquear requests en fases específicas
+  - `continue_request()` — continuar un request interceptado con modificaciones
+  - `continue_response()` — continuar un response interceptado con modificaciones
+  - `fail_request()` — fallar un request interceptado
+  - `provide_response()` — proveer una respuesta sintética sin hacer el request real
+- Event models: `NetworkBeforeRequestSentEvent`, `NetworkResponseCompletedEvent`, `NetworkFetchErrorEvent`
+- `BiDiClient.on_request()`, `on_response()`, `on_fetch_error()` — convenience handlers
+- `NetworkRequestData`, `NetworkResponseData` — modelos tipados del protocolo
+- 20 unit tests para network module y event models
+
 ## [1.0.1] - 2025-07-03
 
 ### Fixed

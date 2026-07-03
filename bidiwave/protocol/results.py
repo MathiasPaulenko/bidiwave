@@ -36,3 +36,10 @@ class Screenshot(BaseModel):
 
     model_config = ConfigDict(extra="allow")
     data: str
+
+
+class InterceptResult(BaseModel):
+    """Resultado de network.addIntercept."""
+
+    model_config = ConfigDict(extra="allow")
+    intercept: str

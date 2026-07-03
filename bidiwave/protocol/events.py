@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Event(BaseModel):
@@ -69,6 +69,72 @@ class ScriptMessageEvent(BaseModel):
     data: dict[str, Any]
 
 
+class NetworkRequestData(BaseModel):
+    """Datos de un request de red."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    request: str
+    url: str
+    method: str
+    headers: list[dict[str, str]] = []
+    cookies: list[dict[str, Any]] = []
+    headers_size: int | None = Field(default=None, alias="headersSize")
+    body_size: int | None = Field(default=None, alias="bodySize")
+    timings: dict[str, Any] | None = None
+
+
+class NetworkResponseData(BaseModel):
+    """Datos de una respuesta de red."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    url: str
+    status: int
+    status_text: str = Field(default="", alias="statusText")
+    headers: list[dict[str, str]] = []
+    mime_type: str = Field(default="", alias="mimeType")
+    headers_size: int | None = Field(default=None, alias="headersSize")
+    body_size: int | None = Field(default=None, alias="bodySize")
+    content: dict[str, Any] | None = None
+
+
+class NetworkBeforeRequestSentEvent(BaseModel):
+    """Evento network.beforeRequestSent — emitido antes de enviar un request."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str | None = None
+    navigation: str | None = None
+    redirect_count: int = Field(default=0, alias="redirectCount")
+    request: NetworkRequestData
+    is_blocked: bool = Field(default=False, alias="isBlocked")
+    intercepts: list[str] = []
+
+
+class NetworkResponseCompletedEvent(BaseModel):
+    """Evento network.responseCompleted — emitido cuando un response se completa."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str | None = None
+    navigation: str | None = None
+    redirect_count: int = Field(default=0, alias="redirectCount")
+    request: NetworkRequestData
+    response: NetworkResponseData
+
+
+class NetworkFetchErrorEvent(BaseModel):
+    """Evento network.fetchError — emitido cuando un request falla."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str | None = None
+    navigation: str | None = None
+    request: NetworkRequestData
+    error_text: str = Field(alias="errorText")
+
+
 def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
     """Factory que retorna el modelo de evento correcto según method."""
     match method:
@@ -82,5 +148,11 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return BrowsingContextNavigatedEvent.model_validate(params)
         case "script.message":
             return ScriptMessageEvent.model_validate(params)
+        case "network.beforeRequestSent":
+            return NetworkBeforeRequestSentEvent.model_validate(params)
+        case "network.responseCompleted":
+            return NetworkResponseCompletedEvent.model_validate(params)
+        case "network.fetchError":
+            return NetworkFetchErrorEvent.model_validate(params)
         case _:
             return Event(method=method, params=params)

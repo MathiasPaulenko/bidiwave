@@ -6,6 +6,7 @@ from bidiwave.config import ClientConfig
 from bidiwave.events.dispatcher import EventDispatcher
 from bidiwave.events.handlers import AsyncHandler, Subscription
 from bidiwave.modules.browsing import BrowsingModule
+from bidiwave.modules.network import NetworkModule
 from bidiwave.modules.script import ScriptModule
 from bidiwave.modules.session import SessionModule
 from bidiwave.protocol.capabilities import Capabilities
@@ -29,6 +30,7 @@ class BiDiClient:
         self.session = SessionModule(connection)
         self.script = ScriptModule(connection)
         self.browsing = BrowsingModule(connection, script_module=self.script)
+        self.network = NetworkModule(connection)
         self._capabilities: Capabilities | None = None
 
     @classmethod
@@ -73,6 +75,18 @@ class BiDiClient:
     def on_context_destroyed(self, handler: AsyncHandler) -> Subscription:
         """Conveniencia para browsingContext.contextDestroyed."""
         return self._dispatcher.on("browsingContext.contextDestroyed", handler)  # type: ignore[return-value]
+
+    def on_request(self, handler: AsyncHandler) -> Subscription:
+        """Conveniencia para network.beforeRequestSent."""
+        return self._dispatcher.on("network.beforeRequestSent", handler)  # type: ignore[return-value]
+
+    def on_response(self, handler: AsyncHandler) -> Subscription:
+        """Conveniencia para network.responseCompleted."""
+        return self._dispatcher.on("network.responseCompleted", handler)  # type: ignore[return-value]
+
+    def on_fetch_error(self, handler: AsyncHandler) -> Subscription:
+        """Conveniencia para network.fetchError."""
+        return self._dispatcher.on("network.fetchError", handler)  # type: ignore[return-value]
 
     def on_reconnect(self, handler: AsyncHandler) -> None:
         """Registra un handler que se ejecuta tras reconectar."""
