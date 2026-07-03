@@ -11,6 +11,8 @@
 | 4. Ergonomics | ✅ Complete | — |
 | 5. Integration + CI | ✅ Complete | — |
 | 6. Docs + Release | ✅ Complete | — |
+| 7. v1.1–v1.5 Features | ✅ Complete | — |
+| 8. English Translation | ✅ Complete | bfc8ee4 (v1.5.1) |
 
 ## Phase 0 — Setup + Spike (complete)
 
@@ -194,28 +196,48 @@
 - `docs/error-handling.md` — exception hierarchy, scenarios, patterns, logging
 - `docs/protocol-reference.md` — complete reference of commands, events and error codes
 - `docs/api/` — 8 mkdocstrings pages: client, session, browsing, script, events, remote-value, exceptions, config
-- `CHANGELOG.md` — v1.0.0 entry with all features
+- `CHANGELOG.md` — entries for v1.0.0 through v1.5.1
 - `.github/workflows/docs.yml` — deploy to GitHub Pages on push to main
-- `.github/workflows/release.yml` — build + publish to PyPI via Trusted Publishing on tag push
-- `pyproject.toml` — version bumped to 1.0.0, classifier updated to Production/Stable
-- `bidiwave/__init__.py` — `__version__ = "1.0.0"`
+- `.github/workflows/release.yml` — build + publish to PyPI via Trusted Publishing on tag push (idempotent — handles pre-existing releases)
+- `pyproject.toml` — version 1.5.1, classifier Production/Stable
+- `bidiwave/__init__.py` — `__version__ = "1.5.1"`
 
 ### Verification
 
 - `ruff check .` — passes
 - `mypy bidiwave/` — passes (28 source files)
 - `pytest tests/unit/ -c pyproject.toml` — 83 passed
-- Docs deps already present in `pyproject.toml`: mkdocs, mkdocs-material, mkdocstrings[python]
-- Pending: `mkdocs build` local, `python -m build`, `pip install` in clean env, tag v1.0.0
+- `mkdocs build --strict` — passes (deployed to GitHub Pages)
+- `python -m build` — generates wheel and sdist
+- Published to PyPI: https://pypi.org/project/bidiwave/
+- GitHub Releases: v1.0.0 through v1.5.1 with assets
 
 ### Release checklist
 
-- [ ] `mkdocs build` without errors
-- [ ] `python -m build` generates wheel and sdist
-- [ ] `pip install dist/bidiwave-1.0.0-py3-none-any.whl` in clean env
-- [ ] Quick start guide reproduces the hello world
-- [ ] Configure Trusted Publishing on PyPI
-- [ ] `git tag v1.0.0 && git push origin main --tags`
+- [x] `mkdocs build` without errors
+- [x] `python -m build` generates wheel and sdist
+- [x] `pip install dist/bidiwave-1.5.1-py3-none-any.whl` in clean env
+- [x] Quick start guide reproduces the hello world
+- [x] Configure Trusted Publishing on PyPI
+- [x] `git tag v1.5.1 && git push origin main --tags`
+
+## Phase 7 — v1.1–v1.5 Features (complete)
+
+### Releases
+
+- **v1.1.0** — `input` module (perform_actions, release_actions, set_files, click, double_click, type_text, press_key, scroll, drag_and_drop)
+- **v1.2.0** — `storage` module (get_cookies, set_cookie, delete_cookies), cookie changed events
+- **v1.2.1** — Bug fixes (NameError, Navigation validation, RemoteValue unwrap, screenshot format, wait_for_selector/function)
+- **v1.3.0** — `reload`, `traverse_history`, `handle_user_prompt`, `print` (PDF), `locate_nodes`, `activate`, `set_viewport`, `get_realms`, network auth (`continue_with_auth`, `cancel_auth`)
+- **v1.4.0** — `locate_nodes`, `activate`, `set_viewport`, `get_realms`, network auth
+- **v1.5.0** — User contexts, sandbox realms, CDP bridge, cookie events, auto-prompt handling
+- **v1.5.1** — Translated all Spanish documentation and code comments to English
+
+## Phase 8 — English Translation (complete)
+
+- Translated all Spanish docstrings, comments, print statements, and markdown documentation to English
+- Files: all `bidiwave/` modules, all `tests/`, all `docs/`, `README.md`, `CHANGELOG.md`, `CONTEXT.md`, `spike.py`
+- Commit: `bfc8ee4` (tag v1.5.1)
 
 ## Reference Paths (in the brainstorming repo)
 
