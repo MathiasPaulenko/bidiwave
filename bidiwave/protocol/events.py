@@ -186,6 +186,37 @@ class BrowsingContextUserPromptOpenedEvent(BaseModel):
     type: str = "alert"
 
 
+class NetworkDataReceivedEvent(BaseModel):
+    """network.dataReceived event — emitted when response body data arrives.
+
+    Fires in chunks as the response body is received, allowing streaming
+    processing of large responses.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str | None = None
+    request: str
+    redirect_count: int = Field(default=0, alias="redirectCount")
+    data: str
+    data_size: int = Field(alias="dataSize")
+
+
+class BrowsingContextNavigationCompletedEvent(BaseModel):
+    """browsingContext.navigationCompleted event — emitted when navigation finishes.
+
+    Unlike navigationStarted which fires when navigation begins, this fires
+    when the navigation is fully complete (or canceled/failed).
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str
+    url: str
+    navigation: str | None = None
+    status: Literal["pending", "complete", "canceled"] = "complete"
+
+
 def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
     """Factory that returns the correct event model based on method."""
     match method:
@@ -197,6 +228,8 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return BrowsingContextDestroyedEvent.model_validate(params)
         case "browsingContext.navigationStarted":
             return BrowsingContextNavigatedEvent.model_validate(params)
+        case "browsingContext.navigationCompleted":
+            return BrowsingContextNavigationCompletedEvent.model_validate(params)
         case "browsingContext.userPromptOpened":
             return BrowsingContextUserPromptOpenedEvent.model_validate(params)
         case "script.message":
@@ -211,6 +244,8 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return NetworkResponseStartedEvent.model_validate(params)
         case "network.responseCompleted":
             return NetworkResponseCompletedEvent.model_validate(params)
+        case "network.dataReceived":
+            return NetworkDataReceivedEvent.model_validate(params)
         case "network.fetchError":
             return NetworkFetchErrorEvent.model_validate(params)
         case _:

@@ -119,6 +119,14 @@ class BiDiClient:
         """Convenience for network.responseStarted."""
         return self._dispatcher.on("network.responseStarted", handler)  # type: ignore[return-value]
 
+    def on_data_received(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for network.dataReceived."""
+        return self._dispatcher.on("network.dataReceived", handler)  # type: ignore[return-value]
+
+    def on_navigation_completed(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.navigationCompleted."""
+        return self._dispatcher.on("browsingContext.navigationCompleted", handler)  # type: ignore[return-value]
+
     def on_realm_created(self, handler: AsyncHandler) -> Subscription:
         """Convenience for script.realmCreated."""
         return self._dispatcher.on("script.realmCreated", handler)  # type: ignore[return-value]

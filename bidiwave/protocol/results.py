@@ -227,3 +227,11 @@ class GetViewportResult(BaseModel):
 
     viewport: Viewport
     device_pixel_ratio: float = Field(default=1.0, alias="devicePixelRatio")
+
+
+class AddCacheOverrideResult(BaseModel):
+    """Result of network.addCacheOverride."""
+
+    model_config = ConfigDict(extra="allow")
+
+    cache: str

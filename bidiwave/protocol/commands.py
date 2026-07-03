@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Command(BaseModel):
@@ -168,3 +168,24 @@ class GetViewportParams(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     context: str
+
+
+class AddCacheOverrideParams(BaseModel):
+    """Parameters for network.addCacheOverride."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    contexts: list[str] | None = None
+    url: str | None = None
+    method: str | None = None
+    status_code: int | None = Field(default=None, alias="statusCode")
+    headers: list[dict[str, str]] | None = None
+    body: dict[str, Any] | None = None
+
+
+class RemoveCacheOverrideParams(BaseModel):
+    """Parameters for network.removeCacheOverride."""
+
+    model_config = ConfigDict(extra="allow")
+
+    cache: str

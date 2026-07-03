@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from bidiwave.protocol.constants import (
+    NETWORK_ADD_CACHE_OVERRIDE,
     NETWORK_ADD_INTERCEPT,
     NETWORK_CANCEL_AUTH,
     NETWORK_CONTINUE_REQUEST,
@@ -12,9 +13,10 @@ from bidiwave.protocol.constants import (
     NETWORK_CONTINUE_WITH_AUTH,
     NETWORK_FAIL_REQUEST,
     NETWORK_PROVIDE_RESPONSE,
+    NETWORK_REMOVE_CACHE_OVERRIDE,
     NETWORK_REMOVE_INTERCEPT,
 )
-from bidiwave.protocol.results import InterceptResult
+from bidiwave.protocol.results import AddCacheOverrideResult, InterceptResult
 from bidiwave.transport.connection import Connection
 
 InterceptPhase = Literal["beforeRequestSent", "responseStarted", "authRequired"]
@@ -28,10 +30,13 @@ class NetworkModule:
         - continue_request / continue_response — continue an intercepted request/response
         - fail_request — fail an intercepted request
         - provide_response — provide a synthetic response
+        - add_cache_override / remove_cache_override — cached response override
 
     Events (via subscribe):
         - network.beforeRequestSent — before a request is sent
+        - network.responseStarted — when response headers arrive
         - network.responseCompleted — when a response completes
+        - network.dataReceived — when response body data arrives
         - network.fetchError — when a request fails
     """
 
@@ -199,4 +204,56 @@ class NetworkModule:
         """
         await self._connection.send_command(
             NETWORK_CANCEL_AUTH, {"request": request}
+        )
+
+    async def add_cache_override(
+        self,
+        url: str,
+        method: str = "GET",
+        status_code: int = 200,
+        headers: list[dict[str, str]] | None = None,
+        body: str | None = None,
+        contexts: list[str] | None = None,
+    ) -> str:
+        """Adds a cached response override for matching requests.
+
+        Requests matching the URL and method will receive the cached response
+        instead of going to the network.
+
+        Args:
+            url: URL to match.
+            method: HTTP method to match (default GET).
+            status_code: HTTP status code for the cached response.
+            headers: Response headers.
+            body: Response body in base64.
+            contexts: Context IDs to apply to. None = all.
+
+        Returns:
+            Cache override ID for later removal.
+        """
+        params: dict[str, Any] = {
+            "url": url,
+            "method": method,
+            "statusCode": status_code,
+        }
+        if headers is not None:
+            params["headers"] = headers
+        if body is not None:
+            params["body"] = body
+        if contexts is not None:
+            params["contexts"] = contexts
+        result = await self._connection.send_command(
+            NETWORK_ADD_CACHE_OVERRIDE, params
+        )
+        parsed = AddCacheOverrideResult.model_validate(result)
+        return parsed.cache
+
+    async def remove_cache_override(self, cache_id: str) -> None:
+        """Removes a previously added cache override.
+
+        Args:
+            cache_id: ID returned by add_cache_override.
+        """
+        await self._connection.send_command(
+            NETWORK_REMOVE_CACHE_OVERRIDE, {"cache": cache_id}
         )
