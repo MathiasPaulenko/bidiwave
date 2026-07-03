@@ -20,6 +20,9 @@ NETWORK_CONTINUE_REQUEST = "network.continueRequest"
 NETWORK_CONTINUE_RESPONSE = "network.continueResponse"
 NETWORK_FAIL_REQUEST = "network.failRequest"
 NETWORK_PROVIDE_RESPONSE = "network.provideResponse"
+INPUT_PERFORM_ACTIONS = "input.performActions"
+INPUT_RELEASE_ACTIONS = "input.releaseActions"
+INPUT_SET_FILES = "input.setFiles"
 
 # Event types
 LOG_ENTRY_ADDED = "log.entryAdded"

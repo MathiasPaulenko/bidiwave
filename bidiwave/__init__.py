@@ -19,7 +19,14 @@ from bidiwave.exceptions import (
     TimeoutError,
 )
 from bidiwave.modules.browsing import BrowsingContext
+from bidiwave.modules.input import InputModule
+from bidiwave.modules.network import NetworkModule
 from bidiwave.protocol.capabilities import Capabilities
+from bidiwave.protocol.events import (
+    NetworkBeforeRequestSentEvent,
+    NetworkFetchErrorEvent,
+    NetworkResponseCompletedEvent,
+)
 from bidiwave.protocol.remote_value import (
     ArrayValue,
     BigIntValue,
@@ -32,9 +39,10 @@ from bidiwave.protocol.remote_value import (
     StringValue,
     UndefinedValue,
 )
+from bidiwave.protocol.results import InputSource, KeyAction, PointerAction, WheelAction
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 __all__ = [
     "ArrayValue",
@@ -71,5 +79,10 @@ __all__ = [
     "NetworkBeforeRequestSentEvent",
     "NetworkResponseCompletedEvent",
     "NetworkFetchErrorEvent",
+    "InputModule",
+    "InputSource",
+    "KeyAction",
+    "PointerAction",
+    "WheelAction",
     "__version__",
 ]

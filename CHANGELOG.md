@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-07-03
+
+### Added
+
+- `InputModule` — simulación de input del usuario (teclado, mouse, scroll)
+  - `perform_actions()` — ejecuta secuencias de acciones con dispositivos virtuales
+  - `release_actions()` — cancela acciones en curso
+  - `set_files()` — selecciona archivos en `<input type="file">`
+  - `click()` — click en coordenadas (x, y) con botón configurable
+  - `double_click()` — doble click en coordenadas
+  - `type_text()` — escribe texto tecla por tecla
+  - `press_key()` — presiona y suelta una tecla
+  - `scroll()` — scroll del mouse wheel (horizontal y vertical)
+  - `drag_and_drop()` — drag and drop entre dos puntos
+- `InputSource`, `KeyAction`, `PointerAction`, `WheelAction` — modelos tipados
+- 15 unit tests para InputModule
+
 ## [1.1.0] - 2025-07-03
 
 ### Added

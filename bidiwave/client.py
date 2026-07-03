@@ -6,6 +6,7 @@ from bidiwave.config import ClientConfig
 from bidiwave.events.dispatcher import EventDispatcher
 from bidiwave.events.handlers import AsyncHandler, Subscription
 from bidiwave.modules.browsing import BrowsingModule
+from bidiwave.modules.input import InputModule
 from bidiwave.modules.network import NetworkModule
 from bidiwave.modules.script import ScriptModule
 from bidiwave.modules.session import SessionModule
@@ -31,6 +32,7 @@ class BiDiClient:
         self.script = ScriptModule(connection)
         self.browsing = BrowsingModule(connection, script_module=self.script)
         self.network = NetworkModule(connection)
+        self.input = InputModule(connection)
         self._capabilities: Capabilities | None = None
 
     @classmethod
