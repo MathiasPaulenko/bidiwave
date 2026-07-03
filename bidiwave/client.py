@@ -127,6 +127,14 @@ class BiDiClient:
         """Convenience for browsingContext.navigationCompleted."""
         return self._dispatcher.on("browsingContext.navigationCompleted", handler)  # type: ignore[return-value]
 
+    def on_fragment_navigated(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.fragmentNavigated."""
+        return self._dispatcher.on("browsingContext.fragmentNavigated", handler)  # type: ignore[return-value]
+
+    def on_load(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.load."""
+        return self._dispatcher.on("browsingContext.load", handler)  # type: ignore[return-value]
+
     def on_realm_created(self, handler: AsyncHandler) -> Subscription:
         """Convenience for script.realmCreated."""
         return self._dispatcher.on("script.realmCreated", handler)  # type: ignore[return-value]

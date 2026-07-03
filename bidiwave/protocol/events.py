@@ -217,6 +217,48 @@ class BrowsingContextNavigationCompletedEvent(BaseModel):
     status: Literal["pending", "complete", "canceled"] = "complete"
 
 
+class NetworkAuthRequiredEvent(BaseModel):
+    """network.authRequired event — emitted when a request requires authentication.
+
+    The request is blocked until the user provides credentials or the
+    interception is handled via continue_with_auth / cancel_auth.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str | None = None
+    navigation: str | None = None
+    redirect_count: int = Field(default=0, alias="redirectCount")
+    request: NetworkRequestData
+
+
+class BrowsingContextFragmentNavigatedEvent(BaseModel):
+    """browsingContext.fragmentNavigated event — emitted on fragment (#anchor) navigation.
+
+    This fires when the URL fragment changes without a full navigation,
+    e.g. clicking a link to #section on the same page.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str
+    url: str
+    navigation: str | None = None
+
+
+class BrowsingContextLoadEvent(BaseModel):
+    """browsingContext.load event — emitted when the page finishes loading.
+
+    Fires after the window's load event, meaning all resources (images,
+    stylesheets, etc.) have been downloaded.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str
+    url: str
+
+
 def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
     """Factory that returns the correct event model based on method."""
     match method:
@@ -230,6 +272,10 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return BrowsingContextNavigatedEvent.model_validate(params)
         case "browsingContext.navigationCompleted":
             return BrowsingContextNavigationCompletedEvent.model_validate(params)
+        case "browsingContext.fragmentNavigated":
+            return BrowsingContextFragmentNavigatedEvent.model_validate(params)
+        case "browsingContext.load":
+            return BrowsingContextLoadEvent.model_validate(params)
         case "browsingContext.userPromptOpened":
             return BrowsingContextUserPromptOpenedEvent.model_validate(params)
         case "script.message":
@@ -246,6 +292,8 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return NetworkResponseCompletedEvent.model_validate(params)
         case "network.dataReceived":
             return NetworkDataReceivedEvent.model_validate(params)
+        case "network.authRequired":
+            return NetworkAuthRequiredEvent.model_validate(params)
         case "network.fetchError":
             return NetworkFetchErrorEvent.model_validate(params)
         case _:

@@ -69,6 +69,8 @@ SCRIPT_REALM_DESTROYED = "script.realmDestroyed"
 BROWSING_USER_PROMPT_OPENED = "browsingContext.userPromptOpened"
 NETWORK_DATA_RECEIVED = "network.dataReceived"
 BROWSING_NAVIGATION_COMPLETED = "browsingContext.navigationCompleted"
+BROWSING_FRAGMENT_NAVIGATED = "browsingContext.fragmentNavigated"
+BROWSING_LOAD = "browsingContext.load"
 STORAGE_COOKIE_CHANGED = "storage.cookieChanged"
 
 # Error codes
