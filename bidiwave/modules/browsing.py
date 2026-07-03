@@ -11,16 +11,26 @@ from bidiwave.protocol.constants import (
     BROWSING_CAPTURE_SCREENSHOT,
     BROWSING_CLOSE,
     BROWSING_CREATE_CONTEXT,
+    BROWSING_CREATE_USER_CONTEXT,
     BROWSING_GET_TREE,
+    BROWSING_GET_USER_CONTEXTS,
     BROWSING_HANDLE_USER_PROMPT,
     BROWSING_LOCATE_NODES,
     BROWSING_NAVIGATE,
     BROWSING_PRINT,
     BROWSING_RELOAD,
+    BROWSING_REMOVE_USER_CONTEXT,
     BROWSING_SET_VIEWPORT,
     BROWSING_TRAVERSE_HISTORY,
 )
-from bidiwave.protocol.results import LocateNodesResult, Navigation, PrintResult, Screenshot
+from bidiwave.protocol.results import (
+    GetUserContextsResult,
+    LocateNodesResult,
+    Navigation,
+    PrintResult,
+    Screenshot,
+    UserContextInfo,
+)
 from bidiwave.transport.connection import Connection
 
 if TYPE_CHECKING:
@@ -58,15 +68,52 @@ class BrowsingModule:
     async def create_context(
         self,
         type: Literal["tab", "window"] = "tab",
+        user_context: str | None = None,
     ) -> BrowsingContext:
+        params: dict[str, Any] = {"type": type}
+        if user_context is not None:
+            params["userContext"] = user_context
         result = await self._connection.send_command(
-            BROWSING_CREATE_CONTEXT, {"type": type}
+            BROWSING_CREATE_CONTEXT, params
         )
         return BrowsingContext(
             id=result["context"],
             url=result.get("url", ""),
             _module=self,
         )
+
+    async def create_user_context(self) -> UserContextInfo:
+        """Crea un user context aislado (perfil con cookies propias).
+
+        Returns:
+            UserContextInfo con el ID del user context creado.
+        """
+        result = await self._connection.send_command(
+            BROWSING_CREATE_USER_CONTEXT, {}
+        )
+        return UserContextInfo.model_validate(result)
+
+    async def remove_user_context(self, user_context: str) -> None:
+        """Elimina un user context y todos sus browsing contexts.
+
+        Args:
+            user_context: ID del user context a eliminar.
+        """
+        await self._connection.send_command(
+            BROWSING_REMOVE_USER_CONTEXT, {"userContext": user_context}
+        )
+
+    async def get_user_contexts(self) -> list[UserContextInfo]:
+        """Lista todos los user contexts disponibles.
+
+        Returns:
+            Lista de UserContextInfo.
+        """
+        result = await self._connection.send_command(
+            BROWSING_GET_USER_CONTEXTS, {}
+        )
+        parsed = GetUserContextsResult.model_validate(result)
+        return parsed.user_contexts
 
     async def navigate(
         self,

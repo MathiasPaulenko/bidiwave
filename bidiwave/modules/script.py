@@ -29,10 +29,14 @@ class ScriptModule:
         context: BrowsingContext | str,
         expression: str,
         await_promise: bool = False,
+        sandbox: str | None = None,
     ) -> RemoteValue:
         ctx_id = context.id if hasattr(context, "id") else context
+        target: dict[str, Any] = {"context": ctx_id}
+        if sandbox is not None:
+            target["sandbox"] = sandbox
         params = {
-            "target": {"context": ctx_id},
+            "target": target,
             "expression": expression,
             "awaitPromise": await_promise,
         }
@@ -45,10 +49,14 @@ class ScriptModule:
         function_declaration: str,
         args: list[dict[str, Any]] | None = None,
         await_promise: bool = False,
+        sandbox: str | None = None,
     ) -> RemoteValue:
         ctx_id = context.id if hasattr(context, "id") else context
+        target: dict[str, Any] = {"context": ctx_id}
+        if sandbox is not None:
+            target["sandbox"] = sandbox
         params = {
-            "target": {"context": ctx_id},
+            "target": target,
             "functionDeclaration": function_declaration,
             "args": args or [],
             "awaitPromise": await_promise,

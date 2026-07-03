@@ -176,3 +176,27 @@ class GetRealmsResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     realms: list[RealmInfo] = []
+
+
+class UserContextInfo(BaseModel):
+    """Información de un user context (perfil aislado)."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    user_context: str = Field(alias="userContext")
+
+
+class GetUserContextsResult(BaseModel):
+    """Resultado de browser.getUserContexts."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    user_contexts: list[UserContextInfo] = Field(default_factory=list, alias="userContexts")
+
+
+class CDPGetSessionResult(BaseModel):
+    """Resultado de browser.cdp.getSession."""
+
+    model_config = ConfigDict(extra="allow")
+
+    session: str | None = None

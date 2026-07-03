@@ -20,7 +20,7 @@ async def test_page_evaluate_calls_script():
     page = Page(browsing, script, ctx)
 
     result = await page.evaluate("document.title")
-    script.evaluate.assert_called_once_with(ctx, "document.title", False)
+    script.evaluate.assert_called_once_with(ctx, "document.title", False, sandbox=None)
     assert isinstance(result, StringValue)
     assert result.value == "title"
 

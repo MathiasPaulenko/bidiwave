@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from bidiwave.config import ClientConfig
 from bidiwave.events.dispatcher import EventDispatcher
 from bidiwave.events.handlers import AsyncHandler, Subscription
 from bidiwave.modules.browsing import BrowsingModule
+from bidiwave.modules.cdp import CDPModule
 from bidiwave.modules.input import InputModule
 from bidiwave.modules.network import NetworkModule
 from bidiwave.modules.script import ScriptModule
@@ -35,7 +38,11 @@ class BiDiClient:
         self.network = NetworkModule(connection)
         self.input = InputModule(connection)
         self.storage = StorageModule(connection)
+        self.cdp = CDPModule(connection)
         self._capabilities: Capabilities | None = None
+        self._auto_prompt_accept: bool | None = None
+        self._auto_prompt_text: str | None = None
+        self._auto_prompt_sub: Subscription | None = None
 
     @classmethod
     async def connect(
@@ -91,6 +98,56 @@ class BiDiClient:
     def on_fetch_error(self, handler: AsyncHandler) -> Subscription:
         """Conveniencia para network.fetchError."""
         return self._dispatcher.on("network.fetchError", handler)  # type: ignore[return-value]
+
+    def on_cookie_changed(self, handler: AsyncHandler) -> Subscription:
+        """Conveniencia para storage.cookieChanged."""
+        return self._dispatcher.on("storage.cookieChanged", handler)  # type: ignore[return-value]
+
+    def on_auth_required(self, handler: AsyncHandler) -> Subscription:
+        """Conveniencia para network.authRequired."""
+        return self._dispatcher.on("network.authRequired", handler)  # type: ignore[return-value]
+
+    async def set_auto_prompt(
+        self,
+        accept: bool = True,
+        user_text: str | None = None,
+    ) -> None:
+        """Habilita el manejo automático de dialogs (alert/confirm/prompt).
+
+        Suscribe a browsingContext.userPromptOpened y maneja cada dialog
+        automáticamente con los parámetros indicados.
+
+        Args:
+            accept: True para aceptar, False para dismiss.
+            user_text: Texto para prompts (opcional).
+        """
+        self._auto_prompt_accept = accept
+        self._auto_prompt_text = user_text
+
+        if self._auto_prompt_sub is not None:
+            self.off(self._auto_prompt_sub)
+
+        async def _handle_prompt(event: dict[str, Any]) -> None:
+            ctx_id = event.get("context")
+            if ctx_id is not None:
+                await self.browsing.handle_user_prompt(
+                    ctx_id,
+                    accept=self._auto_prompt_accept,
+                    user_text=self._auto_prompt_text,
+                )
+
+        self._auto_prompt_sub = self.on(
+            "browsingContext.userPromptOpened", _handle_prompt
+        )
+        await self.session.subscribe(["browsingContext.userPromptOpened"])
+
+    async def disable_auto_prompt(self) -> None:
+        """Desactiva el manejo automático de dialogs."""
+        if self._auto_prompt_sub is not None:
+            self.off(self._auto_prompt_sub)
+            self._auto_prompt_sub = None
+        self._auto_prompt_accept = None
+        self._auto_prompt_text = None
 
     def on_reconnect(self, handler: AsyncHandler) -> None:
         """Registra un handler que se ejecuta tras reconectar."""

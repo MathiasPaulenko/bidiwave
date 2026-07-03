@@ -19,6 +19,7 @@ from bidiwave.exceptions import (
     TimeoutError,
 )
 from bidiwave.modules.browsing import BrowsingContext
+from bidiwave.modules.cdp import CDPModule
 from bidiwave.modules.input import InputModule
 from bidiwave.modules.network import NetworkModule
 from bidiwave.modules.storage import StorageModule
@@ -47,11 +48,12 @@ from bidiwave.protocol.results import (
     LocateNodesResult,
     PointerAction,
     RealmInfo,
+    UserContextInfo,
     WheelAction,
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 
 __all__ = [
     "ArrayValue",
@@ -62,6 +64,7 @@ __all__ = [
     "BooleanValue",
     "BrowsingContext",
     "Capabilities",
+    "CDPModule",
     "CapabilityError",
     "ClientConfig",
     "CommandError",
@@ -94,6 +97,7 @@ __all__ = [
     "LocateNodesResult",
     "PointerAction",
     "RealmInfo",
+    "UserContextInfo",
     "WheelAction",
     "StorageModule",
     "Cookie",

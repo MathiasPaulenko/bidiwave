@@ -40,21 +40,30 @@ class Page:
     def url(self) -> str:
         return self._context.url
 
-    async def evaluate(self, expression: str, await_promise: bool = False) -> RemoteValue:
+    async def evaluate(
+        self,
+        expression: str,
+        await_promise: bool = False,
+        sandbox: str | None = None,
+    ) -> RemoteValue:
         if self._script is None:
             raise RuntimeError("ScriptModule not available")
-        return await self._script.evaluate(self._context, expression, await_promise)
+        return await self._script.evaluate(
+            self._context, expression, await_promise, sandbox=sandbox
+        )
 
     async def call(
         self,
         function_declaration: str,
         args: list[dict[str, Any]] | None = None,
         await_promise: bool = False,
+        sandbox: str | None = None,
     ) -> RemoteValue:
         if self._script is None:
             raise RuntimeError("ScriptModule not available")
         return await self._script.call_function(
             self._context, function_declaration, args, await_promise,
+            sandbox=sandbox,
         )
 
     async def navigate(
