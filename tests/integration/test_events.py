@@ -43,7 +43,9 @@ async def test_context_created_event(client: object) -> None:
     await asyncio.sleep(1)
 
     assert len(events) >= 1
-    assert events[0].context == ctx.id
+    # The event may be for any context, find the one matching our ctx
+    ctx_ids = [e.context for e in events]
+    assert ctx.id in ctx_ids
 
     await client.browsing.close(ctx)
 

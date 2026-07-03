@@ -24,7 +24,7 @@ class ScriptModule:
         expression: str,
         await_promise: bool = False,
     ) -> RemoteValue:
-        ctx_id = context.id if isinstance(context, BrowsingContext) else context
+        ctx_id = context.id if hasattr(context, "id") else context
         params = {
             "target": {"context": ctx_id},
             "expression": expression,
@@ -40,7 +40,7 @@ class ScriptModule:
         args: list[dict[str, Any]] | None = None,
         await_promise: bool = False,
     ) -> RemoteValue:
-        ctx_id = context.id if isinstance(context, BrowsingContext) else context
+        ctx_id = context.id if hasattr(context, "id") else context
         params = {
             "target": {"context": ctx_id},
             "functionDeclaration": function_declaration,
@@ -51,7 +51,7 @@ class ScriptModule:
         return RemoteValue.parse(result)
 
     async def disown(self, context: BrowsingContext | str, handles: list[str]) -> None:
-        ctx_id = context.id if isinstance(context, BrowsingContext) else context
+        ctx_id = context.id if hasattr(context, "id") else context
         params = {
             "target": {"context": ctx_id},
             "handles": handles,

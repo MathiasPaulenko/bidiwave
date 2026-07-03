@@ -39,7 +39,7 @@ async def test_wait_for_function(client: object, context: object) -> None:
     await client.browsing.navigate(context, "https://example.com", wait="complete")
     result = await client.browsing.wait_for_function(
         context,
-        "() => document.readyState === 'complete'",
+        "document.readyState === 'complete'",
         timeout=5,
     )
     assert result

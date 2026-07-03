@@ -16,6 +16,9 @@ class RemoteValue(BaseModel):
     @classmethod
     def parse(cls, data: dict[str, Any]) -> RemoteValue:
         """Factory que retorna el subtipo correcto según type."""
+        # script.evaluate/callFunction retornan {type: "success", result: {...}}
+        if data.get("type") == "success" and "result" in data:
+            data = data["result"]
         type_name = data.get("type", "")
         match type_name:
             case "string":
@@ -34,8 +37,10 @@ class RemoteValue(BaseModel):
                 return ObjectValue.model_validate(data)
             case "array":
                 return ArrayValue.model_validate(data)
-            case _:
+            case "symbol" | "function":
                 return HandleValue.model_validate(data)
+            case _:
+                return RemoteValue.model_validate(data)
 
 
 class StringValue(RemoteValue):

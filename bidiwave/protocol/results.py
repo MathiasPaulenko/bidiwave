@@ -24,11 +24,12 @@ class SessionStatus(BaseModel):
 class Navigation(BaseModel):
     """Resultado de browsing.navigate."""
 
-    model_config = ConfigDict(extra="allow")
-    context: str
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str | None = None
     url: str
     navigation: str | None = None
-    status: Literal["pending", "complete", "canceled"]
+    status: str = "complete"
 
 
 class Screenshot(BaseModel):

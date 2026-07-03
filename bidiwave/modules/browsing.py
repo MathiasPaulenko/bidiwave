@@ -67,14 +67,14 @@ class BrowsingModule:
         url: str,
         wait: Literal["none", "interactive", "complete"] = "complete",
     ) -> Navigation:
-        ctx_id = context.id if isinstance(context, BrowsingContext) else context
+        ctx_id = context.id if hasattr(context, "id") else context
         result = await self._connection.send_command(
             BROWSING_NAVIGATE, {"context": ctx_id, "url": url, "wait": wait}
         )
         return Navigation.model_validate(result)
 
     async def close(self, context: BrowsingContext | str) -> None:
-        ctx_id = context.id if isinstance(context, BrowsingContext) else context
+        ctx_id = context.id if hasattr(context, "id") else context
         await self._connection.send_command(BROWSING_CLOSE, {"context": ctx_id})
 
     async def screenshot(
@@ -83,8 +83,10 @@ class BrowsingModule:
         format: Literal["png", "jpeg"] = "png",
         quality: int | None = None,
     ) -> Screenshot:
-        ctx_id = context.id if isinstance(context, BrowsingContext) else context
-        params: dict[str, Any] = {"context": ctx_id, "format": format}
+        ctx_id = context.id if hasattr(context, "id") else context
+        params: dict[str, Any] = {"context": ctx_id}
+        if format != "png":
+            params["format"] = format
         if quality is not None:
             params["quality"] = quality
         result = await self._connection.send_command(BROWSING_CAPTURE_SCREENSHOT, params)
@@ -109,31 +111,34 @@ class BrowsingModule:
         timeout: float = 10.0,
     ) -> bool:
         """Espera a que un elemento exista en el DOM."""
-        ctx_id = context.id if isinstance(context, BrowsingContext) else context
+        ctx_id = context.id if hasattr(context, "id") else context
+        # Use evaluate instead of callFunction (driver bug with primitive args)
+        expression = (
+            f"new Promise(resolve => {{"
+            f" const el = document.querySelector({selector!r});"
+            f" if (el) return resolve(true);"
+            f" new MutationObserver((_, obs) => {{"
+            f" if (document.querySelector({selector!r})) {{"
+            f" obs.disconnect();"
+            f" resolve(true);"
+            f" }}"
+            f" }}).observe(document.body, {{childList: true, subtree: true}});"
+            f"}})"
+        )
         result = await asyncio.wait_for(
             self._connection.send_command(
-                "script.callFunction",
+                "script.evaluate",
                 {
                     "target": {"context": ctx_id},
-                    "functionDeclaration": (
-                        "(sel) => new Promise(resolve => {{"
-                        " const el = document.querySelector(sel);"
-                        " if (el) return resolve(true);"
-                        " new MutationObserver((_, obs) => {{"
-                        " if (document.querySelector(sel)) {{"
-                        " obs.disconnect();"
-                        " resolve(true);"
-                        " }}"
-                        " }}).observe(document.body, {{childList: true, subtree: true}});"
-                        "}})"
-                    ),
-                    "args": [{"type": "string", "value": selector}],
+                    "expression": expression,
                     "awaitPromise": True,
                 },
             ),
             timeout=timeout,
         )
-        return result.get("value") is True
+        # Unwrap script success wrapper
+        inner = result.get("result", result)
+        return inner.get("value") is True
 
     async def wait_for_function(
         self,
@@ -142,7 +147,7 @@ class BrowsingModule:
         timeout: float = 10.0,
     ) -> Any:
         """Espera a que una función JS retorne true."""
-        ctx_id = context.id if isinstance(context, BrowsingContext) else context
+        ctx_id = context.id if hasattr(context, "id") else context
 
         async def check() -> Any:
             while True:
@@ -154,8 +159,10 @@ class BrowsingModule:
                         "awaitPromise": False,
                     },
                 )
-                if result.get("value"):
-                    return result.get("value")
+                # Unwrap script success wrapper
+                inner = result.get("result", result)
+                if inner.get("value"):
+                    return inner.get("value")
                 await asyncio.sleep(0.1)
 
         return await asyncio.wait_for(check(), timeout=timeout)

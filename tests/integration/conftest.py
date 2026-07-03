@@ -1,4 +1,4 @@
-"""Fixtures para integration tests con ChromeDriver real."""
+"""Fixtures para integration tests con EdgeDriver real."""
 
 from __future__ import annotations
 
@@ -14,12 +14,12 @@ from typing import Any
 import pytest
 import pytest_asyncio
 
-CHROMEDRIVER_PATH = r"D:\Codigo\bidiwave\bin\chromedriver-win64\chromedriver.exe"
-DRIVER_PORT = 9515
+EDGEDRIVER_PATH = r"D:\Codigo\bidiwave\bin\edgedriver\msedgedriver.exe"
+DRIVER_PORT = 9516
 
 
 def _wait_for_port(port: int, timeout: float = 30.0) -> bool:
-    """Espera a que ChromeDriver esté disponible."""
+    """Espera a que EdgeDriver esté disponible."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -40,6 +40,9 @@ def _create_webdriver_session(port: int = DRIVER_PORT) -> str:
                 "alwaysMatch": {
                     "webSocketUrl": True,
                     "acceptInsecureCerts": True,
+                    "ms:edgeOptions": {
+                        "args": ["--headless", "--no-sandbox", "--disable-gpu"],
+                    },
                 }
             }
         }
@@ -56,26 +59,51 @@ def _create_webdriver_session(port: int = DRIVER_PORT) -> str:
     return data["value"]["capabilities"]["webSocketUrl"]
 
 
-@pytest.fixture
-def chrome_bidi() -> Iterator[str]:
-    """Lanza ChromeDriver y retorna la URL del endpoint BiDi."""
+@pytest.fixture(scope="session")
+def _edgedriver_proc() -> Iterator[subprocess.Popen[bytes]]:
+    """Lanza EdgeDriver una vez por sesión."""
+    with contextlib.suppress(Exception):
+        subprocess.run(
+            ["taskkill", "/F", "/IM", "msedgedriver.exe"],
+            capture_output=True,
+            timeout=5,
+        )
+        time.sleep(1)
+
     proc = subprocess.Popen(
-        [CHROMEDRIVER_PATH, f"--port={DRIVER_PORT}"],
+        [EDGEDRIVER_PATH, f"--port={DRIVER_PORT}"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
 
     if not _wait_for_port(DRIVER_PORT):
         proc.terminate()
-        proc.wait(timeout=10)
-        pytest.fail("ChromeDriver no arrancó en el puerto {DRIVER_PORT}")
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        pytest.fail(f"EdgeDriver no arrancó en el puerto {DRIVER_PORT}")
 
-    bidi_url = _create_webdriver_session()
-
-    yield bidi_url
+    yield proc
 
     proc.terminate()
-    proc.wait(timeout=10)
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+    # Only kill msedgedriver, never kill user's Edge browser
+    with contextlib.suppress(Exception):
+        subprocess.run(
+            ["taskkill", "/F", "/IM", "msedgedriver.exe"],
+            capture_output=True,
+            timeout=5,
+        )
+
+
+@pytest.fixture
+def chrome_bidi(_edgedriver_proc: subprocess.Popen[bytes]) -> str:
+    """Crea una nueva sesión WebDriver por test y retorna la URL BiDi."""
+    return _create_webdriver_session()
 
 
 @pytest_asyncio.fixture
@@ -88,7 +116,6 @@ async def client(request: pytest.FixtureRequest) -> Any:
 
     config = ClientConfig(timeout=60.0, max_retries=1)
     c = await BiDiClient.connect(bidi_url, config=config)
-    await c.session.new()
     yield c
     await c.close()
 

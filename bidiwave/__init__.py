@@ -42,7 +42,7 @@ from bidiwave.protocol.remote_value import (
 from bidiwave.protocol.results import InputSource, KeyAction, PointerAction, WheelAction
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 __all__ = [
     "ArrayValue",

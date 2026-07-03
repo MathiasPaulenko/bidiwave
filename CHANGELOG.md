@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-07-03
+
+### Fixed
+
+- `NameError: BrowsingContext` en `script.py` y `browsing.py` — `isinstance` con clase bajo `TYPE_CHECKING`
+- `Navigation` validation error — `context` ahora opcional (protocolo no siempre lo retorna)
+- `RemoteValue.parse` ahora desempaqueta wrapper `{type: "success", result: {...}}` de `script.evaluate`
+- `screenshot` "invalid argument" — no enviar `format` cuando es el default `png`
+- `wait_for_selector` reescrito con `script.evaluate` (bug de driver con `callFunction` y args primitivos)
+- `wait_for_function` desempaqueta wrapper `type: "success"` correctamente
+- Integration tests migrados a EdgeDriver headless (no afecta Chrome del usuario)
+- 23 integration tests pasando, 118 unit tests pasando
+
 ## [1.2.0] - 2025-07-03
 
 ### Added

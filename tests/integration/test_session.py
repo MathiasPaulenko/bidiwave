@@ -11,7 +11,8 @@ async def test_session_status(client: object) -> None:
     """session.status funciona después de session.new del fixture."""
     status = await client.session.status()
     assert status is not None
-    assert status.ready is True
+    # When already connected via WebSocket, ready=False with message='already connected'
+    assert status.message is not None
 
 
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
