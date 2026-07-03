@@ -57,6 +57,11 @@ nav:
       - Network: api/network.md
       - Input: api/input.md
       - Storage: api/storage.md
+      - Preload: api/preload.md
+      - Emulation: api/emulation.md
+      - Permissions: api/permissions.md
+      - Log: api/log.md
+      - CDP: api/cdp.md
       - Events: api/events.md
       - RemoteValue: api/remote-value.md
       - Exceptions: api/exceptions.md

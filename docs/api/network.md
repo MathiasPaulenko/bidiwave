@@ -39,3 +39,59 @@ await client.network.provide_response(
     body="eyJtZXNzYWdlIjogImhlbGxvIn0=",  # base64-encoded JSON
 )
 ```
+
+## Cache overrides
+
+Cache overrides let you serve cached responses without hitting the network.
+
+### add / remove pattern
+
+```python
+# Add a cache override — returns a cache ID
+cache = await client.network.add_cache_override(
+    url="https://example.com/api",
+    method="GET",
+    status_code=200,
+    body="eyJkYXRhIjogInRlc3QifQ==",
+)
+# cache.cache = "cache-id-1"
+
+# Remove it later
+await client.network.remove_cache_override(cache.cache)
+```
+
+### set pattern (replace all)
+
+```python
+# Replaces ALL existing cache overrides in a single call
+await client.network.set_cache_override(
+    url="https://example.com/api",
+    method="GET",
+    status_code=204,
+)
+```
+
+## Response body
+
+Retrieve the body of a completed response by request ID:
+
+```python
+result = await client.network.response_body("request-id-1")
+print(result.body)        # base64-encoded content
+print(result.total_size)  # size in bytes
+```
+
+## Authentication
+
+Handle `network.authRequired` events:
+
+```python
+# Continue with credentials
+await client.network.continue_with_auth(
+    request=request_id,
+    credentials={"type": "password", "username": "user", "password": "pass"},
+)
+
+# Cancel the auth challenge
+await client.network.cancel_auth(request=request_id)
+```

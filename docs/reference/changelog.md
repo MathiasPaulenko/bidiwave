@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2025-07-04
+
+### Documentation
+
+- Complete protocol reference with all 53 commands and 21 events
+- Added API doc pages for Preload, Emulation, Permissions, Log, and CDP modules
+- Updated events.md with all event types and convenience handlers
+- Added cache override, response body, and auth docs to network.md
+- Added delete_cookie docs to storage.md
+- Added script.addPreloadScript with channels docs to script.md
+- Updated mkdocs.yml nav with new API pages
+- Added Pydantic model mapping tables to protocol reference
+
 ## [1.7.0] - 2025-07-04
 
 ### Added

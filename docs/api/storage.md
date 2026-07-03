@@ -54,3 +54,10 @@ await client.storage.delete_cookies(
     path="/app",
 )
 ```
+
+## Delete a single cookie
+
+```python
+# Delete one cookie by name (targeted, no filter)
+await client.storage.delete_cookie(context, "session")
+```

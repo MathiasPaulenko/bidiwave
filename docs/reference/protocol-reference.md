@@ -207,6 +207,643 @@ Releases a reference (handle) to a remote object.
 }
 ```
 
+### browsing.reload
+
+Reloads a context.
+
+```json
+{
+  "id": 12,
+  "method": "browsingContext.reload",
+  "params": {
+    "context": "context-id-1",
+    "wait": "complete"
+  }
+}
+```
+
+### browsing.traverseHistory
+
+Traverses the history (back/forward).
+
+```json
+{
+  "id": 13,
+  "method": "browsingContext.traverseHistory",
+  "params": {
+    "context": "context-id-1",
+    "delta": -1
+  }
+}
+```
+
+### browsing.handleUserPrompt
+
+Handles a dialog (alert/confirm/prompt).
+
+```json
+{
+  "id": 14,
+  "method": "browsingContext.handleUserPrompt",
+  "params": {
+    "context": "context-id-1",
+    "accept": true
+  }
+}
+```
+
+### browsing.print
+
+Prints a context to PDF.
+
+```json
+{
+  "id": 15,
+  "method": "browsingContext.print",
+  "params": {
+    "context": "context-id-1",
+    "pageRanges": [1, 2]
+  }
+}
+```
+
+### browsing.locateNodes
+
+Locates nodes by locator strategy.
+
+```json
+{
+  "id": 16,
+  "method": "browsingContext.locateNodes",
+  "params": {
+    "context": "context-id-1",
+    "locator": {"type": "css", "value": "div.content"}
+  }
+}
+```
+
+### browsing.activate
+
+Activates a context (brings to front).
+
+```json
+{
+  "id": 17,
+  "method": "browsingContext.activate",
+  "params": {
+    "context": "context-id-1"
+  }
+}
+```
+
+### browsing.setViewport
+
+Sets the viewport and device pixel ratio.
+
+```json
+{
+  "id": 18,
+  "method": "browsingContext.setViewport",
+  "params": {
+    "context": "context-id-1",
+    "viewport": {"width": 800, "height": 600},
+    "devicePixelRatio": 2.0
+  }
+}
+```
+
+### browsing.getViewport
+
+Gets the current viewport and device pixel ratio.
+
+```json
+{
+  "id": 19,
+  "method": "browsingContext.getViewport",
+  "params": {
+    "context": "context-id-1"
+  }
+}
+```
+
+### script.getRealms
+
+Gets information about available realms.
+
+```json
+{
+  "id": 20,
+  "method": "script.getRealms",
+  "params": {}
+}
+```
+
+### network.addIntercept
+
+Adds a network intercept for request interception.
+
+```json
+{
+  "id": 21,
+  "method": "network.addIntercept",
+  "params": {
+    "phases": ["beforeRequestSent"],
+    "urlPatterns": ["*example.com*"]
+  }
+}
+```
+
+### network.removeIntercept
+
+Removes a network intercept.
+
+```json
+{
+  "id": 22,
+  "method": "network.removeIntercept",
+  "params": {
+    "intercept": "intercept-id-1"
+  }
+}
+```
+
+### network.continueRequest
+
+Continues a blocked request.
+
+```json
+{
+  "id": 23,
+  "method": "network.continueRequest",
+  "params": {
+    "request": "request-id-1"
+  }
+}
+```
+
+### network.continueResponse
+
+Continues a blocked response.
+
+```json
+{
+  "id": 24,
+  "method": "network.continueResponse",
+  "params": {
+    "request": "request-id-1"
+  }
+}
+```
+
+### network.failRequest
+
+Fails a blocked request.
+
+```json
+{
+  "id": 25,
+  "method": "network.failRequest",
+  "params": {
+    "request": "request-id-1"
+  }
+}
+```
+
+### network.provideResponse
+
+Provides a synthetic response without making the real request.
+
+```json
+{
+  "id": 26,
+  "method": "network.provideResponse",
+  "params": {
+    "request": "request-id-1",
+    "statusCode": 200
+  }
+}
+```
+
+### network.continueWithAuth
+
+Continues a request with authentication credentials.
+
+```json
+{
+  "id": 27,
+  "method": "network.continueWithAuth",
+  "params": {
+    "request": "request-id-1",
+    "credentials": {
+      "type": "password",
+      "username": "user",
+      "password": "pass"
+    }
+  }
+}
+```
+
+### network.cancelAuth
+
+Cancels an authentication challenge.
+
+```json
+{
+  "id": 28,
+  "method": "network.cancelAuth",
+  "params": {
+    "request": "request-id-1"
+  }
+}
+```
+
+### network.addCacheOverride
+
+Adds a cached response override for matching requests.
+
+```json
+{
+  "id": 29,
+  "method": "network.addCacheOverride",
+  "params": {
+    "url": "https://example.com/api",
+    "method": "GET",
+    "statusCode": 200
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "type": "success",
+  "id": 29,
+  "result": {
+    "cache": "cache-id-1"
+  }
+}
+```
+
+### network.removeCacheOverride
+
+Removes a previously added cache override.
+
+```json
+{
+  "id": 30,
+  "method": "network.removeCacheOverride",
+  "params": {
+    "cache": "cache-id-1"
+  }
+}
+```
+
+### network.setCacheOverride
+
+Replaces all existing cache overrides in a single call.
+
+```json
+{
+  "id": 31,
+  "method": "network.setCacheOverride",
+  "params": {
+    "url": "https://example.com/api",
+    "method": "GET",
+    "statusCode": 200
+  }
+}
+```
+
+### network.responseBody
+
+Retrieves the body of a completed response.
+
+```json
+{
+  "id": 32,
+  "method": "network.responseBody",
+  "params": {
+    "request": "request-id-1"
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "type": "success",
+  "id": 32,
+  "result": {
+    "body": "SGVsbG8gV29ybGQ=",
+    "totalSize": 11
+  }
+}
+```
+
+### input.performActions
+
+Performs input actions (pointer, key, wheel).
+
+```json
+{
+  "id": 33,
+  "method": "input.performActions",
+  "params": {
+    "context": "context-id-1",
+    "actions": []
+  }
+}
+```
+
+### input.releaseActions
+
+Releases all input actions.
+
+```json
+{
+  "id": 34,
+  "method": "input.releaseActions",
+  "params": {
+    "context": "context-id-1"
+  }
+}
+```
+
+### input.setFiles
+
+Sets files for a file input element.
+
+```json
+{
+  "id": 35,
+  "method": "input.setFiles",
+  "params": {
+    "context": "context-id-1",
+    "element": {"sharedId": "element-id-1"},
+    "files": ["/path/to/file.txt"]
+  }
+}
+```
+
+### storage.getCookies
+
+Gets cookies from a browsing context.
+
+```json
+{
+  "id": 36,
+  "method": "storage.getCookies",
+  "params": {
+    "context": "context-id-1"
+  }
+}
+```
+
+### storage.setCookie
+
+Creates or updates a cookie.
+
+```json
+{
+  "id": 37,
+  "method": "storage.setCookie",
+  "params": {
+    "context": "context-id-1",
+    "cookie": {
+      "name": "session",
+      "value": "abc123",
+      "domain": "example.com"
+    }
+  }
+}
+```
+
+### storage.deleteCookies
+
+Deletes cookies by filter (name, domain, path).
+
+```json
+{
+  "id": 38,
+  "method": "storage.deleteCookies",
+  "params": {
+    "context": "context-id-1",
+    "name": "session"
+  }
+}
+```
+
+### storage.deleteCookie
+
+Deletes a single cookie by name.
+
+```json
+{
+  "id": 39,
+  "method": "storage.deleteCookie",
+  "params": {
+    "context": "context-id-1",
+    "name": "session"
+  }
+}
+```
+
+### preload.addPreloadScript
+
+Adds a preload script that runs on every new page load.
+
+```json
+{
+  "id": 40,
+  "method": "preload.addPreloadScript",
+  "params": {
+    "functionDeclaration": "() => { window.foo = 42; }"
+  }
+}
+```
+
+### preload.removePreloadScript
+
+Removes a preload script.
+
+```json
+{
+  "id": 41,
+  "method": "preload.removePreloadScript",
+  "params": {
+    "script": "preload-id-1"
+  }
+}
+```
+
+### script.addPreloadScript
+
+Adds a preload script with channel support for bidirectional communication.
+
+```json
+{
+  "id": 42,
+  "method": "script.addPreloadScript",
+  "params": {
+    "functionDeclaration": "(channel) => { channel('hello'); }",
+    "arguments": [{"type": "channel", "value": {"channel": "my-channel"}}]
+  }
+}
+```
+
+### emulation.setGeolocationOverride
+
+Sets a geolocation override.
+
+```json
+{
+  "id": 43,
+  "method": "emulation.setGeolocationOverride",
+  "params": {
+    "coordinates": {"latitude": 37.7749, "longitude": -122.4194}
+  }
+}
+```
+
+### emulation.setNetworkConditions
+
+Sets network conditions (online/offline).
+
+```json
+{
+  "id": 44,
+  "method": "emulation.setNetworkConditions",
+  "params": {
+    "offline": false
+  }
+}
+```
+
+### emulation.setTimezoneOverride
+
+Sets a timezone override.
+
+```json
+{
+  "id": 45,
+  "method": "emulation.setTimezoneOverride",
+  "params": {
+    "timezone": "America/Los_Angeles"
+  }
+}
+```
+
+### emulation.setUserAgentOverride
+
+Sets a user agent override.
+
+```json
+{
+  "id": 46,
+  "method": "emulation.setUserAgentOverride",
+  "params": {
+    "userAgent": "Mozilla/5.0 (Custom)"
+  }
+}
+```
+
+### permissions.setPermission
+
+Sets a permission state for a website.
+
+```json
+{
+  "id": 47,
+  "method": "permissions.setPermission",
+  "params": {
+    "descriptor": {"name": "geolocation"},
+    "state": "granted",
+    "origin": "https://example.com"
+  }
+}
+```
+
+### log.clear
+
+Clears all log entries.
+
+```json
+{
+  "id": 48,
+  "method": "log.clear",
+  "params": {}
+}
+```
+
+### browser.createUserContext
+
+Creates a user context (profile).
+
+```json
+{
+  "id": 49,
+  "method": "browser.createUserContext",
+  "params": {}
+}
+```
+
+### browser.removeUserContext
+
+Removes a user context.
+
+```json
+{
+  "id": 50,
+  "method": "browser.removeUserContext",
+  "params": {
+    "userContext": "user-context-id-1"
+  }
+}
+```
+
+### browser.getUserContexts
+
+Gets all user contexts.
+
+```json
+{
+  "id": 51,
+  "method": "browser.getUserContexts",
+  "params": {}
+}
+```
+
+### browser.cdp.sendCommand
+
+Sends a CDP command (Chrome DevTools Protocol).
+
+```json
+{
+  "id": 52,
+  "method": "browser.cdp.sendCommand",
+  "params": {
+    "cdpMethod": "Page.reload",
+    "cdpParams": {}
+  }
+}
+```
+
+### browser.cdp.getSession
+
+Gets the CDP session for a browsing context.
+
+```json
+{
+  "id": 53,
+  "method": "browser.cdp.getSession",
+  "params": {
+    "context": "context-id-1"
+  }
+}
+```
+
 ## Events v1
 
 ### log.entryAdded
@@ -306,6 +943,257 @@ Emitted when a script sends a message via `script.channel`.
 }
 ```
 
+### script.realmCreated
+
+Emitted when a new realm is created.
+
+```json
+{
+  "type": "event",
+  "method": "script.realmCreated",
+  "params": {
+    "realm": "realm-id-1",
+    "type": "window",
+    "context": "context-id-1"
+  }
+}
+```
+
+### script.realmDestroyed
+
+Emitted when a realm is destroyed.
+
+```json
+{
+  "type": "event",
+  "method": "script.realmDestroyed",
+  "params": {
+    "realm": "realm-id-1"
+  }
+}
+```
+
+### browsingContext.userPromptOpened
+
+Emitted when a dialog (alert/confirm/prompt) opens.
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.userPromptOpened",
+  "params": {
+    "context": "context-id-1",
+    "type": "alert",
+    "message": "Are you sure?"
+  }
+}
+```
+
+### network.beforeRequestSent
+
+Emitted when a request is about to be sent.
+
+```json
+{
+  "type": "event",
+  "method": "network.beforeRequestSent",
+  "params": {
+    "context": "context-id-1",
+    "request": {
+      "request": "request-id-1",
+      "url": "https://example.com",
+      "method": "GET"
+    }
+  }
+}
+```
+
+### network.responseStarted
+
+Emitted when response headers are received.
+
+```json
+{
+  "type": "event",
+  "method": "network.responseStarted",
+  "params": {
+    "context": "context-id-1",
+    "request": {"request": "request-id-1"},
+    "response": {"url": "https://example.com", "status": 200}
+  }
+}
+```
+
+### network.responseCompleted
+
+Emitted when a response finishes loading.
+
+```json
+{
+  "type": "event",
+  "method": "network.responseCompleted",
+  "params": {
+    "context": "context-id-1",
+    "request": {"request": "request-id-1"},
+    "response": {"url": "https://example.com", "status": 200}
+  }
+}
+```
+
+### network.dataReceived
+
+Emitted when response body data is received.
+
+```json
+{
+  "type": "event",
+  "method": "network.dataReceived",
+  "params": {
+    "context": "context-id-1",
+    "request": "request-id-1",
+    "data": "SGVsbG8="
+  }
+}
+```
+
+### network.fetchError
+
+Emitted when a request fails.
+
+```json
+{
+  "type": "event",
+  "method": "network.fetchError",
+  "params": {
+    "context": "context-id-1",
+    "request": {"request": "request-id-1"},
+    "errorText": "net::ERR_CONNECTION_REFUSED"
+  }
+}
+```
+
+### network.authRequired
+
+Emitted when a request requires authentication.
+
+```json
+{
+  "type": "event",
+  "method": "network.authRequired",
+  "params": {
+    "context": "context-id-1",
+    "request": {"request": "request-id-1"},
+    "response": {"status": 401}
+  }
+}
+```
+
+### network.samplingStateChanged
+
+Emitted when network sampling mode changes.
+
+```json
+{
+  "type": "event",
+  "method": "network.samplingStateChanged",
+  "params": {
+    "context": "context-id-1",
+    "sampling": "all"
+  }
+}
+```
+
+### browsingContext.navigationCompleted
+
+Emitted when a navigation completes.
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.navigationCompleted",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com",
+    "navigation": "nav-id-1"
+  }
+}
+```
+
+### browsingContext.fragmentNavigated
+
+Emitted when fragment navigation occurs (#anchor).
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.fragmentNavigated",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com#section"
+  }
+}
+```
+
+### browsingContext.domContentLoaded
+
+Emitted when DOM is parsed but resources still loading (before load).
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.domContentLoaded",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com"
+  }
+}
+```
+
+### browsingContext.load
+
+Emitted when the page finishes loading.
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.load",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com"
+  }
+}
+```
+
+### browsingContext.historyUpdated
+
+Chrome-specific event emitted when history entries change (pushState, replaceState).
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.historyUpdated",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com/page"
+  }
+}
+```
+
+### storage.cookieChanged
+
+Emitted when a cookie is created, modified, or deleted.
+
+```json
+{
+  "type": "event",
+  "method": "storage.cookieChanged",
+  "params": {
+    "context": "context-id-1",
+    "cookie": {"name": "session", "value": "abc123"}
+  }
+}
+```
+
 ## Error codes
 
 | Code | Description |
@@ -326,6 +1214,56 @@ Emitted when a script sends a message via `script.channel`.
 
 Each command and event has a corresponding Pydantic model in `protocol/`. Model names follow the pattern:
 
-- Command: `session.new` → `NewSessionParams`
+- Command params: `session.new` → `NewSessionParams`
+- Command result: `network.addCacheOverride` → `AddCacheOverrideResult`
 - Event: `log.entryAdded` → `LogEntryAddedEvent`
 - Response: always `SuccessResponse` or `ErrorResponse`
+
+### Command parameter models
+
+| Command | Params model |
+|---|---|
+| `session.new` | `NewSessionParams` |
+| `network.addIntercept` | `AddInterceptParams` |
+| `network.addCacheOverride` | `AddCacheOverrideParams` |
+| `network.setCacheOverride` | `SetCacheOverrideParams` |
+| `network.responseBody` | `ResponseBodyParams` |
+| `storage.deleteCookie` | `DeleteCookieParams` |
+| `script.addPreloadScript` | `ScriptAddPreloadScriptParams` |
+| `browsingContext.setViewport` | `ViewportSize` |
+
+### Command result models
+
+| Command | Result model |
+|---|---|
+| `network.addIntercept` | `InterceptResult` |
+| `network.addCacheOverride` | `AddCacheOverrideResult` |
+| `network.responseBody` | `ResponseBodyResult` |
+| `script.addPreloadScript` | `ScriptAddPreloadScriptResult` |
+| `browsingContext.getViewport` | `GetViewportResult` |
+
+### Event models
+
+| Event | Event model |
+|---|---|
+| `log.entryAdded` | `LogEntryAddedEvent` |
+| `browsingContext.contextCreated` | `BrowsingContextCreatedEvent` |
+| `browsingContext.contextDestroyed` | `BrowsingContextDestroyedEvent` |
+| `browsingContext.navigationStarted` | `BrowsingContextNavigatedEvent` |
+| `browsingContext.navigationCompleted` | `BrowsingContextNavigationCompletedEvent` |
+| `browsingContext.fragmentNavigated` | `BrowsingContextFragmentNavigatedEvent` |
+| `browsingContext.domContentLoaded` | `BrowsingContextDOMContentLoadedEvent` |
+| `browsingContext.load` | `BrowsingContextLoadEvent` |
+| `browsingContext.historyUpdated` | `BrowsingContextHistoryUpdatedEvent` |
+| `browsingContext.userPromptOpened` | `BrowsingContextUserPromptOpenedEvent` |
+| `script.message` | `ScriptMessageEvent` |
+| `script.realmCreated` | `ScriptRealmCreatedEvent` |
+| `script.realmDestroyed` | `ScriptRealmDestroyedEvent` |
+| `network.beforeRequestSent` | `NetworkBeforeRequestSentEvent` |
+| `network.responseStarted` | `NetworkResponseStartedEvent` |
+| `network.responseCompleted` | `NetworkResponseCompletedEvent` |
+| `network.dataReceived` | `NetworkDataReceivedEvent` |
+| `network.fetchError` | `NetworkFetchErrorEvent` |
+| `network.authRequired` | `NetworkAuthRequiredEvent` |
+| `network.samplingStateChanged` | `NetworkSamplingStateChangedEvent` |
+| `storage.cookieChanged` | `StorageCookieChangedEvent` |

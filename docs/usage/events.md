@@ -106,6 +106,12 @@ The handler receives a `LogEntryAddedEvent` with:
 | `browsingContext.contextCreated` | A new tab, window, or iframe is created | `BrowsingContextCreatedEvent` (`.context`, `.url`) |
 | `browsingContext.contextDestroyed` | A context is closed | `BrowsingContextDestroyedEvent` (`.context`) |
 | `browsingContext.navigationStarted` | Navigation begins | `BrowsingContextNavigatedEvent` (`.context`, `.url`, `.navigation`) |
+| `browsingContext.navigationCompleted` | Navigation completes | `BrowsingContextNavigationCompletedEvent` (`.context`, `.url`, `.navigation`) |
+| `browsingContext.fragmentNavigated` | Fragment navigation (#anchor) | `BrowsingContextFragmentNavigatedEvent` (`.context`, `.url`) |
+| `browsingContext.domContentLoaded` | DOM is parsed, resources still loading | `BrowsingContextDOMContentLoadedEvent` (`.context`, `.url`) |
+| `browsingContext.load` | Page finishes loading | `BrowsingContextLoadEvent` (`.context`, `.url`) |
+| `browsingContext.historyUpdated` | History changes (pushState, replaceState) | `BrowsingContextHistoryUpdatedEvent` (`.context`, `.url`) |
+| `browsingContext.userPromptOpened` | Dialog opens (alert/confirm/prompt) | `BrowsingContextUserPromptOpenedEvent` (`.context`, `.type`, `.message`) |
 
 ```python
 async def on_context_created(event):
@@ -127,8 +133,12 @@ await client.session.subscribe([
 | Event | Fired when | Handler receives |
 | ----- | ---------- | ---------------- |
 | `network.beforeRequestSent` | A request is about to be sent | `NetworkBeforeRequestSentEvent` (`.request`, `.is_blocked`, `.intercepts`) |
+| `network.responseStarted` | Response headers received | `NetworkResponseStartedEvent` (`.request`, `.response`) |
 | `network.responseCompleted` | A response finishes loading | `NetworkResponseCompletedEvent` (`.request`, `.response`) |
+| `network.dataReceived` | Response body data received | `NetworkDataReceivedEvent` (`.context`, `.request`, `.data`) |
 | `network.fetchError` | A request fails | `NetworkFetchErrorEvent` (`.request`, `.error_text`) |
+| `network.authRequired` | Authentication required | `NetworkAuthRequiredEvent` (`.request`, `.response`) |
+| `network.samplingStateChanged` | Network sampling mode changes | `NetworkSamplingStateChangedEvent` (`.context`, `.sampling`) |
 
 ```python
 async def on_request(event):
@@ -154,6 +164,14 @@ The `NetworkRequestData` model has: `.request` (ID), `.url`, `.method`,
 | Event | Fired when |
 | ----- | ---------- |
 | `script.message` | A script sends a message via a BiDi channel |
+| `script.realmCreated` | A new realm is created |
+| `script.realmDestroyed` | A realm is destroyed |
+
+### Storage events
+
+| Event | Fired when |
+| ----- | ---------- |
+| `storage.cookieChanged` | A cookie is created, modified, or deleted |
 
 ## Convenience handlers
 
@@ -169,6 +187,16 @@ don't have to type the full event name:
 | `client.on_request(h)` | `network.beforeRequestSent` |
 | `client.on_response(h)` | `network.responseCompleted` |
 | `client.on_fetch_error(h)` | `network.fetchError` |
+| `client.on_data_received(h)` | `network.dataReceived` |
+| `client.on_auth_required(h)` | `network.authRequired` |
+| `client.on_navigation_completed(h)` | `browsingContext.navigationCompleted` |
+| `client.on_fragment_navigated(h)` | `browsingContext.fragmentNavigated` |
+| `client.on_load(h)` | `browsingContext.load` |
+| `client.on_dom_content_loaded(h)` | `browsingContext.domContentLoaded` |
+| `client.on_history_updated(h)` | `browsingContext.historyUpdated` |
+| `client.on_sampling_state_changed(h)` | `network.samplingStateChanged` |
+| `client.on_realm_created(h)` | `script.realmCreated` |
+| `client.on_realm_destroyed(h)` | `script.realmDestroyed` |
 
 ## Unregistering handlers
 
