@@ -66,7 +66,7 @@ class ScriptMessageEvent(BaseModel):
     realm: str
     source: dict[str, Any]
     channel: str
-    data: dict[str, Any]
+    data: Any
 
 
 class NetworkRequestData(BaseModel):
@@ -180,7 +180,7 @@ class BrowsingContextUserPromptOpenedEvent(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     context: str
-    handler: str | None = None
+    handler: str
     message: str = ""
     default_value: str = Field(default="", alias="defaultValue")
     type: str = "alert"

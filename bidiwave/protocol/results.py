@@ -61,7 +61,7 @@ class KeyAction(BaseModel):
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-    type: Literal["key"] = "key"
+    type: Literal["keyDown", "keyUp"]
     value: str
     duration: int | None = None
 
@@ -71,13 +71,7 @@ class PointerAction(BaseModel):
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-    type: Literal["pointer"] = "pointer"
-    subtype: Literal[
-        "pointerMove",
-        "pointerDown",
-        "pointerUp",
-        "pointerCancel",
-    ]
+    type: Literal["pointerMove", "pointerDown", "pointerUp", "pointerCancel"]
     button: int | None = None
     x: int | float | None = None
     y: int | float | None = None
@@ -105,7 +99,7 @@ class WheelAction(BaseModel):
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-    type: Literal["wheel"] = "wheel"
+    type: Literal["scroll"] = "scroll"
     x: int = 0
     y: int = 0
     delta_x: int = Field(default=0, alias="deltaX")
