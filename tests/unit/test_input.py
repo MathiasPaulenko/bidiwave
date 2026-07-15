@@ -159,9 +159,11 @@ class TestTypeText:
         call_args = mock_connection.send_command.call_args
         actions = call_args.args[1]["actions"]
         assert actions[0]["type"] == "key"
-        assert len(actions[0]["actions"]) == 5
+        assert len(actions[0]["actions"]) == 10
         assert actions[0]["actions"][0]["value"] == "h"
-        assert actions[0]["actions"][4]["value"] == "o"
+        assert actions[0]["actions"][0]["type"] == "keyDown"
+        assert actions[0]["actions"][1]["type"] == "keyUp"
+        assert actions[0]["actions"][8]["value"] == "o"
 
     async def test_type_text_empty(
         self,
@@ -186,7 +188,9 @@ class TestPressKey:
         assert actions[0]["type"] == "key"
         assert len(actions[0]["actions"]) == 2
         assert actions[0]["actions"][0]["value"] == "Enter"
+        assert actions[0]["actions"][0]["type"] == "keyDown"
         assert actions[0]["actions"][1]["value"] == "Enter"
+        assert actions[0]["actions"][1]["type"] == "keyUp"
 
 
 class TestScroll:

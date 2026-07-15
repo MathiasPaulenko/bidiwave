@@ -20,8 +20,8 @@ def test_detect_chrome_capabilities():
     assert caps.vendor == "Google Inc."
     assert caps.supports_browsing is True
     assert caps.supports_script is True
-    assert caps.supports_network is False
-    assert caps.supports_input is False
+    assert caps.supports_network is True
+    assert caps.supports_input is True
 
 
 def test_detect_firefox_capabilities():
@@ -57,4 +57,4 @@ def test_capabilities_defaults():
     caps = Capabilities()
     assert caps.browser_name == ""
     assert caps.supports_browsing is True
-    assert caps.supports_network is False
+    assert caps.supports_network is True

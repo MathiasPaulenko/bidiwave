@@ -180,7 +180,7 @@ class BrowsingContextUserPromptOpenedEvent(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     context: str
-    handler: str
+    handler: str | None = None
     message: str = ""
     default_value: str = Field(default="", alias="defaultValue")
     type: str = "alert"
