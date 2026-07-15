@@ -12,16 +12,16 @@ from bidiwave.protocol.constants import (
     BROWSING_CAPTURE_SCREENSHOT,
     BROWSING_CLOSE,
     BROWSING_CREATE_CONTEXT,
-    BROWSING_CREATE_USER_CONTEXT,
+    BROWSER_CREATE_USER_CONTEXT,
     BROWSING_GET_TREE,
-    BROWSING_GET_USER_CONTEXTS,
+    BROWSER_GET_USER_CONTEXTS,
     BROWSING_GET_VIEWPORT,
     BROWSING_HANDLE_USER_PROMPT,
     BROWSING_LOCATE_NODES,
     BROWSING_NAVIGATE,
     BROWSING_PRINT,
     BROWSING_RELOAD,
-    BROWSING_REMOVE_USER_CONTEXT,
+    BROWSER_REMOVE_USER_CONTEXT,
     BROWSING_SET_VIEWPORT,
     BROWSING_TRAVERSE_HISTORY,
 )
@@ -55,7 +55,11 @@ class BrowsingContext:
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         if self._module:
-            await self._module.close(self.id)
+            try:
+                await self._module.close(self.id)
+            except Exception:
+                if exc_type is None:
+                    raise
 
 
 class BrowsingModule:
@@ -93,7 +97,7 @@ class BrowsingModule:
             UserContextInfo with the ID of the created user context.
         """
         result = await self._connection.send_command(
-            BROWSING_CREATE_USER_CONTEXT, {}
+            BROWSER_CREATE_USER_CONTEXT, {}
         )
         return UserContextInfo.model_validate(result)
 
@@ -104,7 +108,7 @@ class BrowsingModule:
             user_context: ID of the user context to remove.
         """
         await self._connection.send_command(
-            BROWSING_REMOVE_USER_CONTEXT, {"userContext": user_context}
+            BROWSER_REMOVE_USER_CONTEXT, {"userContext": user_context}
         )
 
     async def get_user_contexts(self) -> list[UserContextInfo]:
@@ -114,7 +118,7 @@ class BrowsingModule:
             List of UserContextInfo.
         """
         result = await self._connection.send_command(
-            BROWSING_GET_USER_CONTEXTS, {}
+            BROWSER_GET_USER_CONTEXTS, {}
         )
         parsed = GetUserContextsResult.model_validate(result)
         return parsed.user_contexts
@@ -145,7 +149,7 @@ class BrowsingModule:
         params: dict[str, Any] = {"context": ctx_id}
         if format != "png":
             params["format"] = format
-        if quality is not None:
+        if quality is not None and format == "jpeg":
             params["quality"] = quality
         result = await self._connection.send_command(BROWSING_CAPTURE_SCREENSHOT, params)
         return Screenshot.model_validate(result)
@@ -156,7 +160,7 @@ class BrowsingModule:
         max_depth: int | None = None,
     ) -> dict[str, Any]:
         params: dict[str, Any] = {}
-        if root:
+        if root is not None:
             params["root"] = root
         if max_depth is not None:
             params["maxDepth"] = max_depth
@@ -391,5 +395,9 @@ class BrowsingModule:
         from bidiwave.convenience.page import Page
 
         ctx = await self.create_context()
-        await self.navigate(ctx, url, wait)
+        try:
+            await self.navigate(ctx, url, wait)
+        except Exception:
+            await self.close(ctx)
+            raise
         return Page(self, self._script_module, ctx)

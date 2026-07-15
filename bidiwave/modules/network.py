@@ -66,9 +66,9 @@ class NetworkModule:
             InterceptResult with the intercept ID.
         """
         params: dict[str, Any] = {"phases": phases}
-        if contexts:
+        if contexts is not None:
             params["contexts"] = contexts
-        if url_patterns:
+        if url_patterns is not None:
             params["urlPatterns"] = url_patterns
         result = await self._connection.send_command(NETWORK_ADD_INTERCEPT, params)
         return InterceptResult.model_validate(result)

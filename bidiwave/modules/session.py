@@ -22,7 +22,7 @@ class SessionModule:
     async def new(self, capabilities: dict[str, Any] | None = None) -> Session:
         params = {
             "capabilities": {
-                "alwaysMatch": capabilities or {"webSocketUrl": True},
+                "alwaysMatch": capabilities if capabilities is not None else {"webSocketUrl": True},
             }
         }
         result = await self._connection.send_command(SESSION_NEW, params)
@@ -46,7 +46,7 @@ class SessionModule:
     ) -> None:
         """Subscribes to browser events."""
         params: dict[str, Any] = {"events": events}
-        if contexts:
+        if contexts is not None:
             params["contexts"] = contexts
         await self._connection.send_command(SESSION_SUBSCRIBE, params)
 
@@ -57,6 +57,6 @@ class SessionModule:
     ) -> None:
         """Unsubscribes from events."""
         params: dict[str, Any] = {"events": events}
-        if contexts:
+        if contexts is not None:
             params["contexts"] = contexts
         await self._connection.send_command(SESSION_UNSUBSCRIBE, params)

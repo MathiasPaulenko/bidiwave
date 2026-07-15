@@ -39,6 +39,10 @@ class RemoteValue(BaseModel):
                 return ArrayValue.model_validate(data)
             case "symbol" | "function":
                 return HandleValue.model_validate(data)
+            case "node":
+                return NodeValue.model_validate(data)
+            case "channel":
+                return ChannelValue.model_validate(data)
             case _:
                 return RemoteValue.model_validate(data)
 
@@ -88,3 +92,20 @@ class HandleValue(RemoteValue):
 
     type: str
     handle: str
+
+
+class NodeValue(RemoteValue):
+    """DOM node reference with sharedId."""
+
+    type: Literal["node"] = "node"
+    shared_id: str | None = None
+    value: dict[str, Any] | None = None
+    handle: str | None = None
+
+
+class ChannelValue(RemoteValue):
+    """Channel for preload script communication."""
+
+    type: Literal["channel"] = "channel"
+    value: dict[str, Any] | None = None
+    handle: str | None = None

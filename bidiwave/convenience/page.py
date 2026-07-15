@@ -31,6 +31,7 @@ class Page:
         self._browsing = browsing
         self._script = script
         self._context = context
+        self._closed = False
 
     @property
     def id(self) -> str:
@@ -135,6 +136,9 @@ class Page:
         await self._script.disown(self._context, handles)
 
     async def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         await self._browsing.close(self._context)
 
     async def activate(self) -> None:
@@ -165,5 +169,9 @@ class Page:
     async def __aenter__(self) -> Page:
         return self
 
-    async def __aexit__(self, *args: object) -> None:
-        await self.close()
+    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        try:
+            await self.close()
+        except Exception:
+            if exc_type is None:
+                raise
