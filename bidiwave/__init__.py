@@ -6,10 +6,11 @@ from bidiwave.convenience.page import Page
 from bidiwave.events.dispatcher import EventDispatcher
 from bidiwave.events.handlers import AsyncHandler, Subscription
 from bidiwave.exceptions import (
+    BiDiConnectionError,
     BiDiError,
+    BiDiTimeoutError,
     CapabilityError,
     CommandError,
-    BiDiConnectionError,
     InvalidArgumentError,
     InvalidSessionError,
     JavaScriptError,
@@ -18,7 +19,6 @@ from bidiwave.exceptions import (
     ProtocolError,
     SessionError,
     SessionNotFoundError,
-    BiDiTimeoutError,
     UnableToCaptureScreenError,
     UnknownCommandError,
     UnsupportedOperationError,
