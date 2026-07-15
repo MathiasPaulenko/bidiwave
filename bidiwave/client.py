@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 from bidiwave.config import ClientConfig
@@ -194,10 +195,8 @@ class BiDiClient:
             self._auto_prompt_sub = None
         self._auto_prompt_accept = None
         self._auto_prompt_text = None
-        try:
+        with contextlib.suppress(Exception):
             await self.session.unsubscribe(["browsingContext.userPromptOpened"])
-        except Exception:
-            pass
 
     def on_reconnect(self, handler: AsyncHandler) -> None:
         """Registers a handler that runs after reconnection."""
@@ -208,10 +207,8 @@ class BiDiClient:
         self._connection.on_disconnect(handler)
 
     async def close(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             await self.session.end()
-        except Exception:
-            pass
         await self._connection.close()
 
     async def __aenter__(self) -> BiDiClient:

@@ -1,6 +1,7 @@
 """WebSocket connection to the browser's BiDi endpoint."""
 
 import asyncio
+import contextlib
 import logging
 from typing import Any
 
@@ -10,8 +11,7 @@ from websockets.asyncio.client import ClientConnection
 
 from bidiwave.events.dispatcher import EventDispatcher
 from bidiwave.events.handlers import AsyncHandler
-from bidiwave.exceptions import BiDiConnectionError
-from bidiwave.exceptions import map_error
+from bidiwave.exceptions import BiDiConnectionError, map_error
 from bidiwave.transport.correlation import Correlator
 from bidiwave.transport.serializer import deserialize_message, serialize_command
 
@@ -73,7 +73,7 @@ class Connection:
 
         try:
             return await asyncio.wait_for(future, timeout=self._config.timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self._correlator.reject(
                 command_id,
                 BiDiConnectionError(
@@ -181,10 +181,8 @@ class Connection:
         self._closed = True
         if self._receive_task:
             self._receive_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._receive_task
-            except asyncio.CancelledError:
-                pass
         if self._ws:
             await self._ws.close()
         logger.info("Connection closed")
