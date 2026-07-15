@@ -25,5 +25,8 @@ site/
 CONTEXT.md
 spike.py
 
+# Audit / reference notes
+ref/
+
 # Driver binaries (downloaded on demand)
 bin/
