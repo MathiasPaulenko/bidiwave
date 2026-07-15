@@ -16,7 +16,7 @@ class Correlator:
         return self._next_id
 
     def register(self, command_id: int) -> asyncio.Future[dict[str, Any]]:
-        fut: asyncio.Future[dict[str, Any]] = asyncio.get_event_loop().create_future()
+        fut: asyncio.Future[dict[str, Any]] = asyncio.get_running_loop().create_future()
         self._pending[command_id] = fut
         return fut
 

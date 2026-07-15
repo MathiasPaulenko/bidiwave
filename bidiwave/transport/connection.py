@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Any, Literal
+from typing import Any
 
 import websockets
 from pydantic import BaseModel
@@ -10,7 +10,7 @@ from websockets.asyncio.client import ClientConnection
 
 from bidiwave.events.dispatcher import EventDispatcher
 from bidiwave.events.handlers import AsyncHandler
-from bidiwave.exceptions import ConnectionError as BiDiConnectionError
+from bidiwave.exceptions import BiDiConnectionError
 from bidiwave.exceptions import map_error
 from bidiwave.transport.correlation import Correlator
 from bidiwave.transport.serializer import deserialize_message, serialize_command
@@ -25,8 +25,6 @@ class TransportConfig(BaseModel):
     max_retries: int = 3
     retry_delay: float = 1.0
     retry_backoff: float = 2.0
-    max_queue: int = 1000
-    drop_policy: Literal["oldest", "newest", "block"] = "oldest"
 
 
 class Connection:
@@ -51,7 +49,10 @@ class Connection:
         self._on_disconnect: list[AsyncHandler] = []
 
     async def connect(self) -> None:
-        self._ws = await websockets.connect(self._url)
+        self._ws = await asyncio.wait_for(
+            websockets.connect(self._url),
+            timeout=self._config.timeout,
+        )
         self._receive_task = asyncio.create_task(self._receive_loop())
         logger.info("Connected to %s", self._url)
 
@@ -63,10 +64,23 @@ class Connection:
         future = self._correlator.register(command_id)
 
         message = serialize_command(command_id, method, params)
-        await self._ws.send(message)
+        try:
+            await self._ws.send(message)
+        except Exception:
+            self._correlator.reject(command_id, BiDiConnectionError("Failed to send command"))
+            raise
         logger.debug("→ [%d] %s", command_id, method)
 
-        return await asyncio.wait_for(future, timeout=self._config.timeout)
+        try:
+            return await asyncio.wait_for(future, timeout=self._config.timeout)
+        except asyncio.TimeoutError:
+            self._correlator.reject(
+                command_id,
+                BiDiConnectionError(
+                    f"Command {method} timed out after {self._config.timeout}s"
+                ),
+            )
+            raise
 
     async def _reconnect(self) -> bool:
         """Attempts to reconnect with exponential backoff. Returns True on success."""
@@ -89,7 +103,7 @@ class Connection:
 
                 for handler in self._on_reconnect:
                     try:
-                        await handler(None)
+                        await handler({})
                     except Exception as e:
                         logger.error("Reconnect handler error: %s", e)
 
@@ -104,9 +118,15 @@ class Connection:
 
     async def _receive_loop(self) -> None:
         assert self._ws is not None
+        reconnect_succeeded = False
         try:
             async for raw in self._ws:
-                data = deserialize_message(str(raw))
+                try:
+                    raw_str = raw.decode() if isinstance(raw, bytes) else raw
+                    data = deserialize_message(raw_str)
+                except (ValueError, TypeError) as e:
+                    logger.warning("Malformed message from browser: %s", e)
+                    continue
                 msg_type = data.get("type")
 
                 if msg_type in ("success", "error"):
@@ -132,19 +152,23 @@ class Connection:
                     method = data.get("method", "unknown")
                     params = data.get("params", {})
                     logger.debug("← event: %s", method)
-                    await self._dispatcher.dispatch(method, params)
+                    asyncio.create_task(self._dispatcher.dispatch(method, params))
         except websockets.ConnectionClosed:
             logger.info("WebSocket closed")
             if not self._closed:
                 for handler in self._on_disconnect:
                     try:
-                        await handler(None)
+                        await handler({})
                     except Exception as e:
                         logger.error("Disconnect handler error: %s", e)
 
-                await self._reconnect()
+                reconnect_succeeded = await self._reconnect()
+        except Exception as e:
+            logger.error("Receive loop crashed: %s: %s", type(e).__name__, e, exc_info=True)
+            if not self._closed:
+                reconnect_succeeded = await self._reconnect()
         finally:
-            if not self._reconnecting:
+            if not reconnect_succeeded:
                 self._correlator.reject_all(BiDiConnectionError("Connection closed"))
 
     def on_reconnect(self, handler: AsyncHandler) -> None:
@@ -157,6 +181,10 @@ class Connection:
         self._closed = True
         if self._receive_task:
             self._receive_task.cancel()
+            try:
+                await self._receive_task
+            except asyncio.CancelledError:
+                pass
         if self._ws:
             await self._ws.close()
         logger.info("Connection closed")

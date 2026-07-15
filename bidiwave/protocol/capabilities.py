@@ -16,8 +16,8 @@ class Capabilities(BaseModel):
     vendor: str = ""
     supports_browsing: bool = True
     supports_script: bool = True
-    supports_network: bool = False
-    supports_input: bool = False
+    supports_network: bool = True
+    supports_input: bool = True
 
 
 def detect_capabilities(status_response: dict[str, Any]) -> Capabilities:
@@ -30,9 +30,6 @@ def detect_capabilities(status_response: dict[str, Any]) -> Capabilities:
     platform_name = caps_data.get("platformName", "")
     vendor = caps_data.get("vendor", "")
 
-    supports_network = "firefox" in browser_name.lower()
-    supports_input = "firefox" in browser_name.lower()
-
     return Capabilities(
         browser_name=browser_name,
         browser_version=browser_version,
@@ -40,6 +37,6 @@ def detect_capabilities(status_response: dict[str, Any]) -> Capabilities:
         vendor=vendor,
         supports_browsing=True,
         supports_script=True,
-        supports_network=supports_network,
-        supports_input=supports_input,
+        supports_network=True,
+        supports_input=True,
     )

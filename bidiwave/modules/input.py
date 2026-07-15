@@ -174,7 +174,8 @@ class InputModule:
         """
         key_actions: list[dict[str, Any]] = []
         for char in text:
-            key_actions.append({"type": "key", "value": char})
+            key_actions.append({"type": "keyDown", "value": char})
+            key_actions.append({"type": "keyUp", "value": char})
         actions = [
             InputSource(type="key", id="keyboard", actions=key_actions),
         ]
@@ -199,8 +200,8 @@ class InputModule:
                 type="key",
                 id="keyboard",
                 actions=[
-                    {"type": "key", "value": key},
-                    {"type": "key", "value": key},
+                    {"type": "keyDown", "value": key},
+                    {"type": "keyUp", "value": key},
                 ],
             ),
         ]
