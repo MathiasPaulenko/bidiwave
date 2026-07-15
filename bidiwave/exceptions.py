@@ -10,11 +10,11 @@ class BiDiError(Exception):
         self.message = message
 
 
-class ConnectionError(BiDiError):
+class BiDiConnectionError(BiDiError):
     """WebSocket connection error."""
 
 
-class TimeoutError(BiDiError):
+class BiDiTimeoutError(BiDiError):
     """Timeout waiting for response or navigation."""
 
 
@@ -53,11 +53,36 @@ class JavaScriptError(CommandError):
     """Error evaluating JavaScript."""
 
 
+class InvalidSessionError(CommandError):
+    """Invalid or expired session."""
+
+
+class SessionNotFoundError(CommandError):
+    """Session not found."""
+
+
+class UnableToCaptureScreenError(CommandError):
+    """Unable to capture screen."""
+
+
+class UnknownCommandError(CommandError):
+    """Unknown command."""
+
+
+class UnsupportedOperationError(CommandError):
+    """Unsupported operation."""
+
+
 ERROR_CODE_MAP: dict[str, type[CommandError]] = {
     "invalid argument": InvalidArgumentError,
     "no such frame": NoSuchFrameError,
     "no such window": NoSuchWindowError,
     "javascript error": JavaScriptError,
+    "invalid session": InvalidSessionError,
+    "session not found": SessionNotFoundError,
+    "unable to capture screen": UnableToCaptureScreenError,
+    "unknown command": UnknownCommandError,
+    "unsupported operation": UnsupportedOperationError,
 }
 
 

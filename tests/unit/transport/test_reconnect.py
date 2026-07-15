@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import websockets
 
-from bidiwave.exceptions import ConnectionError as BiDiConnectionError
+from bidiwave.exceptions import BiDiConnectionError
 from bidiwave.transport.connection import Connection, TransportConfig
 
 

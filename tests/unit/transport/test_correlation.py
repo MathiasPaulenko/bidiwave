@@ -2,6 +2,7 @@
 
 import pytest
 
+from bidiwave.exceptions import BiDiConnectionError
 from bidiwave.transport.correlation import Correlator
 
 
@@ -34,10 +35,10 @@ class TestCorrelator:
         corr = Correlator()
         fut1 = corr.register(1)
         fut2 = corr.register(2)
-        corr.reject_all(ConnectionError("closed"))
-        with pytest.raises(ConnectionError, match="closed"):
+        corr.reject_all(BiDiConnectionError("closed"))
+        with pytest.raises(BiDiConnectionError, match="closed"):
             await fut1
-        with pytest.raises(ConnectionError, match="closed"):
+        with pytest.raises(BiDiConnectionError, match="closed"):
             await fut2
 
     @pytest.mark.asyncio

@@ -64,8 +64,6 @@ class BiDiClient:
             max_retries=cfg.max_retries,
             retry_delay=cfg.retry_delay,
             retry_backoff=cfg.retry_backoff,
-            max_queue=cfg.max_queue,
-            drop_policy=cfg.drop_policy,
         )
         connection = Connection(url, config=transport_config)
         await connection.connect()
@@ -83,7 +81,7 @@ class BiDiClient:
         """Unsubscribes a handler."""
         self._dispatcher.off(subscription)
 
-    async def on_log_entry(self, handler: AsyncHandler) -> Subscription:
+    def on_log_entry(self, handler: AsyncHandler) -> Subscription:
         """Convenience for subscribing to console logs."""
         return self._dispatcher.on("log.entryAdded", handler)  # type: ignore[return-value]
 
@@ -106,10 +104,6 @@ class BiDiClient:
     def on_fetch_error(self, handler: AsyncHandler) -> Subscription:
         """Convenience for network.fetchError."""
         return self._dispatcher.on("network.fetchError", handler)  # type: ignore[return-value]
-
-    def on_cookie_changed(self, handler: AsyncHandler) -> Subscription:
-        """Convenience for storage.cookieChanged."""
-        return self._dispatcher.on("storage.cookieChanged", handler)  # type: ignore[return-value]
 
     def on_auth_required(self, handler: AsyncHandler) -> Subscription:
         """Convenience for network.authRequired."""
@@ -188,10 +182,10 @@ class BiDiClient:
                     user_text=self._auto_prompt_text,
                 )
 
+        await self.session.subscribe(["browsingContext.userPromptOpened"])
         self._auto_prompt_sub = self.on(
             "browsingContext.userPromptOpened", _handle_prompt
         )
-        await self.session.subscribe(["browsingContext.userPromptOpened"])
 
     async def disable_auto_prompt(self) -> None:
         """Disables automatic dialog handling."""
@@ -200,6 +194,10 @@ class BiDiClient:
             self._auto_prompt_sub = None
         self._auto_prompt_accept = None
         self._auto_prompt_text = None
+        try:
+            await self.session.unsubscribe(["browsingContext.userPromptOpened"])
+        except Exception:
+            pass
 
     def on_reconnect(self, handler: AsyncHandler) -> None:
         """Registers a handler that runs after reconnection."""
@@ -210,6 +208,10 @@ class BiDiClient:
         self._connection.on_disconnect(handler)
 
     async def close(self) -> None:
+        try:
+            await self.session.end()
+        except Exception:
+            pass
         await self._connection.close()
 
     async def __aenter__(self) -> BiDiClient:

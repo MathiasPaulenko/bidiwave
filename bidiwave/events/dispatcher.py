@@ -84,8 +84,17 @@ class EventDispatcher:
         If a handler fails, the error is logged but not propagated
         (error isolation).
         """
-        event = parse_event(method, params)
-        handlers = self._handlers.get(method, [])
+        try:
+            event = parse_event(method, params)
+        except Exception as e:
+            logger.warning(
+                "Failed to parse event %s: %s: %s — passing raw params",
+                method,
+                type(e).__name__,
+                e,
+            )
+            event = params  # type: ignore[assignment]
+        handlers = list(self._handlers.get(method, []))
 
         for handler in handlers:
             try:
