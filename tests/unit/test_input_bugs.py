@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from bidiwave.modules.input import InputModule
-from bidiwave.protocol.results import InputSource, PointerAction, WheelAction
+from bidiwave.protocol.results import InputSource, PointerAction
 
 MockConn = MagicMock
 

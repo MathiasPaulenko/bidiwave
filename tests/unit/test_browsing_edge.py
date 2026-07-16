@@ -1,4 +1,7 @@
-"""Edge-case unit tests for BrowsingModule — create, navigate, close, screenshot, get_tree, viewport, open, context manager."""
+"""Edge-case unit tests for BrowsingModule.
+
+create, navigate, close, screenshot, get_tree, viewport, open, context manager.
+"""
 
 from unittest.mock import AsyncMock, MagicMock
 

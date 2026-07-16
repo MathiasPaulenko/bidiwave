@@ -141,7 +141,7 @@ class ObjectValue(RemoteValue):
                 else:
                     return v  # type: ignore[return-value]
             return result
-        return v
+        return v  # type: ignore[no-any-return]
 
 
 class ArrayValue(RemoteValue):
@@ -162,7 +162,7 @@ class ArrayValue(RemoteValue):
                 else:
                     result.append(item)
             return result
-        return v
+        return v  # type: ignore[no-any-return]
 
 
 class HandleValue(RemoteValue):

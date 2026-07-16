@@ -44,7 +44,10 @@ class LogEntryAddedEvent(BaseModel):
     @classmethod
     def normalize_args(cls, v: Any) -> Any:
         if isinstance(v, list):
-            return [RemoteValue.parse(item) if isinstance(item, dict) and item.get("type") else item for item in v]
+            return [
+                RemoteValue.parse(item) if isinstance(item, dict) and item.get("type") else item
+                for item in v
+            ]
         return v
 
     @field_validator("level", mode="before")

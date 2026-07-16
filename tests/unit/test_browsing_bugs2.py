@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from bidiwave.modules.browsing import BrowsingContext, BrowsingModule
+from bidiwave.modules.browsing import BrowsingModule
 
 CTX_ID = "ctx-123"
 

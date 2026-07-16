@@ -413,7 +413,7 @@ class NetworkModule:
         result = await self._connection.send_command(
             NETWORK_ADD_DATA_COLLECTOR, params
         )
-        return result["collector"]
+        return str(result["collector"])
 
     async def remove_data_collector(self, collector_id: str) -> None:
         """Removes a previously added data collector.

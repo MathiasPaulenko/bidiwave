@@ -5,10 +5,9 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from pydantic import ValidationError
 
 from bidiwave.modules.storage import StorageModule
-from bidiwave.protocol.results import Cookie, GetCookiesResult
+from bidiwave.protocol.results import Cookie
 
 MockConn = MagicMock
 
@@ -26,7 +25,7 @@ def storage_module(mock_connection: MockConn) -> StorageModule:
 
 
 class TestCookieValueBytesValue:
-    """Bug 27: Cookie.value should accept BytesValue format {type: 'base64', value: '...'} per spec."""
+    """Bug 27: Cookie.value accepts BytesValue {type: 'base64', value: '...'} per spec."""
 
     def test_cookie_accepts_string_value(self) -> None:
         cookie = Cookie(name="foo", value="bar")
@@ -98,7 +97,7 @@ class TestGetCookiesFilter:
 
 
 class TestDeleteCookieUsesDeleteCookies:
-    """Bug 30: delete_cookie should use storage.deleteCookies with name filter, not non-existent storage.deleteCookie."""
+    """Bug 30: delete_cookie should use storage.deleteCookies with name filter, not non-existent storage.deleteCookie."""  # noqa: E501
 
     async def test_delete_cookie_uses_delete_cookies_command(
         self,

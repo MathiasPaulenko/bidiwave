@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from pydantic import ValidationError
 
 from bidiwave.modules.network import NetworkModule
 from bidiwave.protocol.results import ResponseBodyResult
@@ -57,7 +56,7 @@ class TestResponseBodyResultTotalSizeDefault:
 
 
 class TestContinueWithAuthCredentialsValidation:
-    """Bug 21: continue_with_auth should raise when action='provideCredentials' but no credentials."""
+    """Bug 21: continue_with_auth should raise when action='provideCredentials' but no credentials."""  # noqa: E501
 
     async def test_provide_credentials_without_credentials_raises(
         self,
@@ -82,11 +81,12 @@ class TestDeadImportCheck:
     """Bug 18: NETWORK_CANCEL_AUTH should no longer be imported in network.py."""
 
     def test_no_dead_import(self) -> None:
-        import bidiwave.modules.network as net_mod
         import inspect
 
+        import bidiwave.modules.network as net_mod
+
         source = inspect.getsource(net_mod)
-        lines = [l for l in source.splitlines() if "NETWORK_CANCEL_AUTH" in l]
+        lines = [line for line in source.splitlines() if "NETWORK_CANCEL_AUTH" in line]
         assert len(lines) == 0
 
     def test_constant_removed_from_constants(self) -> None:

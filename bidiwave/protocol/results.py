@@ -135,8 +135,8 @@ class Cookie(BaseModel):
     @classmethod
     def normalize_value(cls, v: Any) -> str:
         if isinstance(v, dict):
-            return v.get("value", "")
-        return v
+            return str(v.get("value", ""))
+        return str(v)
 
     @field_validator("same_site", mode="before")
     @classmethod

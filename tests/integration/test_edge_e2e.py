@@ -13,7 +13,6 @@ import pytest
 
 from bidiwave.exceptions import BiDiError
 
-
 # ---------------------------------------------------------------------------
 # Error handling edge cases
 # ---------------------------------------------------------------------------
@@ -228,7 +227,9 @@ async def test_multiple_contexts_independent(client: object) -> None:
     ctx2 = await client.browsing.create_context()
     try:
         await client.browsing.navigate(ctx1, "https://example.com", wait="complete")
-        await client.browsing.navigate(ctx2, "https://www.iana.org/domains/example", wait="complete")
+        await client.browsing.navigate(
+            ctx2, "https://www.iana.org/domains/example", wait="complete"
+        )
         title1 = await client.script.evaluate(ctx1, "document.title")
         title2 = await client.script.evaluate(ctx2, "document.title")
         assert "Example" in title1.value

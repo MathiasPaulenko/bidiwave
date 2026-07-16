@@ -191,6 +191,7 @@ class TestCookieValueBytesValue:
 
     def test_cookie_value_serialized_as_bytes_value(self) -> None:
         from unittest.mock import AsyncMock, MagicMock
+
         from bidiwave.modules.storage import StorageModule
         from bidiwave.protocol.results import Cookie
 

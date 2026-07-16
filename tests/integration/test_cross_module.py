@@ -13,7 +13,6 @@ import pytest
 
 from bidiwave.protocol.results import Cookie
 
-
 # ---------------------------------------------------------------------------
 # Script + Browsing integration
 # ---------------------------------------------------------------------------
@@ -199,7 +198,7 @@ async def test_log_warning_level(client: object, context: object) -> None:
     await client.script.evaluate(context, "console.warn('careful-warning')")
     await asyncio.sleep(2)
 
-    matching = [l for l in logs if "careful-warning" in l.text]
+    matching = [entry for entry in logs if "careful-warning" in entry.text]
     assert len(matching) >= 1
     assert matching[0].level == "warning"
 
@@ -220,7 +219,7 @@ async def test_log_error_level(client: object, context: object) -> None:
     await client.script.evaluate(context, "console.error('bad-error')")
     await asyncio.sleep(2)
 
-    matching = [l for l in logs if "bad-error" in l.text]
+    matching = [entry for entry in logs if "bad-error" in entry.text]
     assert len(matching) >= 1
     assert matching[0].level == "error"
 

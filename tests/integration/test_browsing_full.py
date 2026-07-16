@@ -210,7 +210,9 @@ async def test_reload_ignore_cache(client: object, context: object) -> None:
 async def test_traverse_history_back_forward(client: object, context: object) -> None:
     """Navigate to two pages, then traverse back and forward."""
     await client.browsing.navigate(context, "https://example.com", wait="complete")
-    await client.browsing.navigate(context, "https://www.iana.org/domains/reserved", wait="complete")
+    await client.browsing.navigate(
+        context, "https://www.iana.org/domains/reserved", wait="complete"
+    )
 
     try:
         back_result = await client.browsing.traverse_history(context, "back")
@@ -426,7 +428,9 @@ async def test_multiple_contexts(client: object) -> None:
     try:
         assert ctx1.id != ctx2.id
         await client.browsing.navigate(ctx1, "https://example.com", wait="complete")
-        await client.browsing.navigate(ctx2, "https://www.iana.org/domains/reserved", wait="complete")
+        await client.browsing.navigate(
+            ctx2, "https://www.iana.org/domains/reserved", wait="complete"
+        )
         tree = await client.browsing.get_tree()
         context_ids = [c.context for c in tree.contexts]
         assert ctx1.id in context_ids

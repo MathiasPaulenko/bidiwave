@@ -6,12 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from bidiwave.exceptions import JavaScriptError
 from bidiwave.modules.script import ScriptModule
 from bidiwave.protocol.remote_value import (
     NumberValue,
     RemoteValue,
-    StringValue,
 )
 
 CTX_ID = "ctx-123"
@@ -87,7 +85,7 @@ class TestAddPreloadScriptEmptyArguments:
 
 
 class TestRemoteValueParseSuccessNoResult:
-    """Bug 12: RemoteValue.parse on {type: 'success'} without result key returns bare RemoteValue."""
+    """Bug 12: RemoteValue.parse on {type: 'success'} without result key returns bare RemoteValue."""  # noqa: E501
 
     def test_parse_success_without_result_returns_undefined(self) -> None:
         data = {"type": "success"}
