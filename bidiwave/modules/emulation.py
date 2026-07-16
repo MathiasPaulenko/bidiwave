@@ -6,7 +6,9 @@ from typing import Any
 
 from bidiwave.protocol.constants import (
     EMULATION_SET_GEOLOCATION,
+    EMULATION_SET_LOCALE,
     EMULATION_SET_NETWORK_CONDITIONS,
+    EMULATION_SET_SCREEN_ORIENTATION,
     EMULATION_SET_TIMEZONE,
     EMULATION_SET_USER_AGENT,
 )
@@ -38,6 +40,8 @@ class EmulationModule:
         self,
         coordinates: dict[str, float] | None = None,
         contexts: list[str] | None = None,
+        user_contexts: list[str] | None = None,
+        error: dict[str, str] | None = None,
     ) -> None:
         """Overrides the geolocation coordinates.
 
@@ -45,12 +49,18 @@ class EmulationModule:
             coordinates: Dict with 'latitude' and 'longitude' keys.
                 None to clear the override.
             contexts: Context IDs to apply to. None = all.
+            user_contexts: User context IDs to apply to. None = all.
+            error: Error dict to simulate, e.g. {"type": "positionUnavailable"}.
         """
         params: dict[str, Any] = {}
         if coordinates is not None:
             params["coordinates"] = coordinates
+        if error is not None:
+            params["error"] = error
         if contexts is not None:
             params["contexts"] = contexts
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
         await self._connection.send_command(EMULATION_SET_GEOLOCATION, params)
 
     async def set_network_conditions(
@@ -89,16 +99,20 @@ class EmulationModule:
         self,
         timezone: str,
         contexts: list[str] | None = None,
+        user_contexts: list[str] | None = None,
     ) -> None:
         """Overrides the browser timezone.
 
         Args:
             timezone: IANA timezone identifier (e.g. "America/New_York").
             contexts: Context IDs to apply to. None = all.
+            user_contexts: User context IDs to apply to. None = all.
         """
         params: dict[str, Any] = {"timezone": timezone}
         if contexts is not None:
             params["contexts"] = contexts
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
         await self._connection.send_command(EMULATION_SET_TIMEZONE, params)
 
     async def set_user_agent(
@@ -124,3 +138,52 @@ class EmulationModule:
         if contexts is not None:
             params["contexts"] = contexts
         await self._connection.send_command(EMULATION_SET_USER_AGENT, params)
+
+    async def set_locale(
+        self,
+        locale: str | None = None,
+        contexts: list[str] | None = None,
+        user_contexts: list[str] | None = None,
+    ) -> None:
+        """Overrides the browser locale.
+
+        Args:
+            locale: Locale identifier (e.g. "en-US", "fr-FR").
+                None to clear the override.
+            contexts: Context IDs to apply to. None = all.
+            user_contexts: User context IDs to apply to. None = all.
+        """
+        params: dict[str, Any] = {}
+        if locale is not None:
+            params["locale"] = locale
+        if contexts is not None:
+            params["contexts"] = contexts
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
+        await self._connection.send_command(EMULATION_SET_LOCALE, params)
+
+    async def set_screen_orientation(
+        self,
+        orientation: dict[str, Any] | None = None,
+        contexts: list[str] | None = None,
+        user_contexts: list[str] | None = None,
+    ) -> None:
+        """Overrides the screen orientation.
+
+        Args:
+            orientation: Dict with 'type' ("portraitPrimary", "landscapePrimary",
+                "portraitSecondary", "landscapeSecondary") and optional 'angle'.
+                None to clear the override.
+            contexts: Context IDs to apply to. None = all.
+            user_contexts: User context IDs to apply to. None = all.
+        """
+        params: dict[str, Any] = {}
+        if orientation is not None:
+            params["orientation"] = orientation
+        if contexts is not None:
+            params["contexts"] = contexts
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
+        await self._connection.send_command(
+            EMULATION_SET_SCREEN_ORIENTATION, params
+        )

@@ -2,7 +2,9 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from bidiwave.protocol.remote_value import RemoteValue
 
 
 class Event(BaseModel):
@@ -15,28 +17,53 @@ class Event(BaseModel):
     params: dict[str, Any] = {}
 
 
+class ScriptSource(BaseModel):
+    """script.Source — identifies the realm and browsing context of a script."""
+
+    model_config = ConfigDict(extra="allow")
+
+    realm: str | None = None
+    context: str | None = None
+
+
 class LogEntryAddedEvent(BaseModel):
     """log.entryAdded event — a console log from the browser."""
 
     model_config = ConfigDict(extra="allow")
 
-    level: Literal["debug", "info", "warn", "error"]
+    level: Literal["debug", "info", "warning", "error"]
     text: str
     timestamp: int
-    source: dict[str, Any]
-    type: str = "console"
-    args: list[dict[str, Any]] = []
+    source: ScriptSource
+    type: Literal["console", "javascript"] = "console"
+    args: list[RemoteValue] = []
+    stack_trace: dict[str, Any] | None = Field(default=None, alias="stackTrace")
+    method: str | None = None
+
+    @field_validator("args", mode="before")
+    @classmethod
+    def normalize_args(cls, v: Any) -> Any:
+        if isinstance(v, list):
+            return [RemoteValue.parse(item) if isinstance(item, dict) and item.get("type") else item for item in v]
+        return v
+
+    @field_validator("level", mode="before")
+    @classmethod
+    def normalize_level(cls, v: Any) -> Any:
+        if v == "warn":
+            return "warning"
+        return v
 
 
 class BrowsingContextCreatedEvent(BaseModel):
     """browsingContext.contextCreated event."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     context: str
     url: str
-    user_context: str = "default"
-    original_opener: str | None = None
+    user_context: str = Field(default="default", alias="userContext")
+    original_opener: str | None = Field(default=None, alias="originalOpener")
 
 
 class BrowsingContextDestroyedEvent(BaseModel):
@@ -47,7 +74,7 @@ class BrowsingContextDestroyedEvent(BaseModel):
     context: str
 
 
-class BrowsingContextNavigatedEvent(BaseModel):
+class BrowsingContextNavigationStartedEvent(BaseModel):
     """browsingContext.navigationStarted event."""
 
     model_config = ConfigDict(extra="allow")
@@ -56,6 +83,44 @@ class BrowsingContextNavigatedEvent(BaseModel):
     url: str
     navigation: str | None = None
     status: Literal["pending", "complete", "canceled"] = "pending"
+    canceled: bool = False
+
+
+# Backward-compatible alias
+BrowsingContextNavigatedEvent = BrowsingContextNavigationStartedEvent
+
+
+class BrowsingContextNavigationAbortedEvent(BaseModel):
+    """browsingContext.navigationAborted event — emitted when a navigation is aborted."""
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str
+    navigation: str
+    url: str
+
+
+class BrowsingContextNavigationCommittedEvent(BaseModel):
+    """browsingContext.navigationCommitted event — emitted when navigation is committed.
+
+    Fires after the response is received and the new document starts loading.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str
+    navigation: str
+    url: str
+
+
+class BrowsingContextNavigationFailedEvent(BaseModel):
+    """browsingContext.navigationFailed event — emitted when a navigation fails."""
+
+    model_config = ConfigDict(extra="allow")
+
+    context: str
+    navigation: str
+    url: str
 
 
 class ScriptMessageEvent(BaseModel):
@@ -64,7 +129,7 @@ class ScriptMessageEvent(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     realm: str
-    source: dict[str, Any]
+    source: ScriptSource
     channel: str
     data: Any
 
@@ -77,11 +142,12 @@ class NetworkRequestData(BaseModel):
     request: str
     url: str
     method: str
-    headers: list[dict[str, str]] = []
+    headers: list[dict[str, Any]] = []
     cookies: list[dict[str, Any]] = []
     headers_size: int | None = Field(default=None, alias="headersSize")
     body_size: int | None = Field(default=None, alias="bodySize")
     timings: dict[str, Any] | None = None
+    initiator: dict[str, Any] | None = None
 
 
 class NetworkResponseData(BaseModel):
@@ -92,11 +158,13 @@ class NetworkResponseData(BaseModel):
     url: str
     status: int
     status_text: str = Field(default="", alias="statusText")
-    headers: list[dict[str, str]] = []
+    headers: list[dict[str, Any]] = []
     mime_type: str = Field(default="", alias="mimeType")
     headers_size: int | None = Field(default=None, alias="headersSize")
     body_size: int | None = Field(default=None, alias="bodySize")
     content: dict[str, Any] | None = None
+    from_cache: bool = Field(default=False, alias="fromCache")
+    from_service_worker: bool = Field(default=False, alias="fromServiceWorker")
 
 
 class NetworkBeforeRequestSentEvent(BaseModel):
@@ -158,7 +226,7 @@ class ScriptRealmCreatedEvent(BaseModel):
 
     realm: str
     origin: str
-    type: str
+    type: Literal["window", "dedicated-worker", "shared-worker", "service-worker", "worker"]
     context: str | None = None
     sandbox: str | None = None
 
@@ -180,10 +248,55 @@ class BrowsingContextUserPromptOpenedEvent(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     context: str
-    handler: str | None = None
+    handler: Literal["accept", "dismiss", "default"] | None = None
     message: str = ""
     default_value: str = Field(default="", alias="defaultValue")
-    type: str = "alert"
+    type: Literal["alert", "confirm", "prompt", "beforeunload"] = "alert"
+
+
+class BrowsingContextUserPromptClosedEvent(BaseModel):
+    """browsingContext.userPromptClosed event — emitted when a dialog is closed.
+
+    The accepted field is true if the user accepted the dialog, false if dismissed.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str
+    accepted: bool = False
+    user_text: str | None = Field(default=None, alias="userText")
+
+
+class BrowsingContextDownloadWillBeginEvent(BaseModel):
+    """browsingContext.downloadWillBegin event — emitted when a download starts.
+
+    Fired before the download begins, allowing interception or cancellation.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str
+    navigation: str | None = None
+    url: str
+    suggested_filename: str | None = Field(default=None, alias="suggestedFilename")
+    user_context: str | None = Field(default=None, alias="userContext")
+
+
+class BrowsingContextDownloadEndEvent(BaseModel):
+    """browsingContext.downloadEnd event — emitted when a download finishes.
+
+    The status field indicates whether the download succeeded or was cancelled.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str
+    navigation: str | None = None
+    url: str
+    user_context: str | None = Field(default=None, alias="userContext")
+    status: Literal["completed", "canceled"] = "completed"
+    cancel_reason: str | None = Field(default=None, alias="cancelReason")
+    item: str | None = None
 
 
 class NetworkDataReceivedEvent(BaseModel):
@@ -199,7 +312,7 @@ class NetworkDataReceivedEvent(BaseModel):
     request: str
     redirect_count: int = Field(default=0, alias="redirectCount")
     data: str
-    data_size: int = Field(alias="dataSize")
+    data_size: int = Field(default=0, alias="dataSize")
 
 
 class BrowsingContextNavigationCompletedEvent(BaseModel):
@@ -215,6 +328,7 @@ class BrowsingContextNavigationCompletedEvent(BaseModel):
     url: str
     navigation: str | None = None
     status: Literal["pending", "complete", "canceled"] = "complete"
+    canceled: bool = False
 
 
 class NetworkAuthRequiredEvent(BaseModel):
@@ -230,6 +344,7 @@ class NetworkAuthRequiredEvent(BaseModel):
     navigation: str | None = None
     redirect_count: int = Field(default=0, alias="redirectCount")
     request: NetworkRequestData
+    response: NetworkResponseData | None = None
 
 
 class BrowsingContextFragmentNavigatedEvent(BaseModel):
@@ -299,6 +414,20 @@ class BrowsingContextHistoryUpdatedEvent(BaseModel):
     url: str
 
 
+class InputFileDialogOpenedEvent(BaseModel):
+    """input.fileDialogOpened event — emitted when a file dialog is opened.
+
+    This fires when a file input element triggers a native file dialog,
+    allowing the user to set files via input.setFiles instead.
+    """
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str
+    element: dict[str, Any] | None = None
+    multiple: bool = False
+
+
 def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
     """Factory that returns the correct event model based on method."""
     match method:
@@ -309,7 +438,13 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
         case "browsingContext.contextDestroyed":
             return BrowsingContextDestroyedEvent.model_validate(params)
         case "browsingContext.navigationStarted":
-            return BrowsingContextNavigatedEvent.model_validate(params)
+            return BrowsingContextNavigationStartedEvent.model_validate(params)
+        case "browsingContext.navigationAborted":
+            return BrowsingContextNavigationAbortedEvent.model_validate(params)
+        case "browsingContext.navigationCommitted":
+            return BrowsingContextNavigationCommittedEvent.model_validate(params)
+        case "browsingContext.navigationFailed":
+            return BrowsingContextNavigationFailedEvent.model_validate(params)
         case "browsingContext.navigationCompleted":
             return BrowsingContextNavigationCompletedEvent.model_validate(params)
         case "browsingContext.fragmentNavigated":
@@ -322,6 +457,12 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return BrowsingContextHistoryUpdatedEvent.model_validate(params)
         case "browsingContext.userPromptOpened":
             return BrowsingContextUserPromptOpenedEvent.model_validate(params)
+        case "browsingContext.userPromptClosed":
+            return BrowsingContextUserPromptClosedEvent.model_validate(params)
+        case "browsingContext.downloadWillBegin":
+            return BrowsingContextDownloadWillBeginEvent.model_validate(params)
+        case "browsingContext.downloadEnd":
+            return BrowsingContextDownloadEndEvent.model_validate(params)
         case "script.message":
             return ScriptMessageEvent.model_validate(params)
         case "script.realmCreated":
@@ -342,5 +483,7 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return NetworkSamplingStateChangedEvent.model_validate(params)
         case "network.fetchError":
             return NetworkFetchErrorEvent.model_validate(params)
+        case "input.fileDialogOpened":
+            return InputFileDialogOpenedEvent.model_validate(params)
         case _:
             return Event(method=method, params=params)

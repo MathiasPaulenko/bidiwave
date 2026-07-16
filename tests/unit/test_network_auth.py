@@ -62,5 +62,5 @@ class TestCancelAuth:
     ) -> None:
         await network_module.cancel_auth("req-1")
         mock_connection.send_command.assert_called_once_with(
-            "network.cancelAuth", {"request": "req-1"}
+            "network.continueWithAuth", {"request": "req-1", "action": "cancel"}
         )

@@ -6,11 +6,15 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
+from bidiwave.exceptions import JavaScriptError
 from bidiwave.protocol.commands import ViewportSize
 from bidiwave.protocol.constants import (
+    BROWSER_CLOSE,
     BROWSER_CREATE_USER_CONTEXT,
+    BROWSER_GET_CLIENT_WINDOWS,
     BROWSER_GET_USER_CONTEXTS,
     BROWSER_REMOVE_USER_CONTEXT,
+    BROWSER_SET_CLIENT_WINDOW_STATE,
     BROWSING_ACTIVATE,
     BROWSING_CAPTURE_SCREENSHOT,
     BROWSING_CLOSE,
@@ -26,6 +30,9 @@ from bidiwave.protocol.constants import (
     BROWSING_TRAVERSE_HISTORY,
 )
 from bidiwave.protocol.results import (
+    ClientWindowInfo,
+    GetClientWindowsResult,
+    GetTreeResult,
     GetUserContextsResult,
     GetViewportResult,
     LocateNodesResult,
@@ -48,6 +55,7 @@ class BrowsingContext:
 
     id: str
     url: str = ""
+    user_context: str | None = None
     _module: BrowsingModule | None = field(default=None, repr=False)
 
     async def __aenter__(self) -> BrowsingContext:
@@ -77,29 +85,78 @@ class BrowsingModule:
         self,
         type: Literal["tab", "window"] = "tab",
         user_context: str | None = None,
+        reference_context: str | None = None,
+        background: bool | None = None,
     ) -> BrowsingContext:
         params: dict[str, Any] = {"type": type}
         if user_context is not None:
             params["userContext"] = user_context
+        if reference_context is not None:
+            params["referenceContext"] = reference_context
+        if background is not None:
+            params["background"] = background
         result = await self._connection.send_command(
             BROWSING_CREATE_CONTEXT, params
         )
         return BrowsingContext(
             id=result["context"],
             url=result.get("url", ""),
+            user_context=result.get("userContext"),
             _module=self,
         )
 
-    async def create_user_context(self) -> UserContextInfo:
+    async def create_user_context(
+        self,
+        accept_insecure_certs: bool | None = None,
+    ) -> UserContextInfo:
         """Creates an isolated user context (profile with its own cookies).
+
+        Args:
+            accept_insecure_certs: Whether the context accepts insecure
+                TLS certificates. Defaults to the session value if omitted.
 
         Returns:
             UserContextInfo with the ID of the created user context.
         """
+        params: dict[str, Any] = {}
+        if accept_insecure_certs is not None:
+            params["acceptInsecureCerts"] = accept_insecure_certs
         result = await self._connection.send_command(
-            BROWSER_CREATE_USER_CONTEXT, {}
+            BROWSER_CREATE_USER_CONTEXT, params
         )
         return UserContextInfo.model_validate(result)
+
+    async def close_browser(self) -> None:
+        """Closes the browser, ending the session and cleaning up resources."""
+        await self._connection.send_command(BROWSER_CLOSE, {})
+
+    async def get_client_windows(self) -> list[ClientWindowInfo]:
+        """Lists all open client windows.
+
+        Returns:
+            List of ClientWindowInfo with window state, dimensions, and position.
+        """
+        result = await self._connection.send_command(
+            BROWSER_GET_CLIENT_WINDOWS, {}
+        )
+        parsed = GetClientWindowsResult.model_validate(result)
+        return parsed.client_windows
+
+    async def set_client_window_state(
+        self,
+        client_window: str,
+        state: Literal["normal", "minimized", "maximized", "fullscreen"],
+    ) -> None:
+        """Sets the state of a client window.
+
+        Args:
+            client_window: ID of the client window.
+            state: Target state — "normal", "minimized", "maximized", or "fullscreen".
+        """
+        await self._connection.send_command(
+            BROWSER_SET_CLIENT_WINDOW_STATE,
+            {"clientWindow": client_window, "state": state},
+        )
 
     async def remove_user_context(self, user_context: str) -> None:
         """Removes a user context and all its browsing contexts.
@@ -133,7 +190,10 @@ class BrowsingModule:
         result = await self._connection.send_command(
             BROWSING_NAVIGATE, {"context": ctx_id, "url": url, "wait": wait}
         )
-        return Navigation.model_validate(result)
+        nav = Navigation.model_validate(result)
+        if isinstance(context, BrowsingContext):
+            context.url = nav.url
+        return nav
 
     async def close(self, context: BrowsingContext | str) -> None:
         ctx_id = context.id if hasattr(context, "id") else context
@@ -144,6 +204,8 @@ class BrowsingModule:
         context: BrowsingContext | str,
         format: Literal["png", "jpeg"] = "png",
         quality: int | None = None,
+        clip: dict[str, Any] | None = None,
+        origin: Literal["viewport", "document"] | None = None,
     ) -> Screenshot:
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id}
@@ -151,6 +213,10 @@ class BrowsingModule:
             params["format"] = format
         if quality is not None and format == "jpeg":
             params["quality"] = quality
+        if clip is not None:
+            params["clip"] = clip
+        if origin is not None:
+            params["origin"] = origin
         result = await self._connection.send_command(BROWSING_CAPTURE_SCREENSHOT, params)
         return Screenshot.model_validate(result)
 
@@ -158,13 +224,14 @@ class BrowsingModule:
         self,
         root: str | None = None,
         max_depth: int | None = None,
-    ) -> dict[str, Any]:
+    ) -> GetTreeResult:
         params: dict[str, Any] = {}
         if root is not None:
             params["root"] = root
         if max_depth is not None:
             params["maxDepth"] = max_depth
-        return await self._connection.send_command(BROWSING_GET_TREE, params)
+        result = await self._connection.send_command(BROWSING_GET_TREE, params)
+        return GetTreeResult.model_validate(result)
 
     async def wait_for_selector(
         self,
@@ -179,12 +246,14 @@ class BrowsingModule:
             f"new Promise(resolve => {{"
             f" const el = document.querySelector({selector!r});"
             f" if (el) return resolve(true);"
+            f" const target = document.body || document.documentElement;"
+            f" if (!target) return resolve(false);"
             f" new MutationObserver((_, obs) => {{"
             f" if (document.querySelector({selector!r})) {{"
             f" obs.disconnect();"
             f" resolve(true);"
             f" }}"
-            f" }}).observe(document.body, {{childList: true, subtree: true}});"
+            f" }}).observe(target, {{childList: true, subtree: true}});"
             f"}})"
         )
         result = await asyncio.wait_for(
@@ -198,6 +267,12 @@ class BrowsingModule:
             ),
             timeout=timeout,
         )
+        if result.get("type") == "exception":
+            details = result.get("exceptionDetails", {})
+            raise JavaScriptError(
+                "javascript error",
+                details.get("text", "Unknown JS error in wait_for_selector"),
+            )
         # Unwrap script success wrapper
         inner = result.get("result", result)
         return inner.get("value") is True
@@ -208,26 +283,43 @@ class BrowsingModule:
         expression: str,
         timeout: float = 10.0,
     ) -> Any:
-        """Waits for a JS function to return true."""
+        """Waits for a JS expression to return truthy.
+
+        Wraps the expression in a Promise that polls internally and resolves
+        when the condition is truthy, using ``awaitPromise=True`` instead of
+        client-side polling.
+        """
         ctx_id = context.id if hasattr(context, "id") else context
-
-        async def check() -> Any:
-            while True:
-                result = await self._connection.send_command(
-                    "script.evaluate",
-                    {
-                        "target": {"context": ctx_id},
-                        "expression": expression,
-                        "awaitPromise": False,
-                    },
-                )
-                # Unwrap script success wrapper
-                inner = result.get("result", result)
-                if inner.get("value"):
-                    return inner.get("value")
-                await asyncio.sleep(0.1)
-
-        return await asyncio.wait_for(check(), timeout=timeout)
+        wrapped = (
+            f"new Promise(resolve => {{"
+            f" const check = () => {{"
+            f"  try {{ const r = ({expression});"
+            f"   if (r) return resolve(r);"
+            f"  }} catch(e) {{ return resolve(undefined); }}"
+            f"  setTimeout(check, 100);"
+            f" }};"
+            f" check();"
+            f"}})"
+        )
+        result = await asyncio.wait_for(
+            self._connection.send_command(
+                "script.evaluate",
+                {
+                    "target": {"context": ctx_id},
+                    "expression": wrapped,
+                    "awaitPromise": True,
+                },
+            ),
+            timeout=timeout,
+        )
+        if result.get("type") == "exception":
+            details = result.get("exceptionDetails", {})
+            raise JavaScriptError(
+                "javascript error",
+                details.get("text", "Unknown JS error in wait_for_function"),
+            )
+        inner = result.get("result", result)
+        return inner.get("value")
 
     async def reload(
         self,
@@ -243,7 +335,10 @@ class BrowsingModule:
         result = await self._connection.send_command(
             BROWSING_RELOAD, params
         )
-        return Navigation.model_validate(result)
+        nav = Navigation.model_validate(result)
+        if isinstance(context, BrowsingContext):
+            context.url = nav.url
+        return nav
 
     async def traverse_history(
         self,
@@ -256,7 +351,10 @@ class BrowsingModule:
             BROWSING_TRAVERSE_HISTORY,
             {"context": ctx_id, "direction": direction},
         )
-        return Navigation.model_validate(result)
+        nav = Navigation.model_validate(result)
+        if isinstance(context, BrowsingContext):
+            context.url = nav.url
+        return nav
 
     async def handle_user_prompt(
         self,
@@ -282,15 +380,26 @@ class BrowsingModule:
         margin: dict[str, Any] | None = None,
         orientation: Literal["portrait", "landscape"] = "portrait",
         page: dict[str, Any] | None = None,
-        page_ranges: list[str] | None = None,
+        page_ranges: list[int | str] | None = None,
         scale: float = 1.0,
         shrink_to_fit: bool = True,
     ) -> PrintResult:
-        """Exports the context to PDF and returns base64 data."""
+        """Exports the context to PDF and returns base64 data.
+
+        Args:
+            background: Whether to print background graphics.
+                Also accepted as ``printBackground`` per spec.
+            margin: Page margins dict.
+            orientation: Page orientation.
+            page: Page size dict.
+            page_ranges: Page ranges to print.
+            scale: Scale factor (0.1 to 2.0).
+            shrink_to_fit: Whether to shrink content to fit page.
+        """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {
             "context": ctx_id,
-            "background": background,
+            "printBackground": background,
             "orientation": orientation,
             "scale": scale,
             "shrinkToFit": shrink_to_fit,
@@ -310,6 +419,7 @@ class BrowsingModule:
         locator: dict[str, Any],
         max_node_count: int | None = None,
         start_nodes: list[dict[str, Any]] | None = None,
+        serialization_options: dict[str, Any] | None = None,
     ) -> LocateNodesResult:
         """Locates elements in the DOM using a locator.
 
@@ -321,6 +431,8 @@ class BrowsingModule:
                 {"type": "innerText", "value": "Click me"}
             max_node_count: Maximum number of nodes to return.
             start_nodes: Nodes to search from (e.g. iframes).
+            serialization_options: Controls how node values are serialized.
+                e.g. {"maxDomDepth": 1, "includeShadowTree": "all"}.
         """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id, "locator": locator}
@@ -328,6 +440,8 @@ class BrowsingModule:
             params["maxNodeCount"] = max_node_count
         if start_nodes is not None:
             params["startNodes"] = start_nodes
+        if serialization_options is not None:
+            params["serializationOptions"] = serialization_options
         result = await self._connection.send_command(
             BROWSING_LOCATE_NODES, params
         )

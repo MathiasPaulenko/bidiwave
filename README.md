@@ -13,20 +13,28 @@ WebDriver BiDi for Python — talk to any browser via W3C standard.
 - **Cross-browser** — Chrome, Firefox, Edge (Safari when BiDi support lands)
 - **Async-first** — native `async/await` with `asyncio`
 - **Browsing** — contexts, navigation, screenshots, viewport control with DPR,
-  element waiting, CSS/XPath locators, PDF printing, dialog handling
+  element waiting, CSS/XPath locators, PDF printing, dialog handling, download
+  events, history traversal, user prompt management
 - **Script** — evaluate JS, call functions, typed `RemoteValue` with `match`
-  pattern narrowing, preload scripts with channel communication, realm inspection
-- **Input simulation** — clicks, keyboard, scroll, drag & drop, file upload
+  pattern narrowing, preload scripts with channel communication, realm inspection,
+  serialization options, user activation
+- **Input simulation** — clicks, keyboard, scroll, drag & drop, file upload,
+  file dialog events
 - **Network interception** — block, modify, mock requests, cache overrides,
-  response body retrieval, authentication handling
-- **Storage** — get, set, delete cookies with full attribute support, cookie
-  change monitoring
-- **Emulation** — geolocation, network conditions, timezone, user agent override
+  response body retrieval, authentication handling, extra headers, data
+  collectors, cache behavior control
+- **Storage** — get, set, delete cookies with full attribute support,
+  partition key support, cookie change monitoring
+- **Emulation** — geolocation, locale, screen orientation, timezone, user agent
+  override, network conditions
 - **Permissions** — grant or deny browser permissions without user dialogs
 - **Preload scripts** — inject JS before page load for polyfills or monitoring
+  with user context support
+- **Web extensions** — install and uninstall browser extensions
 - **CDP bridge** — access Chrome DevTools Protocol for browser-specific features
-- **Event streaming** — 21 event types with async handlers and error isolation
+- **Event streaming** — 27 event types with async handlers and error isolation
 - **Type-safe** — Pydantic v2 models, full type hints, `mypy` clean
+- **Spec-compliant** — W3C WebDriver BiDi (WD 2025-07-28), full coverage
 - **Resilient** — automatic reconnection with exponential backoff
 - **Lightweight** — no Selenium, no Playwright required
 
@@ -196,6 +204,18 @@ async with await BiDiClient.connect(url) as client:
     await client.preload.remove_preload_script(result.script)
 ```
 
+## Web extensions
+
+```python
+async with await BiDiClient.connect(url) as client:
+    # Install a browser extension
+    result = await client.web_extension.install("/path/to/extension.crx")
+    print(f"Installed: {result}")
+
+    # Uninstall when done
+    await client.web_extension.uninstall(result.extension)
+```
+
 ## Launch a browser with BiDi
 
 ### Chrome / Edge
@@ -233,6 +253,7 @@ Full documentation at **[mathiaspaulenko.github.io/bidiwave](https://mathiaspaul
 - [Emulation](https://mathiaspaulenko.github.io/bidiwave/usage/emulation/)
 - [Permissions](https://mathiaspaulenko.github.io/bidiwave/usage/permissions/)
 - [Preload Scripts](https://mathiaspaulenko.github.io/bidiwave/usage/preload/)
+- [Web Extensions](https://mathiaspaulenko.github.io/bidiwave/api/web-extension/)
 - [CDP](https://mathiaspaulenko.github.io/bidiwave/usage/cdp/)
 - [Events](https://mathiaspaulenko.github.io/bidiwave/usage/events/)
 - [Configuration](https://mathiaspaulenko.github.io/bidiwave/usage/configuration/)

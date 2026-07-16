@@ -19,6 +19,7 @@ from bidiwave.modules.preload import PreloadModule
 from bidiwave.modules.script import ScriptModule
 from bidiwave.modules.session import SessionModule
 from bidiwave.modules.storage import StorageModule
+from bidiwave.modules.webextension import WebExtensionModule
 from bidiwave.protocol.capabilities import Capabilities
 from bidiwave.transport.connection import Connection, TransportConfig
 
@@ -48,10 +49,12 @@ class BiDiClient:
         self.emulation = EmulationModule(connection)
         self.permissions = PermissionsModule(connection)
         self.log = LogModule(connection)
+        self.web_extension = WebExtensionModule(connection)
         self._capabilities: Capabilities | None = None
         self._auto_prompt_accept: bool | None = None
         self._auto_prompt_text: str | None = None
         self._auto_prompt_sub: Subscription | None = None
+        self._auto_prompt_subscribed: bool = False
 
     @classmethod
     async def connect(
@@ -154,6 +157,38 @@ class BiDiClient:
         """Convenience for browsingContext.userPromptOpened."""
         return self._dispatcher.on("browsingContext.userPromptOpened", handler)  # type: ignore[return-value]
 
+    def on_user_prompt_closed(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.userPromptClosed."""
+        return self._dispatcher.on("browsingContext.userPromptClosed", handler)  # type: ignore[return-value]
+
+    def on_navigation_started(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.navigationStarted."""
+        return self._dispatcher.on("browsingContext.navigationStarted", handler)  # type: ignore[return-value]
+
+    def on_navigation_aborted(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.navigationAborted."""
+        return self._dispatcher.on("browsingContext.navigationAborted", handler)  # type: ignore[return-value]
+
+    def on_navigation_committed(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.navigationCommitted."""
+        return self._dispatcher.on("browsingContext.navigationCommitted", handler)  # type: ignore[return-value]
+
+    def on_navigation_failed(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.navigationFailed."""
+        return self._dispatcher.on("browsingContext.navigationFailed", handler)  # type: ignore[return-value]
+
+    def on_script_message(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for script.message."""
+        return self._dispatcher.on("script.message", handler)  # type: ignore[return-value]
+
+    def on_download_will_begin(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.downloadWillBegin."""
+        return self._dispatcher.on("browsingContext.downloadWillBegin", handler)  # type: ignore[return-value]
+
+    def on_download_end(self, handler: AsyncHandler) -> Subscription:
+        """Convenience for browsingContext.downloadEnd."""
+        return self._dispatcher.on("browsingContext.downloadEnd", handler)  # type: ignore[return-value]
+
     async def set_auto_prompt(
         self,
         accept: bool = True,
@@ -183,7 +218,9 @@ class BiDiClient:
                     user_text=self._auto_prompt_text,
                 )
 
-        await self.session.subscribe(["browsingContext.userPromptOpened"])
+        if not self._auto_prompt_subscribed:
+            await self.session.subscribe(["browsingContext.userPromptOpened"])
+            self._auto_prompt_subscribed = True
         self._auto_prompt_sub = self.on(
             "browsingContext.userPromptOpened", _handle_prompt
         )
@@ -195,8 +232,10 @@ class BiDiClient:
             self._auto_prompt_sub = None
         self._auto_prompt_accept = None
         self._auto_prompt_text = None
-        with contextlib.suppress(Exception):
-            await self.session.unsubscribe(["browsingContext.userPromptOpened"])
+        if self._auto_prompt_subscribed:
+            with contextlib.suppress(Exception):
+                await self.session.unsubscribe(["browsingContext.userPromptOpened"])
+            self._auto_prompt_subscribed = False
 
     def on_reconnect(self, handler: AsyncHandler) -> None:
         """Registers a handler that runs after reconnection."""

@@ -68,7 +68,7 @@ class TestDeleteCookie:
         await storage.delete_cookie("ctx-1", "session")
         mock_connection.send_command.assert_called_once()
         call_args = mock_connection.send_command.call_args
-        assert call_args.args[0] == "storage.deleteCookie"
+        assert call_args.args[0] == "storage.deleteCookies"
         assert call_args.args[1]["context"] == "ctx-1"
         assert call_args.args[1]["name"] == "session"
 

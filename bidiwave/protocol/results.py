@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Session(BaseModel):
@@ -27,7 +27,7 @@ class Navigation(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     context: str | None = None
-    url: str
+    url: str = ""
     navigation: str | None = None
     status: str = "complete"
 
@@ -54,6 +54,7 @@ class InputSource(BaseModel):
     type: Literal["none", "key", "pointer", "wheel"]
     id: str
     actions: list[dict[str, Any]] = []
+    parameters: dict[str, Any] | None = None
 
 
 class KeyAction(BaseModel):
@@ -92,6 +93,9 @@ class PointerAction(BaseModel):
     )
     duration: int | None = None
     origin: Literal["pointer", "viewport"] | dict[str, Any] = "viewport"
+    pointer_type: Literal["mouse", "pen", "touch"] | None = Field(
+        default=None, alias="pointerType"
+    )
 
 
 class WheelAction(BaseModel):
@@ -126,6 +130,20 @@ class Cookie(BaseModel):
     same_party: bool | None = Field(default=None, alias="sameParty")
     source_scheme: str | None = Field(default=None, alias="sourceScheme")
     source_port: int | None = Field(default=None, alias="sourcePort")
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def normalize_value(cls, v: Any) -> str:
+        if isinstance(v, dict):
+            return v.get("value", "")
+        return v
+
+    @field_validator("same_site", mode="before")
+    @classmethod
+    def normalize_same_site(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.lower()
+        return v
 
 
 class GetCookiesResult(BaseModel):
@@ -241,7 +259,7 @@ class ResponseBodyResult(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     body: str
-    total_size: int = Field(alias="totalSize")
+    total_size: int = Field(default=0, alias="totalSize")
 
 
 class ScriptAddPreloadScriptResult(BaseModel):
@@ -255,3 +273,50 @@ class ScriptAddPreloadScriptResult(BaseModel):
 
     script: str
     channel: str | None = None
+
+
+class BrowsingContextInfo(BaseModel):
+    """Information about a single browsing context in the tree."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    context: str
+    url: str = ""
+    user_context: str = Field(default="default", alias="userContext")
+    original_opener: str | None = Field(default=None, alias="originalOpener")
+    children: list["BrowsingContextInfo"] | None = Field(default=None)
+
+
+class GetTreeResult(BaseModel):
+    """Result of browsingContext.getTree."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    contexts: list[BrowsingContextInfo] = Field(default_factory=list)
+
+
+BrowsingContextInfo.model_rebuild()
+
+
+class ClientWindowInfo(BaseModel):
+    """Information about a browser client window."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    client_window: str = Field(alias="clientWindow")
+    state: Literal["normal", "minimized", "maximized", "fullscreen"] = "normal"
+    width: int = 0
+    height: int = 0
+    x: int = 0
+    y: int = 0
+    active: bool = False
+
+
+class GetClientWindowsResult(BaseModel):
+    """Result of browser.getClientWindows."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    client_windows: list[ClientWindowInfo] = Field(
+        default_factory=list, alias="clientWindows"
+    )

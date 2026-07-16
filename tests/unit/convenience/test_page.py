@@ -20,9 +20,100 @@ async def test_page_evaluate_calls_script():
     page = Page(browsing, script, ctx)
 
     result = await page.evaluate("document.title")
-    script.evaluate.assert_called_once_with(ctx, "document.title", False, sandbox=None)
+    script.evaluate.assert_called_once_with(
+        ctx,
+        "document.title",
+        False,
+        sandbox=None,
+        serialization_options=None,
+        user_activation=False,
+    )
     assert isinstance(result, StringValue)
     assert result.value == "title"
+
+
+@pytest.mark.asyncio
+async def test_page_evaluate_with_serialization_options():
+    browsing = MagicMock()
+    script = MagicMock()
+    script.evaluate = AsyncMock(return_value=StringValue(type="string", value="data"))
+
+    ctx = BrowsingContext(id="ctx1")
+    page = Page(browsing, script, ctx)
+
+    ser_opts = {"maxObjectDepth": 2}
+    await page.evaluate("document.title", serialization_options=ser_opts, user_activation=True)
+    script.evaluate.assert_called_once_with(
+        ctx,
+        "document.title",
+        False,
+        sandbox=None,
+        serialization_options=ser_opts,
+        user_activation=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_page_call_with_this_and_serialization():
+    browsing = MagicMock()
+    script = MagicMock()
+    script.call_function = AsyncMock(return_value=StringValue(type="string", value="ok"))
+
+    ctx = BrowsingContext(id="ctx1")
+    page = Page(browsing, script, ctx)
+
+    this_val = {"type": "undefined"}
+    ser_opts = {"maxObjectDepth": 1}
+    await page.call("fn()", this=this_val, serialization_options=ser_opts, user_activation=True)
+    script.call_function.assert_called_once_with(
+        ctx,
+        "fn()",
+        None,
+        False,
+        sandbox=None,
+        this=this_val,
+        serialization_options=ser_opts,
+        user_activation=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_page_screenshot_with_origin():
+    browsing = MagicMock()
+    screenshot_data = base64.b64encode(b"png-data").decode()
+    from bidiwave.protocol.results import Screenshot
+
+    browsing.screenshot = AsyncMock(return_value=Screenshot(data=screenshot_data))
+
+    ctx = BrowsingContext(id="ctx1")
+    page = Page(browsing, None, ctx)
+
+    result = await page.screenshot(origin="document")
+    browsing.screenshot.assert_called_once_with(
+        ctx, "png", None, None, origin="document"
+    )
+    assert result == b"png-data"
+
+
+@pytest.mark.asyncio
+async def test_page_locate_nodes_with_start_nodes():
+    browsing = MagicMock()
+    from bidiwave.protocol.results import LocateNodesResult
+
+    browsing.locate_nodes = AsyncMock(return_value=LocateNodesResult(nodes=[{"sharedId": "n1"}]))
+
+    ctx = BrowsingContext(id="ctx1")
+    page = Page(browsing, None, ctx)
+
+    start_nodes = [{"sharedId": "start-1"}]
+    result = await page.locate_nodes({"type": "css", "value": "div"}, start_nodes=start_nodes)
+    browsing.locate_nodes.assert_called_once_with(
+        ctx,
+        {"type": "css", "value": "div"},
+        max_node_count=None,
+        start_nodes=start_nodes,
+    )
+    assert len(result) == 1
 
 
 @pytest.mark.asyncio

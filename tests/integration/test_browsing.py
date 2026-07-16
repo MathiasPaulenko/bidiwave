@@ -49,5 +49,4 @@ async def test_screenshot(client: object, context: object) -> None:
 async def test_get_tree(client: object, context: object) -> None:
     """getTree returns the context tree."""
     tree = await client.browsing.get_tree()
-    assert "contexts" in tree
-    assert len(tree["contexts"]) >= 1
+    assert len(tree.contexts) >= 1

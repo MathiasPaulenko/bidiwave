@@ -4,6 +4,8 @@ from bidiwave.protocol.events import (
     BrowsingContextCreatedEvent,
     Event,
     LogEntryAddedEvent,
+    ScriptMessageEvent,
+    ScriptSource,
     parse_event,
 )
 
@@ -56,3 +58,44 @@ def test_parse_event_browsing_context_created():
     })
     assert isinstance(event, BrowsingContextCreatedEvent)
     assert event.context == "ctx-2"
+
+
+def test_log_entry_source_is_script_source():
+    event = LogEntryAddedEvent.model_validate({
+        "level": "info",
+        "text": "hello",
+        "timestamp": 12345,
+        "source": {"realm": "r1", "context": "c1"},
+    })
+    assert isinstance(event.source, ScriptSource)
+    assert event.source.realm == "r1"
+    assert event.source.context == "c1"
+
+
+def test_script_message_event_source_is_script_source():
+    event = ScriptMessageEvent.model_validate({
+        "realm": "r1",
+        "source": {"realm": "r1", "context": "c1"},
+        "channel": "ch1",
+        "data": {"type": "string", "value": "hello"},
+    })
+    assert isinstance(event.source, ScriptSource)
+    assert event.source.realm == "r1"
+    assert event.channel == "ch1"
+
+
+def test_log_entry_args_are_remote_values():
+    from bidiwave.protocol.remote_value import StringValue
+    event = LogEntryAddedEvent.model_validate({
+        "level": "info",
+        "text": "hello",
+        "timestamp": 12345,
+        "source": {"realm": "r1"},
+        "args": [
+            {"type": "string", "value": "arg1"},
+            {"type": "number", "value": 42},
+        ],
+    })
+    assert len(event.args) == 2
+    assert isinstance(event.args[0], StringValue)
+    assert event.args[0].value == "arg1"

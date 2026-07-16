@@ -178,7 +178,7 @@ class TestPrint:
             shrink_to_fit=False,
         )
         params = mock_connection.send_command.call_args.args[1]
-        assert params["background"] is True
+        assert params["printBackground"] is True
         assert params["orientation"] == "landscape"
         assert params["scale"] == 0.5
         assert params["margin"] == {"top": 1, "bottom": 1, "left": 1, "right": 1}
@@ -194,7 +194,7 @@ class TestPrint:
         mock_connection.send_command.return_value = {"data": ""}
         await browsing_module.print(CTX_ID)
         params = mock_connection.send_command.call_args.args[1]
-        assert params["background"] is False
+        assert params["printBackground"] is False
         assert params["orientation"] == "portrait"
         assert params["scale"] == 1.0
         assert params["shrinkToFit"] is True

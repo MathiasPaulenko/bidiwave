@@ -10,6 +10,7 @@ from bidiwave.protocol.constants import (
     SCRIPT_DISOWN,
     SCRIPT_EVALUATE,
     SCRIPT_GET_REALMS,
+    SCRIPT_REMOVE_PRELOAD_SCRIPT,
 )
 from bidiwave.protocol.remote_value import RemoteValue
 from bidiwave.protocol.results import (
@@ -31,49 +32,63 @@ class ScriptModule:
 
     async def evaluate(
         self,
-        context: BrowsingContext | str,
-        expression: str,
+        context: BrowsingContext | str | None = None,
+        expression: str = "",
         await_promise: bool = False,
         sandbox: str | None = None,
+        realm: str | None = None,
+        serialization_options: dict[str, Any] | None = None,
+        user_activation: bool = False,
     ) -> RemoteValue:
-        ctx_id = context.id if hasattr(context, "id") else context
-        target: dict[str, Any] = {"context": ctx_id}
-        if sandbox is not None:
-            target["sandbox"] = sandbox
-        params = {
+        target = self._build_target(context, sandbox, realm)
+        params: dict[str, Any] = {
             "target": target,
             "expression": expression,
             "awaitPromise": await_promise,
+            "userActivation": user_activation,
         }
+        if serialization_options is not None:
+            params["serializationOptions"] = serialization_options
         result = await self._connection.send_command(SCRIPT_EVALUATE, params)
         return RemoteValue.parse(result)
 
     async def call_function(
         self,
-        context: BrowsingContext | str,
-        function_declaration: str,
+        context: BrowsingContext | str | None = None,
+        function_declaration: str = "",
         args: list[dict[str, Any]] | None = None,
         await_promise: bool = False,
         sandbox: str | None = None,
+        realm: str | None = None,
+        this: dict[str, Any] | None = None,
+        serialization_options: dict[str, Any] | None = None,
+        user_activation: bool = False,
     ) -> RemoteValue:
-        ctx_id = context.id if hasattr(context, "id") else context
-        target: dict[str, Any] = {"context": ctx_id}
-        if sandbox is not None:
-            target["sandbox"] = sandbox
-        params = {
+        target = self._build_target(context, sandbox, realm)
+        params: dict[str, Any] = {
             "target": target,
             "functionDeclaration": function_declaration,
             "args": args or [],
             "awaitPromise": await_promise,
+            "this": this if this is not None else {"type": "undefined"},
+            "userActivation": user_activation,
         }
+        if serialization_options is not None:
+            params["serializationOptions"] = serialization_options
         result = await self._connection.send_command(SCRIPT_CALL_FUNCTION, params)
         return RemoteValue.parse(result)
 
-    async def disown(self, context: BrowsingContext | str, handles: list[str]) -> None:
-        ctx_id = context.id if hasattr(context, "id") else context
-        params = {
-            "target": {"context": ctx_id},
-            "handles": handles,
+    async def disown(
+        self,
+        context: BrowsingContext | str | None = None,
+        handles: list[str] | None = None,
+        sandbox: str | None = None,
+        realm: str | None = None,
+    ) -> None:
+        target = self._build_target(context, sandbox, realm)
+        params: dict[str, Any] = {
+            "target": target,
+            "handles": handles or [],
         }
         await self._connection.send_command(SCRIPT_DISOWN, params)
 
@@ -128,8 +143,9 @@ class ScriptModule:
         """
         params: dict[str, Any] = {
             "functionDeclaration": function_declaration,
-            "arguments": arguments or [],
         }
+        if arguments is not None:
+            params["arguments"] = arguments
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
@@ -140,3 +156,33 @@ class ScriptModule:
             SCRIPT_ADD_PRELOAD_SCRIPT, params
         )
         return ScriptAddPreloadScriptResult.model_validate(result)
+
+    async def remove_preload_script(
+        self,
+        script_id: str,
+    ) -> None:
+        """Removes a preload script by its ID.
+
+        Args:
+            script_id: ID of the preload script to remove.
+        """
+        params: dict[str, Any] = {"script": script_id}
+        await self._connection.send_command(
+            SCRIPT_REMOVE_PRELOAD_SCRIPT, params
+        )
+
+    @staticmethod
+    def _build_target(
+        context: BrowsingContext | str | None,
+        sandbox: str | None,
+        realm: str | None,
+    ) -> dict[str, Any]:
+        if realm is not None:
+            return {"realm": realm}
+        if context is None:
+            raise ValueError("Either context or realm must be provided")
+        ctx_id = context.id if hasattr(context, "id") else context
+        target: dict[str, Any] = {"context": ctx_id}
+        if sandbox is not None:
+            target["sandbox"] = sandbox
+        return target

@@ -73,6 +73,58 @@ class UnsupportedOperationError(CommandError):
     """Unsupported operation."""
 
 
+class NoSuchElementError(CommandError):
+    """Element not found."""
+
+
+class NoSuchCookieError(CommandError):
+    """Cookie not found."""
+
+
+class StaleElementReferenceError(CommandError):
+    """Element reference is stale."""
+
+
+class ElementNotInteractableError(CommandError):
+    """Element not interactable."""
+
+
+class InsecureCertificateError(CommandError):
+    """Insecure certificate."""
+
+
+class MoveTargetOutOfBoundsError(CommandError):
+    """Move target out of bounds."""
+
+
+class NoSuchAlertError(CommandError):
+    """No such alert."""
+
+
+class NoSuchShadowRootError(CommandError):
+    """No such shadow root."""
+
+
+class DetachedShadowRootError(CommandError):
+    """Detached shadow root."""
+
+
+class InvalidWebExtensionError(CommandError):
+    """Invalid web extension."""
+
+
+class NoSuchUserContextError(CommandError):
+    """No such user context."""
+
+
+class SessionNotCreatedError(CommandError):
+    """Session not created."""
+
+
+class TimeoutError(CommandError):
+    """Timeout."""
+
+
 ERROR_CODE_MAP: dict[str, type[CommandError]] = {
     "invalid argument": InvalidArgumentError,
     "no such frame": NoSuchFrameError,
@@ -80,9 +132,22 @@ ERROR_CODE_MAP: dict[str, type[CommandError]] = {
     "javascript error": JavaScriptError,
     "invalid session": InvalidSessionError,
     "session not found": SessionNotFoundError,
+    "session not created": SessionNotCreatedError,
     "unable to capture screen": UnableToCaptureScreenError,
     "unknown command": UnknownCommandError,
     "unsupported operation": UnsupportedOperationError,
+    "no such element": NoSuchElementError,
+    "no such cookie": NoSuchCookieError,
+    "stale element reference": StaleElementReferenceError,
+    "element not interactable": ElementNotInteractableError,
+    "insecure certificate": InsecureCertificateError,
+    "move target out of bounds": MoveTargetOutOfBoundsError,
+    "no such alert": NoSuchAlertError,
+    "no such shadow root": NoSuchShadowRootError,
+    "detached shadow root": DetachedShadowRootError,
+    "invalid web extension": InvalidWebExtensionError,
+    "no such user context": NoSuchUserContextError,
+    "timeout": TimeoutError,
 }
 
 

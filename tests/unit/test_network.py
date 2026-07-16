@@ -66,6 +66,25 @@ class TestAddIntercept:
             {"phases": ["beforeRequestSent", "authRequired"], "urlPatterns": ["*api*"]},
         )
 
+    async def test_add_intercept_with_url_pattern_dicts(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"intercept": "intercept-4"}
+        await network_module.add_intercept(
+            phases=["beforeRequestSent"],
+            url_patterns=[
+                {"type": "string", "pattern": "https://example.com/*"},
+                {"type": "regex", "pattern": ".*\\.png$"},
+            ],
+        )
+        params = mock_connection.send_command.call_args.args[1]
+        assert params["urlPatterns"] == [
+            {"type": "string", "pattern": "https://example.com/*"},
+            {"type": "regex", "pattern": ".*\\.png$"},
+        ]
+
 
 class TestRemoveIntercept:
     async def test_remove_intercept(
@@ -214,3 +233,172 @@ class TestProvideResponse:
         assert call_args.args[1]["reasonPhrase"] == "Created"
         assert len(call_args.args[1]["headers"]) == 1
         assert call_args.args[1]["body"] == "eyJ0ZXN0IjogdHJ1ZX0="
+
+
+class TestSetExtraHeaders:
+    async def test_set_extra_headers_basic(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.set_extra_headers(
+            [{"name": "X-Custom", "value": {"text": "test"}}],
+        )
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[0] == "network.setExtraHeaders"
+        assert len(call_args.args[1]["headers"]) == 1
+        assert call_args.args[1]["headers"][0]["name"] == "X-Custom"
+
+    async def test_set_extra_headers_with_contexts(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.set_extra_headers(
+            [{"name": "Authorization", "value": {"text": "Bearer token"}}],
+            contexts=["ctx-1", "ctx-2"],
+        )
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[0] == "network.setExtraHeaders"
+        assert call_args.args[1]["contexts"] == ["ctx-1", "ctx-2"]
+
+    async def test_set_extra_headers_with_user_contexts(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.set_extra_headers(
+            [{"name": "X-Trace", "value": {"text": "abc"}}],
+            user_contexts=["uc-1"],
+        )
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[1]["userContexts"] == ["uc-1"]
+
+
+class TestSetCacheBehavior:
+    async def test_set_cache_behavior_bypass(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.set_cache_behavior("bypass")
+        mock_connection.send_command.assert_called_once_with(
+            "network.setCacheBehavior", {"cacheBehavior": "bypass"}
+        )
+
+    async def test_set_cache_behavior_default_with_contexts(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.set_cache_behavior(
+            "default", contexts=["ctx-1"], user_contexts=["uc-1"]
+        )
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[0] == "network.setCacheBehavior"
+        assert call_args.args[1]["cacheBehavior"] == "default"
+        assert call_args.args[1]["contexts"] == ["ctx-1"]
+        assert call_args.args[1]["userContexts"] == ["uc-1"]
+
+    async def test_set_cache_behavior_clear(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.set_cache_behavior()
+        mock_connection.send_command.assert_called_once_with(
+            "network.setCacheBehavior", {}
+        )
+
+
+class TestAddDataCollector:
+    async def test_add_data_collector_basic(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"collector": "dc-1"}
+        result = await network_module.add_data_collector(
+            {"type": "response-body", "name": "bodies"}
+        )
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[0] == "network.addDataCollector"
+        assert call_args.args[1]["collector"]["type"] == "response-body"
+        assert result == "dc-1"
+
+    async def test_add_data_collector_with_contexts(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"collector": "dc-2"}
+        await network_module.add_data_collector(
+            {"type": "response-body", "name": "bodies"},
+            contexts=["ctx-1"],
+            user_contexts=["uc-1"],
+        )
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[1]["contexts"] == ["ctx-1"]
+        assert call_args.args[1]["userContexts"] == ["uc-1"]
+
+
+class TestRemoveDataCollector:
+    async def test_remove_data_collector(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.remove_data_collector("dc-1")
+        mock_connection.send_command.assert_called_once_with(
+            "network.removeDataCollector", {"collector": "dc-1"}
+        )
+
+
+class TestGetData:
+    async def test_get_data_basic(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"data": []}
+        result = await network_module.get_data("dc-1")
+        mock_connection.send_command.assert_called_once_with(
+            "network.getData", {"collector": "dc-1"}
+        )
+        assert result == {"data": []}
+
+    async def test_get_data_with_filters(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"data": []}
+        await network_module.get_data(
+            "dc-1", context="ctx-1", request="req-1", url="https://example.com"
+        )
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[1]["context"] == "ctx-1"
+        assert call_args.args[1]["request"] == "req-1"
+        assert call_args.args[1]["url"] == "https://example.com"
+
+
+class TestDisownData:
+    async def test_disown_data_basic(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.disown_data("dc-1")
+        mock_connection.send_command.assert_called_once_with(
+            "network.disownData", {"collector": "dc-1"}
+        )
+
+    async def test_disown_data_with_request(
+        self,
+        network_module: NetworkModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await network_module.disown_data("dc-1", request="req-1")
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[0] == "network.disownData"
+        assert call_args.args[1]["request"] == "req-1"

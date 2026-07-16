@@ -38,6 +38,7 @@ class PreloadModule:
         function_declaration: str,
         arguments: list[dict[str, Any]] | None = None,
         contexts: list[str] | None = None,
+        user_contexts: list[str] | None = None,
         sandbox: str | None = None,
     ) -> str:
         """Adds a preload script.
@@ -46,6 +47,7 @@ class PreloadModule:
             function_declaration: JS function to execute before page load.
             arguments: Arguments to pass to the function.
             contexts: Context IDs where the script should run. None = all.
+            user_contexts: User context IDs where the script should run. None = all.
             sandbox: Sandbox name to run the script in.
 
         Returns:
@@ -58,6 +60,8 @@ class PreloadModule:
             params["arguments"] = arguments
         if contexts is not None:
             params["contexts"] = contexts
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
         if sandbox is not None:
             params["sandbox"] = sandbox
         result = await self._connection.send_command(PRELOAD_ADD_SCRIPT, params)

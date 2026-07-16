@@ -91,7 +91,7 @@ class TestGetCookies:
         assert cookie.domain == "example.com"
         assert cookie.http_only is True
         assert cookie.secure is True
-        assert cookie.same_site == "Strict"
+        assert cookie.same_site == "strict"
         assert cookie.expires == 1735689600
 
 
@@ -108,7 +108,7 @@ class TestSetCookie:
         params = call_args.args[1]
         assert params["context"] == "ctx-1"
         assert params["cookie"]["name"] == "session"
-        assert params["cookie"]["value"] == "abc123"
+        assert params["cookie"]["value"] == {"type": "string", "value": "abc123"}
         assert params["cookie"]["domain"] == "example.com"
 
     async def test_set_cookie_with_browsing_context(
@@ -154,7 +154,7 @@ class TestSetCookie:
         params = mock_connection.send_command.call_args.args[1]["cookie"]
         assert params["httpOnly"] is True
         assert params["secure"] is True
-        assert params["sameSite"] == "Lax"
+        assert params["sameSite"] == "lax"
         assert params["path"] == "/app"
         assert params["expires"] == 1735689600
 
@@ -253,7 +253,7 @@ class TestCookieModel:
             }
         )
         assert cookie.http_only is True
-        assert cookie.same_site == "Strict"
+        assert cookie.same_site == "strict"
 
     def test_cookie_serializes_with_aliases(self) -> None:
         cookie = Cookie(
@@ -264,7 +264,7 @@ class TestCookieModel:
         )
         dumped = cookie.model_dump(by_alias=True, exclude_none=True)
         assert dumped["httpOnly"] is True
-        assert dumped["sameSite"] == "Lax"
+        assert dumped["sameSite"] == "lax"
 
 
 class TestGetCookiesResult:
@@ -284,3 +284,50 @@ class TestGetCookiesResult:
         assert len(result.cookies) == 2
         assert result.cookies[0].name == "a"
         assert result.cookies[1].name == "b"
+
+
+class TestPartitionKey:
+    async def test_get_cookies_with_partition_key(
+        self,
+        storage_module: StorageModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"cookies": []}
+        await storage_module.get_cookies(
+            "ctx-1", partition_key={"userContext": "uc-1"}
+        )
+        params = mock_connection.send_command.call_args.args[1]
+        assert params["partitionKey"] == {"userContext": "uc-1"}
+
+    async def test_set_cookie_with_partition_key(
+        self,
+        storage_module: StorageModule,
+        mock_connection: MockConn,
+    ) -> None:
+        cookie = Cookie(name="test", value="abc", domain="example.com")
+        await storage_module.set_cookie(
+            "ctx-1", cookie, partition_key={"sourceOrigin": "https://example.com"}
+        )
+        params = mock_connection.send_command.call_args.args[1]
+        assert params["partitionKey"] == {"sourceOrigin": "https://example.com"}
+
+    async def test_delete_cookies_with_partition_key(
+        self,
+        storage_module: StorageModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await storage_module.delete_cookies(
+            "ctx-1", partition_key={"userContext": "uc-1"}
+        )
+        params = mock_connection.send_command.call_args.args[1]
+        assert params["partitionKey"] == {"userContext": "uc-1"}
+
+    async def test_get_cookies_without_partition_key_omitted(
+        self,
+        storage_module: StorageModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"cookies": []}
+        await storage_module.get_cookies("ctx-1")
+        params = mock_connection.send_command.call_args.args[1]
+        assert "partitionKey" not in params

@@ -867,7 +867,7 @@ Emitted when there is a console.log or JS error.
 }
 ```
 
-Levels: `debug`, `info`, `warn`, `error`
+Levels: `debug`, `info`, `warning`, `error`
 
 Types: `console`, `javascript`
 
@@ -902,24 +902,69 @@ Emitted when a context is closed.
 }
 ```
 
-### browsing.contextNavigated
+### browsingContext.navigationStarted
 
-Emitted during navigation.
+Emitted when a navigation starts.
 
 ```json
 {
   "type": "event",
-  "method": "browsing.contextNavigated",
+  "method": "browsingContext.navigationStarted",
   "params": {
     "context": "context-id-1",
     "url": "https://example.com",
-    "navigation": "nav-id-1",
-    "status": "complete"
+    "navigation": "nav-id-1"
   }
 }
 ```
 
-Status: `pending`, `complete`, `canceled`
+### browsingContext.navigationAborted
+
+Emitted when a navigation is aborted.
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.navigationAborted",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com",
+    "navigation": "nav-id-1"
+  }
+}
+```
+
+### browsingContext.navigationCommitted
+
+Emitted when navigation is committed (response received, document starts loading).
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.navigationCommitted",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com",
+    "navigation": "nav-id-1"
+  }
+}
+```
+
+### browsingContext.navigationFailed
+
+Emitted when a navigation fails.
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.navigationFailed",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com",
+    "navigation": "nav-id-1"
+  }
+}
+```
 
 ### script.message
 
@@ -1179,6 +1224,70 @@ Chrome-specific event emitted when history entries change (pushState, replaceSta
 }
 ```
 
+### browsingContext.userPromptClosed
+
+Emitted when a dialog (alert/confirm/prompt) is closed.
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.userPromptClosed",
+  "params": {
+    "context": "context-id-1",
+    "accepted": true,
+    "userText": "response text"
+  }
+}
+```
+
+### browsingContext.downloadWillBegin
+
+Emitted when a download starts.
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.downloadWillBegin",
+  "params": {
+    "context": "context-id-1",
+    "url": "https://example.com/file.zip",
+    "filename": "file.zip"
+  }
+}
+```
+
+### browsingContext.downloadEnd
+
+Emitted when a download finishes.
+
+```json
+{
+  "type": "event",
+  "method": "browsingContext.downloadEnd",
+  "params": {
+    "context": "context-id-1",
+    "status": "success",
+    "item": "download-id-1"
+  }
+}
+```
+
+### input.fileDialogOpened
+
+Emitted when a file input dialog opens.
+
+```json
+{
+  "type": "event",
+  "method": "input.fileDialogOpened",
+  "params": {
+    "context": "context-id-1",
+    "element": {"sharedId": "element-id-1"},
+    "multiple": false
+  }
+}
+```
+
 ### storage.cookieChanged
 
 Emitted when a cookie is created, modified, or deleted.
@@ -1209,6 +1318,17 @@ Emitted when a cookie is created, modified, or deleted.
 | `no such window` | Window not found |
 | `timeout` | Browser timeout |
 | `unable to capture screen` | Could not capture screenshot |
+| `no such element` | Element not found |
+| `no such cookie` | Cookie not found |
+| `stale element reference` | Element reference is stale |
+| `element not interactable` | Element not interactable |
+| `insecure certificate` | Insecure certificate |
+| `move target out of bounds` | Move target out of bounds |
+| `no such alert` | No such alert |
+| `no such shadow root` | No such shadow root |
+| `detached shadow root` | Detached shadow root |
+| `invalid web extension` | Invalid web extension |
+| `no such user context` | No such user context |
 
 ## Mapping to Pydantic models
 
@@ -1249,7 +1369,14 @@ Each command and event has a corresponding Pydantic model in `protocol/`. Model 
 | `log.entryAdded` | `LogEntryAddedEvent` |
 | `browsingContext.contextCreated` | `BrowsingContextCreatedEvent` |
 | `browsingContext.contextDestroyed` | `BrowsingContextDestroyedEvent` |
-| `browsingContext.navigationStarted` | `BrowsingContextNavigatedEvent` |
+| `browsingContext.navigationStarted` | `BrowsingContextNavigationStartedEvent` |
+| `browsingContext.navigationAborted` | `BrowsingContextNavigationAbortedEvent` |
+| `browsingContext.navigationCommitted` | `BrowsingContextNavigationCommittedEvent` |
+| `browsingContext.navigationFailed` | `BrowsingContextNavigationFailedEvent` |
+| `browsingContext.userPromptClosed` | `BrowsingContextUserPromptClosedEvent` |
+| `browsingContext.downloadWillBegin` | `BrowsingContextDownloadWillBeginEvent` |
+| `browsingContext.downloadEnd` | `BrowsingContextDownloadEndEvent` |
+| `input.fileDialogOpened` | `InputFileDialogOpenedEvent` |
 | `browsingContext.navigationCompleted` | `BrowsingContextNavigationCompletedEvent` |
 | `browsingContext.fragmentNavigated` | `BrowsingContextFragmentNavigatedEvent` |
 | `browsingContext.domContentLoaded` | `BrowsingContextDOMContentLoadedEvent` |

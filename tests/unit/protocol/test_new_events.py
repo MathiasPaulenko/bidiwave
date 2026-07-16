@@ -5,6 +5,7 @@ Covers: responseStarted, realmCreated, realmDestroyed, userPromptOpened.
 
 from bidiwave.protocol.events import (
     BrowsingContextUserPromptOpenedEvent,
+    InputFileDialogOpenedEvent,
     NetworkResponseStartedEvent,
     ScriptRealmCreatedEvent,
     ScriptRealmDestroyedEvent,
@@ -75,11 +76,12 @@ class TestScriptRealmCreatedEvent:
         params = {
             "realm": "realm-2",
             "origin": "https://example.com",
-            "type": "sandbox",
+            "type": "window",
             "sandbox": "my-sandbox",
         }
         event = parse_event("script.realmCreated", params)
         assert isinstance(event, ScriptRealmCreatedEvent)
+        assert event.type == "window"
         assert event.sandbox == "my-sandbox"
         assert event.context is None
 
@@ -127,3 +129,28 @@ class TestBrowsingContextUserPromptOpenedEvent:
         event = parse_event("browsingContext.userPromptOpened", params)
         assert isinstance(event, BrowsingContextUserPromptOpenedEvent)
         assert event.type == "confirm"
+
+
+class TestInputFileDialogOpenedEvent:
+    def test_parse_basic(self) -> None:
+        params = {
+            "context": "ctx-1",
+            "element": {"sharedId": "elem-1"},
+            "multiple": False,
+        }
+        event = parse_event("input.fileDialogOpened", params)
+        assert isinstance(event, InputFileDialogOpenedEvent)
+        assert event.context == "ctx-1"
+        assert event.element == {"sharedId": "elem-1"}
+        assert event.multiple is False
+
+    def test_parse_multiple(self) -> None:
+        params = {
+            "context": "ctx-2",
+            "multiple": True,
+        }
+        event = parse_event("input.fileDialogOpened", params)
+        assert isinstance(event, InputFileDialogOpenedEvent)
+        assert event.context == "ctx-2"
+        assert event.multiple is True
+        assert event.element is None

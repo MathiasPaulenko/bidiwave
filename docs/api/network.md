@@ -95,3 +95,48 @@ await client.network.continue_with_auth(
 # Cancel the auth challenge
 await client.network.cancel_auth(request=request_id)
 ```
+
+## Cache behavior
+
+Control browser cache behavior for specific contexts:
+
+```python
+await client.network.set_cache_behavior(
+    cache_behavior="bypass",
+    contexts=["context-id-1"],
+)
+```
+
+## Extra headers
+
+Add, modify, or remove HTTP headers for outgoing requests:
+
+```python
+await client.network.set_extra_headers(
+    headers={"X-Custom-Header": "my-value"},
+    contexts=["context-id-1"],
+)
+```
+
+## Data collectors
+
+Collect response body data for later retrieval:
+
+```python
+# Start collecting data for a request
+collector = await client.network.add_data_collector(
+    request=request_id,
+    context="context-id-1",
+)
+# collector.data_collector = "collector-id"
+
+# Retrieve collected data
+data = await client.network.get_data(collector.data_collector)
+print(data.data)  # base64-encoded content
+
+# Disown the data when done
+await client.network.disown_data(collector.data_collector)
+
+# Remove the data collector
+await client.network.remove_data_collector(collector.data_collector)
+```

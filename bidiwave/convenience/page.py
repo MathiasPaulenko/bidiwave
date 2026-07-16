@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 from typing import TYPE_CHECKING, Any, Literal
 
 from bidiwave.protocol.remote_value import RemoteValue
@@ -46,11 +47,18 @@ class Page:
         expression: str,
         await_promise: bool = False,
         sandbox: str | None = None,
+        serialization_options: dict[str, Any] | None = None,
+        user_activation: bool = False,
     ) -> RemoteValue:
         if self._script is None:
             raise RuntimeError("ScriptModule not available")
         return await self._script.evaluate(
-            self._context, expression, await_promise, sandbox=sandbox
+            self._context,
+            expression,
+            await_promise,
+            sandbox=sandbox,
+            serialization_options=serialization_options,
+            user_activation=user_activation,
         )
 
     async def call(
@@ -59,12 +67,21 @@ class Page:
         args: list[dict[str, Any]] | None = None,
         await_promise: bool = False,
         sandbox: str | None = None,
+        this: dict[str, Any] | None = None,
+        serialization_options: dict[str, Any] | None = None,
+        user_activation: bool = False,
     ) -> RemoteValue:
         if self._script is None:
             raise RuntimeError("ScriptModule not available")
         return await self._script.call_function(
-            self._context, function_declaration, args, await_promise,
+            self._context,
+            function_declaration,
+            args,
+            await_promise,
             sandbox=sandbox,
+            this=this,
+            serialization_options=serialization_options,
+            user_activation=user_activation,
         )
 
     async def navigate(
@@ -100,7 +117,7 @@ class Page:
         margin: dict[str, Any] | None = None,
         orientation: Literal["portrait", "landscape"] = "portrait",
         page: dict[str, Any] | None = None,
-        page_ranges: list[str] | None = None,
+        page_ranges: list[int | str] | None = None,
         scale: float = 1.0,
         shrink_to_fit: bool = True,
     ) -> bytes:
@@ -120,8 +137,12 @@ class Page:
         self,
         format: Literal["png", "jpeg"] = "png",
         quality: int | None = None,
+        clip: dict[str, Any] | None = None,
+        origin: Literal["viewport", "document"] | None = None,
     ) -> bytes:
-        result = await self._browsing.screenshot(self._context, format, quality)
+        result = await self._browsing.screenshot(
+            self._context, format, quality, clip, origin=origin
+        )
         return base64.b64decode(result.data)
 
     async def wait_for_selector(self, selector: str, timeout: float = 10.0) -> bool:
@@ -130,10 +151,10 @@ class Page:
     async def wait_for_function(self, expression: str, timeout: float = 10.0) -> Any:
         return await self._browsing.wait_for_function(self._context, expression, timeout)
 
-    async def disown(self, handles: list[str]) -> None:
+    async def disown(self, handles: list[str], sandbox: str | None = None) -> None:
         if self._script is None:
             raise RuntimeError("ScriptModule not available")
-        await self._script.disown(self._context, handles)
+        await self._script.disown(self._context, handles, sandbox=sandbox)
 
     async def close(self) -> None:
         if self._closed:
@@ -160,9 +181,13 @@ class Page:
         self,
         locator: dict[str, Any],
         max_node_count: int | None = None,
+        start_nodes: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
         result = await self._browsing.locate_nodes(
-            self._context, locator, max_node_count=max_node_count
+            self._context,
+            locator,
+            max_node_count=max_node_count,
+            start_nodes=start_nodes,
         )
         return result.nodes
 
@@ -170,8 +195,8 @@ class Page:
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        try:
+        if exc_type is not None:
+            with contextlib.suppress(Exception):
+                await self.close()
+        else:
             await self.close()
-        except Exception:
-            if exc_type is None:
-                raise

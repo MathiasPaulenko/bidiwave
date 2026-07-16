@@ -17,6 +17,15 @@ result = await client.preload.add_preload_script(
 # result.script = "preload-script-id"
 ```
 
+Preload scripts can also be scoped to specific user contexts:
+
+```python
+result = await client.preload.add_preload_script(
+    function_declaration="() => { window.myFlag = true; }",
+    user_contexts=["user-context-id-1"],
+)
+```
+
 ### remove_preload_script
 
 Remove a previously added preload script:

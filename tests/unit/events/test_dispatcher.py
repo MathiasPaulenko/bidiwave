@@ -44,7 +44,7 @@ async def test_error_isolation():
         "level": "info",
         "text": "test",
         "timestamp": 12345,
-        "source": {},
+        "source": {"realm": "r1"},
     })
 
     assert len(calls) == 1

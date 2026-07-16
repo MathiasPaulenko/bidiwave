@@ -5,6 +5,127 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-07-16
+
+### Added
+
+#### New Modules
+
+- `WebExtensionModule` — `install()` and `uninstall()` for browser extension management (Bug 70)
+- `PermissionsModule` — `set_permission()` for controlling browser permissions (separate W3C spec)
+
+#### New Commands
+
+- `BrowsingModule.close_browser()` — `browser.close` (Bug 61)
+- `BrowsingModule.get_client_windows()` — `browser.getClientWindows` (Bug 66)
+- `BrowsingModule.set_client_window_state()` — `browser.setClientWindowState` (Bug 66)
+- `BrowsingModule.activate()` — `browsingContext.activate`
+- `BrowsingModule.locate_nodes()` — `browsingContext.locateNodes` with `serializationOptions` (Bug 72)
+- `EmulationModule.set_locale()` — `emulation.setLocaleOverride` (Bug 64)
+- `EmulationModule.set_screen_orientation()` — `emulation.setScreenOrientationOverride` (Bug 64)
+- `NetworkModule.add_data_collector()` / `get_data()` / `disown_data()` / `remove_data_collector()` (Bug 68)
+- `NetworkModule.set_cache_behavior()` — `network.setCacheBehavior` (Bug 67)
+- `NetworkModule.set_extra_headers()` — `network.setExtraHeaders` (Bug 65)
+- `ScriptModule.add_preload_script()` / `remove_preload_script()` — with channel support (Bug 50)
+- `ScriptModule.get_realms()` — `script.getRealms`
+- `InputModule.set_files()` — `input.setFiles`
+
+#### New Events
+
+- `BrowsingContextDownloadWillBeginEvent` / `BrowsingContextDownloadEndEvent` (Bug 63)
+- `BrowsingContextUserPromptClosedEvent` (Bug 62)
+- `BrowsingContextNavigationAbortedEvent` / `NavigationCommittedEvent` / `NavigationFailedEvent` (Bug 48)
+- `BrowsingContextHistoryUpdatedEvent`
+- `InputFileDialogOpenedEvent` (Bug 69)
+- `ScriptMessageEvent` / `ScriptRealmCreatedEvent` / `ScriptRealmDestroyedEvent`
+
+#### New Remote Value Types
+
+- `DateValue`, `RegExpValue`, `MapValue`, `SetValue` (Bug 55)
+- `WeakMapValue`, `WeakSetValue`, `GeneratorValue`, `ErrorValue`, `ProxyValue`, `PromiseValue` (Bug 71)
+- `TypedArrayValue`, `ArrayBufferValue`, `NodeListValue`, `HTMLCollectionValue`, `WindowValue` (Bug 71)
+- `ChannelValue` for preload script channel communication
+
+#### New Protocol Models
+
+- `ScriptSource` — typed `script.Source` (realm + context) for `LogEntryAddedEvent` and `ScriptMessageEvent` (Bug 74)
+- `NodeValue` — `nodeProperties` field and `sharedId` alias (Bug 73)
+- `ObjectValue` / `ArrayValue` — parse nested `RemoteValue` objects via `RemoteValue.parse()` (Bug 73)
+- `SerializationOptions` support in `evaluate`, `callFunction`, and `locateNodes` (Bug 72)
+
+#### New Error Codes
+
+- 11 new exception types: `NoSuchElementException`, `NoSuchCookieException`, `StaleElementReferenceException`, `ElementNotInteractableException`, `InsecureCertificateException`, `MoveTargetOutOfBoundsException`, `NoSuchAlertException`, `NoSuchShadowRootException`, `DetachedShadowRootException`, `InvalidWebExtensionException`, `NoSuchUserContextException` (Bug 57)
+
+#### New BiDiClient Convenience Methods
+
+- `on_navigation_started()`, `on_navigation_aborted()`, `on_navigation_committed()`, `on_navigation_failed()`
+- `on_user_prompt_closed()`, `on_download_will_begin()`, `on_download_end()`
+- `on_script_message()`
+
+#### New Parameters
+
+- `browser.createUserContext` — `acceptInsecureCerts` parameter
+- `browsingContext.create` — `referenceContext`, `background`, and `userContext` in result (Bug 75)
+- `browsingContext.captureScreenshot` — `clip` and `origin` parameters
+- `emulation.setGeolocationOverride` — `userContexts` and `error` parameters (Bug 74)
+- `emulation.setTimezoneOverride` — `userContexts` parameter (Bug 74)
+- `network.addIntercept` — `url_patterns` accepts `NetworkUrlPattern` dicts (Bug 75)
+- `network.continueRequest` — `post_data` parameter
+- `network.continueResponse` / `provideResponse` — `cookies` parameter
+- `network.continueWithAuth` — validates `credentials` required for `provideCredentials`
+- `network.authRequired` event — optional `response` field
+- `script.evaluate` / `callFunction` — `serializationOptions`, `userActivation` parameters
+- `script.callFunction` — `this` parameter
+- `storage.getCookies` — `filter` and `partitionKey` parameters
+- `storage.setCookie` / `deleteCookies` — `partitionKey` parameter
+- `PreloadModule.add_script` — `userContexts` parameter (Bug 76)
+- `session.subscribe` — returns subscription result from server (Bug 76)
+
+### Changed
+
+- `BrowsingContextNavigatedEvent` renamed to `BrowsingContextNavigationStartedEvent` (backward-compatible alias kept)
+- `LogEntryAddedEvent.level` — `"warn"` normalized to `"warning"` per W3C spec (Bug 52)
+- `LogEntryAddedEvent.type` — changed to `Literal["console", "javascript"]` per spec
+- `LogEntryAddedEvent.source` — typed as `ScriptSource` (Bug 74)
+- `LogEntryAddedEvent.args` — typed as `list[RemoteValue]` with auto-parsing (Bug 75)
+- `LogEntryAddedEvent` — added `stackTrace` and `method` fields per spec
+- `ScriptMessageEvent.source` — typed as `ScriptSource` (Bug 74)
+- `ScriptRealmCreatedEvent.type` — changed to `Literal["window", "dedicated-worker", "shared-worker", "service-worker", "worker"]` per spec (Bug 45)
+- `BrowsingContextUserPromptOpenedEvent.type` — `Literal["alert", "confirm", "prompt", "beforeunload"]` (Bug 41)
+- `BrowsingContextUserPromptOpenedEvent.handler` — `Literal["accept", "dismiss", "default"] | None` (Bug 42)
+- `BrowsingContextCreatedEvent` — `populate_by_name=True`, aliases for `userContext`/`originalOpener` (Bug 54)
+- `browsingContext.print` — sends `printBackground` per spec instead of `background` (Bug 74)
+- `browsingContext.print` — `pageRanges` accepts `list[int | str]` per spec
+- `Cookie.sameSite` — normalized to lowercase (`strict`, `lax`, `none`) per spec
+- `Cookie.value` — accepts `BytesValue` dict format `{type: 'base64', value: '...'}` per spec (Bug 51)
+- `network.cancel_auth` — uses `continueWithAuth` with `action="cancel"` instead of non-existent `network.cancelAuth`
+- `storage.delete_cookie` — uses `deleteCookies` with name filter instead of non-existent `storage.deleteCookie`
+- `Page.wait_for_function` — uses `awaitPromise=True` with Promise wrapper instead of client-side polling (Bug 77)
+- `Page.__aexit__` — suppresses close exceptions only when already exiting with an exception (Bug 77)
+- `BiDiClient.set_auto_prompt` / `disable_auto_prompt` — track subscription state, avoid duplicate subscribe/unsubscribe (Bug 77)
+- Network headers type annotations — `list[dict[str, Any]]` for structured header values
+- `get_tree` — returns typed `GetTreeResult` with `children` list
+
+### Fixed
+
+- `NETWORK_CANCEL_AUTH` dead constant removed from constants.py
+- `STORAGE_DELETE_COOKIE` dead constant removed from constants.py
+- `TransportConfig` — `max_queue` / `drop_policy` dead code removed (Bug 77)
+- `add_intercept` — validates empty `phases` list
+- `ResponseBodyResult.total_size` — default=0 for browsers that omit `totalSize`
+- `NetworkDataReceivedEvent.data_size` — default=0
+- `ObjectValue.value` — normalizes list-of-pairs format from browsers (Bug 53)
+- `RemoteValue.parse` — handles all spec types including `date`, `regexp`, `map`, `set`, `weakmap`, `weakset`, `generator`, `error`, `proxy`, `promise`, `typedarray`, `arraybuffer`, `nodelist`, `htmlcollection`, `window` (Bugs 46-49, 71)
+- `RemoteValue.parse` — unwraps `{type: "success", result: {...}}` wrapper from `script.evaluate`
+- `RemoteValue.parse` — raises `JavaScriptError` on `{type: "exception"}` responses
+
+### Tests
+
+- 642 tests total (607 passed, 5 skipped, 3 xfailed, 27 new integration tests)
+- Unit tests: 505+ covering all new events, commands, models, and convenience methods
+- Integration tests: 43 tests (16 cross-module, 14 edge-case E2E, 13 new feature tests)
+
 ## [1.7.2] - 2025-07-04
 
 ### Documentation

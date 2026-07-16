@@ -93,6 +93,24 @@ class TestLocateNodes:
         assert result.nodes == []
 
 
+    async def test_locate_nodes_with_serialization_options(
+        self,
+        browsing_module: BrowsingModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"nodes": []}
+        await browsing_module.locate_nodes(
+            CTX_ID,
+            {"type": "css", "value": "div"},
+            serialization_options={"maxDomDepth": 1, "includeShadowTree": "all"},
+        )
+        params = mock_connection.send_command.call_args.args[1]
+        assert params["serializationOptions"] == {
+            "maxDomDepth": 1,
+            "includeShadowTree": "all",
+        }
+
+
 class TestActivate:
     async def test_activate(
         self,

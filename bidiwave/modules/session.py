@@ -43,12 +43,16 @@ class SessionModule:
         self,
         events: list[str],
         contexts: list[str] | None = None,
-    ) -> None:
-        """Subscribes to browser events."""
+    ) -> dict[str, Any]:
+        """Subscribes to browser events.
+
+        Returns:
+            Subscription result from the server.
+        """
         params: dict[str, Any] = {"events": events}
         if contexts is not None:
             params["contexts"] = contexts
-        await self._connection.send_command(SESSION_SUBSCRIBE, params)
+        return await self._connection.send_command(SESSION_SUBSCRIBE, params)
 
     async def unsubscribe(
         self,

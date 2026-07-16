@@ -115,3 +115,87 @@ class TestNetworkFetchErrorEvent:
         event = parse_event("network.fetchError", params)
         assert isinstance(event, NetworkFetchErrorEvent)
         assert event.context is None
+
+
+class TestNetworkRequestDataInitiator:
+    def test_request_with_initiator(self) -> None:
+        params = {
+            "context": "ctx-1",
+            "request": {
+                "request": "req-1",
+                "url": "https://example.com",
+                "method": "GET",
+                "initiator": {"type": "script", "stackTrace": {"callFrames": []}},
+            },
+        }
+        event = parse_event("network.beforeRequestSent", params)
+        assert isinstance(event, NetworkBeforeRequestSentEvent)
+        assert event.request.initiator is not None
+        assert event.request.initiator["type"] == "script"
+
+    def test_request_without_initiator_defaults_none(self) -> None:
+        params = {
+            "request": {
+                "request": "req-1",
+                "url": "https://example.com",
+                "method": "GET",
+            },
+        }
+        event = parse_event("network.beforeRequestSent", params)
+        assert isinstance(event, NetworkBeforeRequestSentEvent)
+        assert event.request.initiator is None
+
+
+class TestNetworkResponseDataCacheFields:
+    def test_response_from_cache(self) -> None:
+        params = {
+            "context": "ctx-1",
+            "request": {
+                "request": "req-1",
+                "url": "https://example.com",
+                "method": "GET",
+            },
+            "response": {
+                "url": "https://example.com",
+                "status": 200,
+                "fromCache": True,
+            },
+        }
+        event = parse_event("network.responseCompleted", params)
+        assert isinstance(event, NetworkResponseCompletedEvent)
+        assert event.response.from_cache is True
+
+    def test_response_from_service_worker(self) -> None:
+        params = {
+            "context": "ctx-1",
+            "request": {
+                "request": "req-1",
+                "url": "https://example.com",
+                "method": "GET",
+            },
+            "response": {
+                "url": "https://example.com",
+                "status": 200,
+                "fromServiceWorker": True,
+            },
+        }
+        event = parse_event("network.responseCompleted", params)
+        assert isinstance(event, NetworkResponseCompletedEvent)
+        assert event.response.from_service_worker is True
+
+    def test_response_defaults_false(self) -> None:
+        params = {
+            "request": {
+                "request": "req-1",
+                "url": "https://example.com",
+                "method": "GET",
+            },
+            "response": {
+                "url": "https://example.com",
+                "status": 200,
+            },
+        }
+        event = parse_event("network.responseCompleted", params)
+        assert isinstance(event, NetworkResponseCompletedEvent)
+        assert event.response.from_cache is False
+        assert event.response.from_service_worker is False
