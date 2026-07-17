@@ -24,8 +24,8 @@ from bidiwave.transport.connection import Connection, TransportConfig
 class TestVersionMatch:
     """Fix: __init__.py version must match pyproject.toml version."""
 
-    def test_version_is_181(self) -> None:
-        assert bidiwave.__version__ == "1.8.1"
+    def test_version_matches_pyproject(self) -> None:
+        assert bidiwave.__version__ == "1.8.2"
 
 
 class TestEventDispatcherOnOverload:
