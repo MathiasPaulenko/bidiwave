@@ -137,7 +137,7 @@ from bidiwave.protocol.results import (
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.8.1"
+__version__ = "1.8.2"
 
 __all__ = [
     "AddCacheOverrideResult",

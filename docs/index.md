@@ -128,6 +128,7 @@ asyncio.run(main())
 - [Permissions](api/permissions.md) — permission management
 - [Log](api/log.md) — log management
 - [CDP](api/cdp.md) — Chrome DevTools Protocol
+- [Web Extension](api/web-extension.md) — browser extension management
 - [Events](api/events.md) — event dispatcher and models
 - [RemoteValue](api/remote-value.md) — typed JS return values
 - [Exceptions](api/exceptions.md) — error hierarchy

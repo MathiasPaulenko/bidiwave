@@ -156,6 +156,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests: 505+ covering all new events, commands, models, and convenience methods
 - Integration tests: 43 tests (16 cross-module, 14 edge-case E2E, 13 new feature tests)
 
+## [1.8.0] - 2026-07-15
+
+### Fixed
+
+#### Critical
+- `reconnect` — `reject_all` on pending commands during reconnection
+- `command timeout` — leak when command completes after timeout fires
+- `key action types` — `keyDown`/`keyUp` correctly typed per spec
+- `capability detection` — proper parsing of `session.status` capabilities
+
+#### High Priority
+- `malformed JSON` handling — graceful error instead of crash
+- `event parse errors` — isolated per-event, no cascade failure
+- `async dispatch` — proper task scheduling for event handlers
+- `exception shadowing` — original errors preserved in cleanup paths
+- `auto-prompt ordering` — subscribe before navigation, not after
+
+#### Medium Priority
+- `connection timeout` — proper cleanup on connect failure
+- `receive loop crash` — guarded against unexpected message formats
+- `close cleanup` — ordered shutdown prevents resource leaks
+- `falsy checks` — `0`/`""`/`False` no longer treated as `None`
+- `logging handlers` — duplicate handlers prevented on reconfigure
+- `remote value types` — correct parsing for edge-case types
+- `context leak` — browsing contexts properly tracked and cleaned
+- `double-close` — idempotent close on `BiDiClient` and `Page`
+- `exception masking` — `__aexit__` preserves original exception
+
+#### Low Priority
+- `action model types` — `InputSource`/`KeyAction`/`PointerAction` field validation
+- `constant names` — aligned with W3C spec command names
+- `error code map` — complete mapping of all BiDi error codes
+- `bytes handling` — proper `BytesValue` serialization
+- `quality validation` — input validation on public API boundaries
+- `EventQueue` — removed dead code
+
+### Tests
+- Fixed test expectations for `keyDown`/`keyUp`, capability defaults, prompt handler
+- Ruff lint and mypy type fixes for CI
+
 ## [1.7.2] - 2025-07-04
 
 ### Documentation
