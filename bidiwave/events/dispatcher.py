@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Callable
-from typing import Any, Self
+from typing import Any, overload
 
 from bidiwave.events.handlers import AsyncHandler, Subscription
 from bidiwave.protocol.events import parse_event
@@ -17,18 +17,24 @@ class EventDispatcher:
     - Multiple handlers per event type
     - Error isolation: a failing handler does not affect others
     - off() to unsubscribe
-    - Fluent API: dispatcher.on("a", h1).on("b", h2)
     - Decorator mode: @dispatcher.on("a")
     """
 
     def __init__(self) -> None:
         self._handlers: dict[str, list[AsyncHandler]] = {}
 
+    @overload
+    def on(self, event_type: str, handler: AsyncHandler) -> Subscription: ...
+    @overload
+    def on(
+        self, event_type: str, handler: None = None
+    ) -> Callable[[AsyncHandler], AsyncHandler]: ...
+
     def on(
         self,
         event_type: str,
         handler: AsyncHandler | None = None,
-    ) -> Self | Subscription | Callable[[AsyncHandler], AsyncHandler]:
+    ) -> Subscription | Callable[[AsyncHandler], AsyncHandler]:
         """Registers a handler for an event type.
 
         If handler is None, acts as a decorator.

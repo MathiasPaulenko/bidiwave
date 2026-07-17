@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.2] - 2026-07-17
+
+### Fixed — W3C WebDriver BiDi Spec Compliance
+
+#### Network Module
+- `continue_request`: `post_data` now sent as `body` with `BytesValue` instead of raw `postData`
+- `fail_request`: removed non-spec `error` parameter — only `request` is sent per CDDL
+- `continue_response`: removed non-spec `body` parameter; added `credentials` parameter
+- `provide_response`: body now wrapped as `BytesValue` per spec
+- `add_data_collector`: replaced non-spec `collector` dict with `data_types`, `max_encoded_data_size`, and optional `collector_type` per `network.AddDataCollectorParameters`
+- `get_data`: replaced non-spec `context`/`url` with `request` (required), `data_type` (required), optional `collector` and `disown` per `network.GetDataParameters`
+- `disown_data`: now requires `collector`, `request`, and `data_type` per `network.DisownDataParameters`; removed non-spec `url`
+
+#### Emulation Module
+- `set_network_conditions`: replaced `download_throughput`/`upload_throughput`/`latency` with spec-compliant `networkConditions: {type: "offline"}` or `null` per `emulation.SetNetworkConditionsParameters`
+- `set_user_agent`: removed non-spec `accept_language` and `platform` parameters per `emulation.SetUserAgentOverrideParameters`
+- `set_screen_orientation`: uses `screenOrientation` key (not `orientation`) with spec-compliant kebab-case types (e.g. `"portrait-primary"`) per `emulation.SetScreenOrientationOverrideParameters`
+
+#### Protocol & Models
+- `Cookie.expires`: wire field is now `expiry` (alias) per W3C BiDi spec
+- `HandleValue.handle`: made optional (`str | None`) to support `ownership: "none"` scenarios
+
+#### Infrastructure
+- `setup_logging`: now re-applies formatter to existing handlers on subsequent calls instead of silently discarding new format
+
+### Tests
+- Updated all affected unit tests to assert spec-compliant wire formats
+- Added regression tests for `HandleValue` without handle
+- Added unit tests for `setup_logging` reconfiguration behavior
+
 ## [1.8.1] - 2026-07-16
 
 ### Added
@@ -299,14 +329,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SessionModule` — `new()`, `status()`, `subscribe()`, `unsubscribe()`
 - `BrowsingModule` — `create_context()`, `navigate()`, `close()`, `screenshot()`, `get_tree()`, `wait_for_selector()`, `wait_for_function()`, `open()`
 - `ScriptModule` — `evaluate()`, `call_function()`, `disown()`
-- `EventDispatcher` — `on()`, `off()`, fluent API, decorator mode, error isolation
+- `EventDispatcher` — `on()`, `off()`, decorator mode, error isolation
 - `Page` object — convenience layer with `evaluate()`, `screenshot()`, `wait_for_selector()`, `wait_for_function()`, `close()`
 - `RemoteValue` with subtypes: `StringValue`, `NumberValue`, `BooleanValue`, `NullValue`, `UndefinedValue`, `BigIntValue`, `ObjectValue`, `ArrayValue`, `HandleValue`
 - `Capabilities` — detection from `session.status`
 - `ClientConfig` — typed configuration with Pydantic
 - Reconnect with exponential backoff
-- Backpressure with drop policies (oldest, newest, block)
-- Exception hierarchy: `BiDiError`, `ConnectionError`, `TimeoutError`, `CapabilityError`, `CommandError`, `InvalidArgumentError`, `NoSuchFrameError`, `JavaScriptError`
+- Exception hierarchy: `BiDiError`, `BiDiConnectionError`, `BiDiTimeoutError`, `CapabilityError`, `CommandError`, `InvalidArgumentError`, `NoSuchFrameError`, `JavaScriptError`
 - Cross-browser: Chrome, Firefox, Edge
 - Structured logging
 - CI: GitHub Actions with Chrome + Firefox matrix, Python 3.11/3.12/3.13

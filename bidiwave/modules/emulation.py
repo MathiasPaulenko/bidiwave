@@ -65,32 +65,28 @@ class EmulationModule:
 
     async def set_network_conditions(
         self,
-        offline: bool | None = None,
-        download_throughput: int | None = None,
-        upload_throughput: int | None = None,
-        latency: int | None = None,
+        offline: bool = True,
         contexts: list[str] | None = None,
+        user_contexts: list[str] | None = None,
     ) -> None:
-        """Overrides network conditions (throttling or offline).
+        """Overrides network conditions.
+
+        Per the W3C BiDi spec (emulation.setNetworkConditions), the only
+        supported condition is offline emulation. Pass ``offline=False``
+        to clear the override (sends ``networkConditions: null``).
 
         Args:
-            offline: True to simulate offline mode.
-            download_throughput: Max download throughput in bytes/sec.
-            upload_throughput: Max upload throughput in bytes/sec.
-            latency: Additional latency in milliseconds.
+            offline: True to simulate offline mode, False to clear.
             contexts: Context IDs to apply to. None = all.
+            user_contexts: User context IDs to apply to. None = all.
         """
-        params: dict[str, Any] = {}
-        if offline is not None:
-            params["offline"] = offline
-        if download_throughput is not None:
-            params["downloadThroughput"] = download_throughput
-        if upload_throughput is not None:
-            params["uploadThroughput"] = upload_throughput
-        if latency is not None:
-            params["latency"] = latency
+        params: dict[str, Any] = {
+            "networkConditions": {"type": "offline"} if offline else None,
+        }
         if contexts is not None:
             params["contexts"] = contexts
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
         await self._connection.send_command(
             EMULATION_SET_NETWORK_CONDITIONS, params
         )
@@ -117,26 +113,25 @@ class EmulationModule:
 
     async def set_user_agent(
         self,
-        user_agent: str,
-        accept_language: str | None = None,
-        platform: str | None = None,
+        user_agent: str | None,
         contexts: list[str] | None = None,
+        user_contexts: list[str] | None = None,
     ) -> None:
         """Overrides the User-Agent string.
 
+        Per the W3C BiDi spec (emulation.setUserAgentOverride), only the
+        User-Agent string itself can be overridden.
+
         Args:
-            user_agent: User-Agent string to set.
-            accept_language: Accept-Language header value.
-            platform: Platform string to report.
+            user_agent: User-Agent string to set. None to clear the override.
             contexts: Context IDs to apply to. None = all.
+            user_contexts: User context IDs to apply to. None = all.
         """
         params: dict[str, Any] = {"userAgent": user_agent}
-        if accept_language is not None:
-            params["acceptLanguage"] = accept_language
-        if platform is not None:
-            params["platform"] = platform
         if contexts is not None:
             params["contexts"] = contexts
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
         await self._connection.send_command(EMULATION_SET_USER_AGENT, params)
 
     async def set_locale(
@@ -171,15 +166,15 @@ class EmulationModule:
         """Overrides the screen orientation.
 
         Args:
-            orientation: Dict with 'type' ("portraitPrimary", "landscapePrimary",
-                "portraitSecondary", "landscapeSecondary") and optional 'angle'.
-                None to clear the override.
+            orientation: Dict with 'natural' ("portrait" or "landscape")
+                and 'type' ("portrait-primary", "portrait-secondary",
+                "landscape-primary", "landscape-secondary") per the spec's
+                emulation.ScreenOrientation. None to clear the override
+                (sends ``screenOrientation: null``).
             contexts: Context IDs to apply to. None = all.
             user_contexts: User context IDs to apply to. None = all.
         """
-        params: dict[str, Any] = {}
-        if orientation is not None:
-            params["orientation"] = orientation
+        params: dict[str, Any] = {"screenOrientation": orientation}
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:

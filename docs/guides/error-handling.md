@@ -4,8 +4,8 @@
 
 ```text
 BiDiError (base)
-├── ConnectionError          # WebSocket disconnected or unreachable
-├── TimeoutError             # Timeout waiting for response or navigation
+├── BiDiConnectionError      # WebSocket disconnected or unreachable
+├── BiDiTimeoutError         # Timeout waiting for response or navigation
 ├── CapabilityError          # Browser does not support the capability
 ├── ProtocolError            # Invalid or unexpected protocol message
 ├── SessionError             # Invalid or expired session
@@ -21,9 +21,9 @@ BiDiError (base)
 
 | Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
-| Browser not responding | `ConnectionError` | Browser not launched, wrong port | Verify the browser is running with `--remote-debugging-port` |
-| WebSocket closed | `ConnectionError` | Browser crashed or was closed | Automatic reconnect, or reconnect manually |
-| Timeout on connect | `TimeoutError` | Firewall, slow network | Increase `timeout` in `BiDiClient.connect()` |
+| Browser not responding | `BiDiConnectionError` | Browser not launched, wrong port | Verify the browser is running with `--remote-debugging-port` |
+| WebSocket closed | `BiDiConnectionError` | Browser crashed or was closed | Automatic reconnect, or reconnect manually |
+| Timeout on connect | `BiDiTimeoutError` | Firewall, slow network | Increase `timeout` in `BiDiClient.connect()` |
 
 ### Session
 
@@ -38,7 +38,7 @@ BiDiError (base)
 | Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
 | Invalid URL | `CommandError` | Malformed URL | Validate URL before navigating |
-| Load timeout | `TimeoutError` | Slow or hanging page | Use `wait="none"` or `wait="interactive"`, or increase timeout |
+| Load timeout | `BiDiTimeoutError` | Slow or hanging page | Use `wait="none"` or `wait="interactive"`, or increase timeout |
 | Context closed | `CommandError` | Context was closed by another process | Verify the context exists before navigating |
 | Screenshot fails | `CommandError` | Context not visible (headless without GPU) | Use `--headless=new` in Chrome |
 
@@ -47,7 +47,7 @@ BiDiError (base)
 | Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
 | JS error | `CommandError` | Invalid expression | Catch errors in JS: `try { ... } catch(e) { return e.message }` |
-| Promise not resolved | `TimeoutError` | `await_promise=True` and Promise hung | Use timeout in JS: `Promise.race([promise, timeout(5000)])` |
+| Promise not resolved | `BiDiTimeoutError` | `await_promise=True` and Promise hung | Use timeout in JS: `Promise.race([promise, timeout(5000)])` |
 | Invalid handle | `CommandError` | Handle already released or context closed | Don't reuse handles after `disown()` or `close()` |
 
 ### Events
@@ -55,14 +55,13 @@ BiDiError (base)
 | Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
 | Handler fails | (silent) | Exception in async handler | The handler runs in error isolation. Log errors inside the handler |
-| Lost events | (silent) | Queue full, drop policy active | Increase `max_queue` or use `drop_policy="block"` |
 | No events received | (silent) | Not subscribed or context closed | Verify `session.subscribe()` and that the context is active |
 
 ### Reconnection
 
 | Scenario | Exception | Common cause | Solution |
 |---|---|---|---|
-| Reconnect fails | `ConnectionError` | Browser closed | Handle `on_reconnect` failure, relaunch browser |
+| Reconnect fails | `BiDiConnectionError` | Browser closed | Handle `on_reconnect` failure, relaunch browser |
 | Session lost after reconnect | `SessionError` | BiDi session does not survive reconnection | Create new session in `on_reconnect` handler |
 | Duplicate handlers after reconnect | (silent) | Re-registering handlers on each reconnect | Handlers are kept in memory, no need to re-register |
 
@@ -75,7 +74,7 @@ async def navigate_with_retry(client, ctx, url, max_retries=3):
     for attempt in range(max_retries):
         try:
             return await client.browsing.navigate(ctx, url, wait="complete")
-        except TimeoutError:
+        except BiDiTimeoutError:
             if attempt == max_retries - 1:
                 raise
             await asyncio.sleep(2 ** attempt)

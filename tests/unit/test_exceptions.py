@@ -19,9 +19,9 @@ from bidiwave.exceptions import (
     NoSuchShadowRootError,
     NoSuchUserContextError,
     NoSuchWindowError,
+    ProtocolTimeoutError,
     SessionNotCreatedError,
     StaleElementReferenceError,
-    TimeoutError,
     map_error,
 )
 
@@ -80,7 +80,7 @@ def test_command_error_has_code_and_message():
         ("invalid web extension", InvalidWebExtensionError),
         ("no such user context", NoSuchUserContextError),
         ("session not created", SessionNotCreatedError),
-        ("timeout", TimeoutError),
+        ("timeout", ProtocolTimeoutError),
     ],
 )
 def test_map_error_new_codes(code: str, exc_cls: type[CommandError]) -> None:

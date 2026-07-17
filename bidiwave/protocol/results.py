@@ -125,7 +125,7 @@ class Cookie(BaseModel):
     http_only: bool = Field(default=False, alias="httpOnly")
     secure: bool = False
     same_site: str | None = Field(default=None, alias="sameSite")
-    expires: int | None = None
+    expires: int | None = Field(default=None, alias="expiry")
     priority: str | None = None
     same_party: bool | None = Field(default=None, alias="sameParty")
     source_scheme: str | None = Field(default=None, alias="sourceScheme")

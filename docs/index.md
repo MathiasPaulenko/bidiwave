@@ -17,7 +17,6 @@ standard API with real-time event streaming.
 - **Async-first** — built on `asyncio` and `websockets`. No threads, no
   blocking calls.
 - **Resilient** — automatic reconnection with exponential backoff.
-  Configurable event queue with backpressure policies.
 - **Ergonomic** — the `Page` object wraps browsing contexts with
   convenient methods. Pattern-match on `RemoteValue` for type-safe JS
   results.

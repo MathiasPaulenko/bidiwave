@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bidiwave"
-version = "1.8.1"
+version = "1.8.2"
 description = "WebDriver BiDi for Python — talk to any browser via W3C standard"
 readme = "README.md"
 license = { text = "MIT" }
@@ -25,7 +25,6 @@ classifiers = [
 dependencies = [
     "websockets>=12.0",
     "pydantic>=2.5",
-    "anyio>=4.0",
 ]
 
 [project.optional-dependencies]

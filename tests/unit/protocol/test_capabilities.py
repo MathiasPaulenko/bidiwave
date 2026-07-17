@@ -58,3 +58,20 @@ def test_capabilities_defaults():
     assert caps.browser_name == ""
     assert caps.supports_browsing is True
     assert caps.supports_network is True
+
+
+def test_detect_capabilities_without_browser_name_does_not_claim_support():
+    """session.status does not report browser info; detection must not
+    fabricate support flags when no browser data is available."""
+    caps = detect_capabilities({"result": {"ready": True, "message": ""}})
+    assert caps.browser_name == ""
+    assert caps.supports_browsing is False
+    assert caps.supports_script is False
+    assert caps.supports_network is False
+    assert caps.supports_input is False
+
+
+def test_detect_capabilities_empty_dict():
+    caps = detect_capabilities({})
+    assert caps.browser_name == ""
+    assert caps.supports_browsing is False

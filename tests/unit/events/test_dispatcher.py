@@ -107,6 +107,35 @@ async def test_dispatch_no_handlers_does_nothing():
 
 
 @pytest.mark.asyncio
+async def test_subscription_unsubscribe_removes_handler():
+    dispatcher = EventDispatcher()
+    calls: list[str] = []
+
+    async def handler(entry):
+        calls.append(entry.text)
+
+    sub = dispatcher.on("log.entryAdded", handler)
+    sub.unsubscribe()
+
+    await dispatcher.dispatch("log.entryAdded", {
+        "level": "info", "text": "after-unsub", "timestamp": 1, "source": {},
+    })
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_subscription_unsubscribe_after_dispatcher_gc_is_noop():
+    dispatcher = EventDispatcher()
+
+    async def handler(entry):
+        pass
+
+    sub = dispatcher.on("log.entryAdded", handler)
+    del dispatcher
+    sub.unsubscribe()  # must not raise
+
+
+@pytest.mark.asyncio
 async def test_multiple_handlers_same_event():
     dispatcher = EventDispatcher()
     calls: list[str] = []

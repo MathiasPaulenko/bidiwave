@@ -71,3 +71,14 @@ class TestEvaluateParams:
         assert data["expression"] == "document.title"
         assert data["target"] == {"context": "ctx1"}
         assert data["await_promise"] is False
+
+    def test_serialization_options_and_user_activation(self) -> None:
+        params = EvaluateParams(
+            expression="1+1",
+            target={"context": "ctx1"},
+            serialization_options={"maxDomDepth": 1},
+            user_activation=True,
+        )
+        data = params.model_dump(by_alias=True)
+        assert data["serializationOptions"] == {"maxDomDepth": 1}
+        assert data["userActivation"] is True

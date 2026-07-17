@@ -92,3 +92,12 @@ async def test_send_command_raises_when_closed():
     conn._closed = True
     with pytest.raises(BiDiConnectionError):
         await conn.send_command("session.status", {})
+
+
+@pytest.mark.asyncio
+async def test_send_command_fails_fast_while_reconnecting():
+    conn = Connection("ws://localhost:9999")
+    conn._ws = AsyncMock()
+    conn._reconnecting = True
+    with pytest.raises(BiDiConnectionError, match="reconnecting"):
+        await conn.send_command("session.status", {})

@@ -166,10 +166,14 @@ class ArrayValue(RemoteValue):
 
 
 class HandleValue(RemoteValue):
-    """For functions, symbols and objects with circular references."""
+    """For functions, symbols and objects with circular references.
+
+    The handle is only present when the result ownership is "root";
+    with the default ownership ("none") the browser omits it.
+    """
 
     type: str
-    handle: str
+    handle: str | None = None
 
 
 class NodeValue(RemoteValue):

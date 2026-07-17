@@ -117,7 +117,11 @@ class TestResponseBodyMissingFields:
 
 
 class TestContinueRequestPostData:
-    """Bug 17: continue_request missing post_data parameter per W3C spec."""
+    """Bug 17: continue_request missing post_data parameter per W3C spec.
+
+    Per spec, the request body is sent as ``body`` with a BytesValue,
+    not as a raw ``postData`` string.
+    """
 
     async def test_continue_request_with_post_data(
         self,
@@ -128,4 +132,5 @@ class TestContinueRequestPostData:
             "req-1", post_data="SGVsbG8="
         )
         params = mock_connection.send_command.call_args.args[1]
-        assert params["postData"] == "SGVsbG8="
+        assert params["body"] == {"type": "base64", "value": "SGVsbG8="}
+        assert "postData" not in params

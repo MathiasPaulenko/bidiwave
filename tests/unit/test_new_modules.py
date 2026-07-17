@@ -186,22 +186,28 @@ class TestEmulationNetworkConditions:
         await emulation_module.set_network_conditions(offline=True)
         call_args = mock_connection.send_command.call_args
         assert call_args.args[0] == "emulation.setNetworkConditions"
-        assert call_args.args[1]["offline"] is True
+        assert call_args.args[1]["networkConditions"] == {"type": "offline"}
 
-    async def test_set_network_throttle(
+    async def test_set_network_offline_clear(
+        self,
+        emulation_module: EmulationModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await emulation_module.set_network_conditions(offline=False)
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[1]["networkConditions"] is None
+
+    async def test_set_network_offline_with_contexts(
         self,
         emulation_module: EmulationModule,
         mock_connection: MockConn,
     ) -> None:
         await emulation_module.set_network_conditions(
-            download_throughput=50000,
-            upload_throughput=20000,
-            latency=100,
+            offline=True, contexts=["ctx-1"], user_contexts=["uc-1"]
         )
         call_args = mock_connection.send_command.call_args
-        assert call_args.args[1]["downloadThroughput"] == 50000
-        assert call_args.args[1]["uploadThroughput"] == 20000
-        assert call_args.args[1]["latency"] == 100
+        assert call_args.args[1]["contexts"] == ["ctx-1"]
+        assert call_args.args[1]["userContexts"] == ["uc-1"]
 
 
 class TestEmulationTimezone:
@@ -236,16 +242,31 @@ class TestEmulationUserAgent:
         emulation_module: EmulationModule,
         mock_connection: MockConn,
     ) -> None:
-        await emulation_module.set_user_agent(
-            "MyBot/1.0",
-            accept_language="en-US",
-            platform="Windows",
-        )
+        await emulation_module.set_user_agent("MyBot/1.0")
         call_args = mock_connection.send_command.call_args
         assert call_args.args[0] == "emulation.setUserAgentOverride"
         assert call_args.args[1]["userAgent"] == "MyBot/1.0"
-        assert call_args.args[1]["acceptLanguage"] == "en-US"
-        assert call_args.args[1]["platform"] == "Windows"
+
+    async def test_set_user_agent_clear(
+        self,
+        emulation_module: EmulationModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await emulation_module.set_user_agent(None)
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[1]["userAgent"] is None
+
+    async def test_set_user_agent_with_contexts(
+        self,
+        emulation_module: EmulationModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await emulation_module.set_user_agent(
+            "MyBot/1.0", contexts=["ctx-1"], user_contexts=["uc-1"]
+        )
+        call_args = mock_connection.send_command.call_args
+        assert call_args.args[1]["contexts"] == ["ctx-1"]
+        assert call_args.args[1]["userContexts"] == ["uc-1"]
 
 
 class TestEmulationLocale:
@@ -288,13 +309,14 @@ class TestEmulationScreenOrientation:
         emulation_module: EmulationModule,
         mock_connection: MockConn,
     ) -> None:
+        orientation = {"type": "portrait-primary"}
         await emulation_module.set_screen_orientation(
-            {"type": "portraitPrimary", "angle": 0},
+            orientation,
             contexts=["ctx-1"],
         )
         mock_connection.send_command.assert_called_once_with(
             "emulation.setScreenOrientationOverride",
-            {"orientation": {"type": "portraitPrimary", "angle": 0},
+            {"screenOrientation": {"type": "portrait-primary"},
              "contexts": ["ctx-1"]},
         )
 
@@ -304,12 +326,12 @@ class TestEmulationScreenOrientation:
         mock_connection: MockConn,
     ) -> None:
         await emulation_module.set_screen_orientation(
-            {"type": "landscapePrimary"},
+            {"type": "landscape-primary"},
             user_contexts=["uc-1"],
         )
         call_args = mock_connection.send_command.call_args
         assert call_args.args[0] == "emulation.setScreenOrientationOverride"
-        assert call_args.args[1]["orientation"]["type"] == "landscapePrimary"
+        assert call_args.args[1]["screenOrientation"]["type"] == "landscape-primary"
         assert call_args.args[1]["userContexts"] == ["uc-1"]
 
     async def test_set_screen_orientation_clear(
@@ -319,7 +341,8 @@ class TestEmulationScreenOrientation:
     ) -> None:
         await emulation_module.set_screen_orientation()
         mock_connection.send_command.assert_called_once_with(
-            "emulation.setScreenOrientationOverride", {}
+            "emulation.setScreenOrientationOverride",
+            {"screenOrientation": None},
         )
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-import contextlib
+import logging
 from typing import TYPE_CHECKING, Any, Literal
 
 from bidiwave.protocol.remote_value import RemoteValue
@@ -11,6 +11,8 @@ from bidiwave.protocol.remote_value import RemoteValue
 if TYPE_CHECKING:
     from bidiwave.modules.browsing import BrowsingContext, BrowsingModule
     from bidiwave.modules.script import ScriptModule
+
+logger = logging.getLogger("bidiwave.page")
 
 
 class Page:
@@ -196,7 +198,11 @@ class Page:
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         if exc_type is not None:
-            with contextlib.suppress(Exception):
+            try:
                 await self.close()
+            except Exception as e:
+                logger.warning(
+                    "Error closing Page during exception exit: %s", e
+                )
         else:
             await self.close()

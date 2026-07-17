@@ -91,6 +91,14 @@ def test_on_download_end(client: BiDiClient) -> None:
     assert handler in handlers
 
 
+def test_on_file_dialog_opened(client: BiDiClient) -> None:
+    handler = AsyncMock()
+    sub = client.on_file_dialog_opened(handler)
+    assert sub is not None
+    handlers = client._dispatcher._handlers.get("input.fileDialogOpened", [])
+    assert handler in handlers
+
+
 @pytest.mark.asyncio
 async def test_close_browser_sends_command(client: BiDiClient) -> None:
     client._connection.send_command = AsyncMock(return_value={})

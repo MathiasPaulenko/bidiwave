@@ -97,7 +97,6 @@ async def on_request(event):
     if event.is_blocked and event.intercepts:
         await client.network.fail_request(
             request=event.request.request,
-            error="Blocked by bidiwave",
         )
 
 client.on_request(on_request)
@@ -217,22 +216,21 @@ await client.session.subscribe(["network.beforeRequestSent"])
 | `status_code` | `int \| None` | `None` | Modified status code |
 | `reason_phrase` | `str \| None` | `None` | Modified reason phrase |
 | `headers` | `list[dict] \| None` | `None` | Modified headers |
-| `body` | `str \| None` | `None` | Modified body (base64-encoded) |
+| `cookies` | `list[dict] \| None` | `None` | Modified cookies |
+| `credentials` | `dict \| None` | `None` | Auth credentials (`type`, `username`, `password`) |
+
+Note: per the W3C BiDi spec, `continueResponse` does not accept a body.
+Use `provide_response()` to supply a synthetic body.
 
 ## Failing requests
 
 Block a request with an error:
 
 ```python
-await client.network.fail_request(
-    request=request_id,
-    error="Blocked by bidiwave",
-)
+await client.network.fail_request(request=request_id)
 ```
 
-The browser will receive a network error for this request. The `error`
-parameter is a human-readable string that appears in the browser's
-network error.
+The browser will receive a network error for this request.
 
 ## Removing intercepts
 

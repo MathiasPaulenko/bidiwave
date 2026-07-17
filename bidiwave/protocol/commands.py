@@ -36,11 +36,15 @@ class NavigateParams(BaseModel):
 class EvaluateParams(BaseModel):
     """Parameters for script.evaluate."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     expression: str
     target: dict[str, Any]
     await_promise: bool = False
+    serialization_options: dict[str, Any] | None = Field(
+        default=None, alias="serializationOptions"
+    )
+    user_activation: bool = Field(default=False, alias="userActivation")
 
 
 class ScreenshotParams(BaseModel):
@@ -56,12 +60,17 @@ class ScreenshotParams(BaseModel):
 class CallFunctionParams(BaseModel):
     """Parameters for script.callFunction."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     function_declaration: str
     args: list[dict[str, Any]] = []
     target: dict[str, Any]
     await_promise: bool = False
+    this: dict[str, Any] | None = None
+    serialization_options: dict[str, Any] | None = Field(
+        default=None, alias="serializationOptions"
+    )
+    user_activation: bool = Field(default=False, alias="userActivation")
 
 
 class DisownParams(BaseModel):
@@ -99,6 +108,7 @@ class AddPreloadScriptParams(BaseModel):
     function_declaration: str
     arguments: list[dict[str, Any]] | None = None
     contexts: list[str] | None = None
+    user_contexts: list[str] | None = Field(default=None, alias="userContexts")
     sandbox: str | None = None
 
 

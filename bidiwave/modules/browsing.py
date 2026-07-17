@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -48,6 +50,8 @@ if TYPE_CHECKING:
     from bidiwave.convenience.page import Page
     from bidiwave.modules.script import ScriptModule
 
+logger = logging.getLogger("bidiwave.browsing")
+
 
 @dataclass
 class BrowsingContext:
@@ -65,9 +69,14 @@ class BrowsingContext:
         if self._module:
             try:
                 await self._module.close(self.id)
-            except Exception:
+            except Exception as close_err:
                 if exc_type is None:
                     raise
+                logger.warning(
+                    "Suppressing close error during exception (original: %s, close error: %s)",
+                    exc_val,
+                    close_err,
+                )
 
 
 class BrowsingModule:
@@ -99,7 +108,7 @@ class BrowsingModule:
             BROWSING_CREATE_CONTEXT, params
         )
         return BrowsingContext(
-            id=result["context"],
+            id=result.get("context", ""),
             url=result.get("url", ""),
             user_context=result.get("userContext"),
             _module=self,
@@ -242,14 +251,17 @@ class BrowsingModule:
         """Waits for an element to exist in the DOM."""
         ctx_id = context.id if hasattr(context, "id") else context
         # Use evaluate instead of callFunction (driver bug with primitive args)
+        # json.dumps produces a JS-safe string literal; repr() is Python syntax
+        # and is not guaranteed to be valid/safe JavaScript for all inputs.
+        js_selector = json.dumps(selector)
         expression = (
             f"new Promise(resolve => {{"
-            f" const el = document.querySelector({selector!r});"
+            f" const el = document.querySelector({js_selector});"
             f" if (el) return resolve(true);"
             f" const target = document.body || document.documentElement;"
             f" if (!target) return resolve(false);"
             f" new MutationObserver((_, obs) => {{"
-            f" if (document.querySelector({selector!r})) {{"
+            f" if (document.querySelector({js_selector})) {{"
             f" obs.disconnect();"
             f" resolve(true);"
             f" }}"

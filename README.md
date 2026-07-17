@@ -2,7 +2,7 @@
 
 WebDriver BiDi for Python — talk to any browser via W3C standard.
 
-[![CI](https://github.com/MathiasPaulenko/bidiwave/actions/workflows/test.yml/badge.svg)](https://github.com/MathiasPaulenko/bidiwave/actions/workflows/test.yml)
+[![CI](https://github.com/MathiasPaulenko/bidiwave/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasPaulenko/bidiwave/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/bidiwave)](https://pypi.org/project/bidiwave/)
 [![Python](https://img.shields.io/pypi/pyversions/bidiwave)](https://pypi.org/project/bidiwave/)
 [![License](https://img.shields.io/github/license/MathiasPaulenko/bidiwave)](LICENSE)

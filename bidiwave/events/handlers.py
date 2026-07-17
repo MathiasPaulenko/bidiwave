@@ -30,3 +30,12 @@ class Subscription:
         self.event_type = event_type
         self.handler = handler
         self._dispatcher_ref = weakref.ref(dispatcher)
+
+    def unsubscribe(self) -> None:
+        """Unsubscribes this handler from its originating dispatcher.
+
+        No-op if the dispatcher has already been garbage-collected.
+        """
+        dispatcher = self._dispatcher_ref()
+        if dispatcher is not None:
+            dispatcher.off(self)

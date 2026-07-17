@@ -79,6 +79,21 @@ def test_parse_function_returns_handle():
     assert val.type == "function"
 
 
+def test_parse_function_without_handle():
+    """With the default result ownership ("none") the browser omits the
+    handle — parsing must not raise a validation error."""
+    val = RemoteValue.parse({"type": "function"})
+    assert isinstance(val, HandleValue)
+    assert val.handle is None
+    assert val.type == "function"
+
+
+def test_parse_symbol_without_handle():
+    val = RemoteValue.parse({"type": "symbol"})
+    assert isinstance(val, HandleValue)
+    assert val.handle is None
+
+
 def test_type_narrowing_with_match():
     val = RemoteValue.parse({"type": "string", "value": "title"})
     match val:

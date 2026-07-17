@@ -19,14 +19,6 @@ class WebExtensionInfo(BaseModel):
     extension: str = Field(alias="extension")
 
 
-class InstallResult(BaseModel):
-    """Result of webExtension.install."""
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    extension: str = Field(alias="extension")
-
-
 class WebExtensionModule:
     """Module for managing browser extensions.
 

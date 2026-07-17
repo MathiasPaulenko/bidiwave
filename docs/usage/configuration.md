@@ -8,7 +8,7 @@ config from it automatically.
 ## ClientConfig
 
 `ClientConfig` controls the behavior of the `BiDiClient` — timeouts,
-reconnection strategy, event queue, and logging:
+reconnection strategy, and logging:
 
 ```python
 from bidiwave import BiDiClient, ClientConfig
@@ -18,8 +18,6 @@ config = ClientConfig(
     max_retries=5,
     retry_delay=1.0,
     retry_backoff=2.0,
-    max_queue=1000,
-    drop_policy="oldest",
     log_level="INFO",
 )
 
@@ -30,24 +28,11 @@ client = await BiDiClient.connect("ws://localhost:9515/session", config=config)
 
 | Option | Type | Default | Description |
 | ------ | ---- | ------- | ----------- |
-| `timeout` | `float` | `30.0` | Timeout for command responses, in seconds. If a command doesn't get a response within this time, a `TimeoutError` is raised. |
+| `timeout` | `float` | `30.0` | Timeout for command responses, in seconds. If a command doesn't get a response within this time, a `BiDiTimeoutError` is raised. |
 | `max_retries` | `int` | `3` | Maximum number of reconnection attempts when the WebSocket drops. Set to `0` to disable reconnection. |
 | `retry_delay` | `float` | `1.0` | Initial delay before the first reconnection attempt, in seconds. |
 | `retry_backoff` | `float` | `2.0` | Multiplier applied to the delay after each failed reconnection attempt. E.g., with `retry_delay=1.0` and `retry_backoff=2.0`, delays are: 1s, 2s, 4s. |
-| `max_queue` | `int` | `1000` | Maximum number of events to buffer in the event queue. When the queue is full, the `drop_policy` determines what happens. |
-| `drop_policy` | `Literal["oldest", "newest", "block"]` | `"oldest"` | What to do when the event queue is full (see below). |
 | `log_level` | `str` | `"INFO"` | Python logging level for the `bidiwave` logger. |
-
-### Drop policies
-
-When the event queue reaches `max_queue` events, the `drop_policy`
-controls what happens to new events:
-
-| Policy | Behavior | Use case |
-| ------ | -------- | -------- |
-| `"oldest"` | Drop the oldest event from the queue to make room for the new one | When recent events matter more than old ones (e.g., log monitoring) |
-| `"newest"` | Drop the new event (don't add it to the queue) | When you don't want to lose historical events |
-| `"block"` | Wait until there's space in the queue (backpressure) | When you can't afford to lose any events (e.g., audit logging) |
 
 ### Reconnection strategy
 
@@ -90,18 +75,6 @@ config = ClientConfig(
     max_retries=10,
     retry_delay=1.0,
     retry_backoff=2.0,
-    max_queue=5000,
-    drop_policy="block",
-    log_level="WARNING",
-)
-```
-
-**High-throughput events**:
-
-```python
-config = ClientConfig(
-    max_queue=10000,
-    drop_policy="oldest",
     log_level="WARNING",
 )
 ```
@@ -120,8 +93,6 @@ transport = TransportConfig(
     max_retries=5,
     retry_delay=1.0,
     retry_backoff=2.0,
-    max_queue=1000,
-    drop_policy="oldest",
 )
 
 client = await BiDiClient.connect(
@@ -154,7 +125,7 @@ logging.basicConfig(level=logging.INFO)
 | ----- | ---------------- |
 | `DEBUG` | Every message sent/received, ID correlation, event dispatching |
 | `INFO` | Connection events, reconnections, subscriptions, context creation |
-| `WARNING` | Events dropped (backpressure), failed event handlers, deprecated usage |
+| `WARNING` | Failed event handlers, deprecated usage |
 | `ERROR` | Protocol errors, rejected commands, connection failures |
 
 ### Interpreting logs

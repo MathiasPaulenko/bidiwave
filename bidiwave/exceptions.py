@@ -121,8 +121,8 @@ class SessionNotCreatedError(CommandError):
     """Session not created."""
 
 
-class TimeoutError(CommandError):
-    """Timeout."""
+class ProtocolTimeoutError(CommandError):
+    """Protocol-level timeout error from the browser."""
 
 
 ERROR_CODE_MAP: dict[str, type[CommandError]] = {
@@ -147,7 +147,7 @@ ERROR_CODE_MAP: dict[str, type[CommandError]] = {
     "detached shadow root": DetachedShadowRootError,
     "invalid web extension": InvalidWebExtensionError,
     "no such user context": NoSuchUserContextError,
-    "timeout": TimeoutError,
+    "timeout": ProtocolTimeoutError,
 }
 
 

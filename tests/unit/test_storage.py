@@ -81,7 +81,7 @@ class TestGetCookies:
                     "httpOnly": True,
                     "secure": True,
                     "sameSite": "Strict",
-                    "expires": 1735689600,
+                    "expiry": 1735689600,
                 }
             ]
         }
@@ -132,7 +132,7 @@ class TestSetCookie:
         await storage_module.set_cookie("ctx-1", cookie)
         params = mock_connection.send_command.call_args.args[1]
         assert "domain" not in params["cookie"]
-        assert "expires" not in params["cookie"]
+        assert "expiry" not in params["cookie"]
         assert "sameSite" not in params["cookie"]
 
     async def test_set_cookie_with_all_fields(
@@ -156,7 +156,9 @@ class TestSetCookie:
         assert params["secure"] is True
         assert params["sameSite"] == "lax"
         assert params["path"] == "/app"
-        assert params["expires"] == 1735689600
+        # Per spec the wire field is "expiry", not "expires"
+        assert params["expiry"] == 1735689600
+        assert "expires" not in params
 
 
 class TestDeleteCookies:

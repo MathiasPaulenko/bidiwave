@@ -66,8 +66,11 @@ class NetworkModule:
             phases: Phases to intercept at (beforeRequestSent, responseStarted, authRequired).
             contexts: List of context IDs to apply to. None = all.
             url_patterns: URL patterns to intercept. None = all.
-                Accepts plain strings or NetworkUrlPattern dicts
-                (e.g. {"type": "string", "pattern": "https://example.com/*"}).
+                Accepts plain strings (normalized to
+                {"type": "string", "pattern": ...} per spec) or
+                NetworkUrlPattern dicts
+                (e.g. {"type": "string", "pattern": "https://example.com/*"}
+                or {"type": "pattern", "protocol": "https"}).
 
         Returns:
             InterceptResult with the intercept ID.
@@ -78,7 +81,12 @@ class NetworkModule:
         if contexts is not None:
             params["contexts"] = contexts
         if url_patterns is not None:
-            params["urlPatterns"] = url_patterns
+            params["urlPatterns"] = [
+                {"type": "string", "pattern": pattern}
+                if isinstance(pattern, str)
+                else pattern
+                for pattern in url_patterns
+            ]
         result = await self._connection.send_command(NETWORK_ADD_INTERCEPT, params)
         return InterceptResult.model_validate(result)
 
@@ -109,7 +117,8 @@ class NetworkModule:
             method: Modified HTTP method (optional).
             headers: Modified headers (optional).
             cookies: Modified cookies (optional).
-            post_data: Modified POST body in base64 (optional).
+            post_data: Modified request body in base64 (optional).
+                Sent as the spec-compliant ``body`` BytesValue.
         """
         params: dict[str, Any] = {"request": request}
         if url is not None:
@@ -121,7 +130,7 @@ class NetworkModule:
         if cookies is not None:
             params["cookies"] = cookies
         if post_data is not None:
-            params["postData"] = post_data
+            params["body"] = {"type": "base64", "value": post_data}
         await self._connection.send_command(NETWORK_CONTINUE_REQUEST, params)
 
     async def continue_response(
@@ -130,18 +139,22 @@ class NetworkModule:
         status_code: int | None = None,
         reason_phrase: str | None = None,
         headers: list[dict[str, Any]] | None = None,
-        body: str | None = None,
         cookies: list[dict[str, Any]] | None = None,
+        credentials: dict[str, str] | None = None,
     ) -> None:
         """Continues an intercepted response, optionally modifying it.
+
+        Note: per the W3C BiDi spec, ``network.continueResponse`` does not
+        accept a body. Use provide_response to supply a synthetic body.
 
         Args:
             request: ID of the request.
             status_code: HTTP status code (optional).
             reason_phrase: Reason phrase (optional).
             headers: Response headers (optional).
-            body: Response body in base64 (optional).
             cookies: Modified cookies (optional).
+            credentials: Auth credentials dict with "type" ("password"),
+                "username", "password" (optional).
         """
         params: dict[str, Any] = {"request": request}
         if status_code is not None:
@@ -150,25 +163,26 @@ class NetworkModule:
             params["reasonPhrase"] = reason_phrase
         if headers is not None:
             params["headers"] = headers
-        if body is not None:
-            params["body"] = body
         if cookies is not None:
             params["cookies"] = cookies
+        if credentials is not None:
+            params["credentials"] = credentials
         await self._connection.send_command(NETWORK_CONTINUE_RESPONSE, params)
 
     async def fail_request(
         self,
         request: str,
-        error: str = "Failed",
     ) -> None:
         """Fails an intercepted request.
 
+        Per the W3C BiDi spec, ``network.failRequest`` takes only the
+        request ID — no error message parameter exists.
+
         Args:
             request: ID of the request.
-            error: Error message.
         """
         await self._connection.send_command(
-            NETWORK_FAIL_REQUEST, {"request": request, "error": error}
+            NETWORK_FAIL_REQUEST, {"request": request}
         )
 
     async def provide_response(
@@ -187,7 +201,8 @@ class NetworkModule:
             status_code: HTTP status code.
             reason_phrase: Reason phrase.
             headers: Response headers.
-            body: Response body in base64.
+            body: Response body in base64. Sent as the spec-compliant
+                BytesValue ``{"type": "base64", "value": ...}``.
             cookies: Cookies to set (optional).
         """
         params: dict[str, Any] = {
@@ -198,7 +213,7 @@ class NetworkModule:
         if headers is not None:
             params["headers"] = headers
         if body is not None:
-            params["body"] = body
+            params["body"] = {"type": "base64", "value": body}
         if cookies is not None:
             params["cookies"] = cookies
         await self._connection.send_command(NETWORK_PROVIDE_RESPONSE, params)
@@ -391,21 +406,30 @@ class NetworkModule:
 
     async def add_data_collector(
         self,
-        collector: dict[str, Any],
+        data_types: list[Literal["request", "response"]],
+        max_encoded_data_size: int,
+        collector_type: Literal["blob"] | None = None,
         contexts: list[str] | None = None,
         user_contexts: list[str] | None = None,
     ) -> str:
         """Adds a network data collector for collecting request/response data.
 
         Args:
-            collector: Collector definition dict with 'type' and 'name'.
+            data_types: Data types to collect ("request" and/or "response").
+            max_encoded_data_size: Maximum encoded data size in bytes.
+            collector_type: Collector type ("blob"). Optional per spec.
             contexts: Context IDs to apply to. None = all.
             user_contexts: User context IDs to apply to. None = all.
 
         Returns:
             Data collector ID.
         """
-        params: dict[str, Any] = {"collector": collector}
+        params: dict[str, Any] = {
+            "dataTypes": data_types,
+            "maxEncodedDataSize": max_encoded_data_size,
+        }
+        if collector_type is not None:
+            params["collectorType"] = collector_type
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
@@ -413,7 +437,7 @@ class NetworkModule:
         result = await self._connection.send_command(
             NETWORK_ADD_DATA_COLLECTOR, params
         )
-        return str(result["collector"])
+        return str(result.get("collector", ""))
 
     async def remove_data_collector(self, collector_id: str) -> None:
         """Removes a previously added data collector.
@@ -427,29 +451,30 @@ class NetworkModule:
 
     async def get_data(
         self,
-        collector_id: str,
-        context: str | None = None,
-        request: str | None = None,
-        url: str | None = None,
+        request: str,
+        data_type: Literal["request", "response"] = "response",
+        collector_id: str | None = None,
+        disown: bool | None = None,
     ) -> dict[str, Any]:
         """Retrieves data collected by a data collector.
 
         Args:
-            collector_id: ID of the data collector.
-            context: Filter by browsing context.
-            request: Filter by request ID.
-            url: Filter by URL.
+            request: ID of the request whose data to fetch.
+            data_type: Data type to retrieve ("request" or "response").
+            collector_id: ID of the data collector (optional per spec).
+            disown: Whether to release the data after retrieval.
 
         Returns:
-            Collected data dict.
+            Collected data dict (contains a BytesValue under "bytes").
         """
-        params: dict[str, Any] = {"collector": collector_id}
-        if context is not None:
-            params["context"] = context
-        if request is not None:
-            params["request"] = request
-        if url is not None:
-            params["url"] = url
+        params: dict[str, Any] = {
+            "request": request,
+            "dataType": data_type,
+        }
+        if collector_id is not None:
+            params["collector"] = collector_id
+        if disown is not None:
+            params["disown"] = disown
         result = await self._connection.send_command(
             NETWORK_GET_DATA, params
         )
@@ -458,21 +483,24 @@ class NetworkModule:
     async def disown_data(
         self,
         collector_id: str,
-        request: str | None = None,
-        url: str | None = None,
+        request: str,
+        data_type: Literal["request", "response"] = "response",
     ) -> None:
         """Disowns previously collected data.
 
+        Per the spec, network.disownData requires the data type, the
+        collector ID and the request ID.
+
         Args:
             collector_id: ID of the data collector.
-            request: Disown data for a specific request.
-            url: Disown data for a specific URL.
+            request: ID of the request whose data to disown.
+            data_type: Data type to disown ("request" or "response").
         """
-        params: dict[str, Any] = {"collector": collector_id}
-        if request is not None:
-            params["request"] = request
-        if url is not None:
-            params["url"] = url
+        params: dict[str, Any] = {
+            "dataType": data_type,
+            "collector": collector_id,
+            "request": request,
+        }
         await self._connection.send_command(
             NETWORK_DISOWN_DATA, params
         )

@@ -21,7 +21,15 @@ class Capabilities(BaseModel):
 
 
 def detect_capabilities(status_response: dict[str, Any]) -> Capabilities:
-    """Parses the session.new/status response and detects capabilities."""
+    """Parses the session.new/status response and detects capabilities.
+
+    Browser identification (browserName, browserVersion, platformName,
+    vendor) is only present in the ``session.new`` result per spec —
+    ``session.status`` does not report it. When that data is missing,
+    ``supports_*`` flags are left at their unknown state (False) instead
+    of being assumed True, since we have no evidence the browser
+    actually implements those modules.
+    """
     result = status_response.get("result", status_response)
     caps_data = result.get("capabilities", result)
 
@@ -30,13 +38,18 @@ def detect_capabilities(status_response: dict[str, Any]) -> Capabilities:
     platform_name = caps_data.get("platformName", "")
     vendor = caps_data.get("vendor", "")
 
+    # All WebDriver BiDi implementations are required to support these
+    # core modules, but we can only claim detection succeeded if we
+    # actually received browser identification data.
+    detected = bool(browser_name)
+
     return Capabilities(
         browser_name=browser_name,
         browser_version=browser_version,
         platform_name=platform_name,
         vendor=vendor,
-        supports_browsing=True,
-        supports_script=True,
-        supports_network=True,
-        supports_input=True,
+        supports_browsing=detected,
+        supports_script=detected,
+        supports_network=detected,
+        supports_input=detected,
     )

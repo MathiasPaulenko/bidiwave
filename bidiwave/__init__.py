@@ -27,16 +27,16 @@ from bidiwave.exceptions import (
     NoSuchUserContextError,
     NoSuchWindowError,
     ProtocolError,
+    ProtocolTimeoutError,
     SessionError,
     SessionNotCreatedError,
     SessionNotFoundError,
     StaleElementReferenceError,
-    TimeoutError,
     UnableToCaptureScreenError,
     UnknownCommandError,
     UnsupportedOperationError,
 )
-from bidiwave.modules.browsing import BrowsingContext
+from bidiwave.modules.browsing import BrowsingContext, BrowsingModule
 from bidiwave.modules.cdp import CDPModule
 from bidiwave.modules.emulation import EmulationModule
 from bidiwave.modules.input import InputModule
@@ -47,7 +47,7 @@ from bidiwave.modules.preload import PreloadModule
 from bidiwave.modules.script import ScriptModule
 from bidiwave.modules.session import SessionModule
 from bidiwave.modules.storage import StorageModule
-from bidiwave.modules.webextension import WebExtensionModule
+from bidiwave.modules.webextension import WebExtensionInfo, WebExtensionModule
 from bidiwave.protocol.capabilities import Capabilities
 from bidiwave.protocol.commands import ViewportSize
 from bidiwave.protocol.events import (
@@ -67,6 +67,7 @@ from bidiwave.protocol.events import (
     BrowsingContextUserPromptClosedEvent,
     BrowsingContextUserPromptOpenedEvent,
     InputFileDialogOpenedEvent,
+    LogEntryAddedEvent,
     NetworkAuthRequiredEvent,
     NetworkBeforeRequestSentEvent,
     NetworkDataReceivedEvent,
@@ -110,21 +111,33 @@ from bidiwave.protocol.remote_value import (
 from bidiwave.protocol.results import (
     AddCacheOverrideResult,
     AddPreloadScriptResult,
+    BrowsingContextInfo,
+    ClientWindowInfo,
     Cookie,
+    GetCookiesResult,
+    GetRealmsResult,
+    GetTreeResult,
+    GetUserContextsResult,
     InputSource,
+    InterceptResult,
     KeyAction,
     LocateNodesResult,
+    Navigation,
     PointerAction,
+    PrintResult,
     RealmInfo,
     ResponseBodyResult,
+    Screenshot,
     ScriptAddPreloadScriptResult,
+    Session,
+    SessionStatus,
     UserContextInfo,
     Viewport,
     WheelAction,
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "1.8.0"
+__version__ = "1.8.1"
 
 __all__ = [
     "AddCacheOverrideResult",
@@ -146,6 +159,7 @@ __all__ = [
     "BrowsingContextDownloadWillBeginEvent",
     "BrowsingContextFragmentNavigatedEvent",
     "BrowsingContextHistoryUpdatedEvent",
+    "BrowsingContextInfo",
     "BrowsingContextLoadEvent",
     "BrowsingContextNavigationAbortedEvent",
     "BrowsingContextNavigationCompletedEvent",
@@ -154,11 +168,13 @@ __all__ = [
     "BrowsingContextNavigationStartedEvent",
     "BrowsingContextUserPromptClosedEvent",
     "BrowsingContextUserPromptOpenedEvent",
+    "BrowsingModule",
     "Capabilities",
     "CapabilityError",
     "CDPModule",
     "ChannelValue",
     "ClientConfig",
+    "ClientWindowInfo",
     "CommandError",
     "Cookie",
     "DateValue",
@@ -168,6 +184,10 @@ __all__ = [
     "ErrorValue",
     "EventDispatcher",
     "GeneratorValue",
+    "GetCookiesResult",
+    "GetRealmsResult",
+    "GetTreeResult",
+    "GetUserContextsResult",
     "HandleValue",
     "HTMLCollectionValue",
     "InsecureCertificateError",
@@ -177,12 +197,15 @@ __all__ = [
     "InputFileDialogOpenedEvent",
     "InputModule",
     "InputSource",
+    "InterceptResult",
     "JavaScriptError",
     "KeyAction",
     "LocateNodesResult",
+    "LogEntryAddedEvent",
     "LogModule",
     "MapValue",
     "MoveTargetOutOfBoundsError",
+    "Navigation",
     "NetworkAuthRequiredEvent",
     "NetworkBeforeRequestSentEvent",
     "NetworkDataReceivedEvent",
@@ -207,28 +230,32 @@ __all__ = [
     "PermissionsModule",
     "PointerAction",
     "PreloadModule",
+    "PrintResult",
     "PromiseValue",
     "ProtocolError",
+    "ProtocolTimeoutError",
     "ProxyValue",
     "RealmInfo",
     "RegExpValue",
     "RemoteValue",
     "ResponseBodyResult",
+    "Screenshot",
     "ScriptAddPreloadScriptResult",
     "ScriptMessageEvent",
     "ScriptModule",
     "ScriptRealmCreatedEvent",
     "ScriptRealmDestroyedEvent",
+    "Session",
     "SessionError",
     "SessionModule",
     "SessionNotCreatedError",
     "SessionNotFoundError",
+    "SessionStatus",
     "SetValue",
     "StaleElementReferenceError",
     "StorageModule",
     "StringValue",
     "Subscription",
-    "TimeoutError",
     "TransportConfig",
     "TypedArrayValue",
     "UnableToCaptureScreenError",
@@ -240,6 +267,7 @@ __all__ = [
     "ViewportSize",
     "WeakMapValue",
     "WeakSetValue",
+    "WebExtensionInfo",
     "WebExtensionModule",
     "WheelAction",
     "WindowValue",
