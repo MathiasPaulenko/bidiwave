@@ -9,16 +9,16 @@
   <!-- Icon -->
   <rect x="8" y="8" width="240" height="240" rx="56" ry="56" fill="url(#bg)"/>
   <path d="M 56 100 Q 88 60 120 100 T 184 100 T 200 100"
-        fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+        fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.35"/>
   <path d="M 56 128 Q 88 88 120 128 T 184 128 T 200 128"
-        fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+        fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
 
-  <!-- Bidirectional arrows in icon -->
-  <g transform="translate(128, 186)" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9">
-    <line x1="-36" y1="0" x2="36" y2="0"/>
-    <polyline points="-28,-10 -38,0 -28,10"/>
-    <polyline points="28,-10 38,0 28,10"/>
-  </g>
+  <!-- Bidirectional indicator in icon -->
+  <line x1="100" y1="186" x2="156" y2="186" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" opacity="0.85"/>
+  <path d="M 108 178 L 98 186 L 108 194"
+        fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+  <path d="M 148 178 L 158 186 L 148 194"
+        fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
 
   <!-- Wordmark -->
   <text x="280" y="170" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
