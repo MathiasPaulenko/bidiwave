@@ -1,35 +1,65 @@
-# bidiwave
+<p align="center">
+  <img src="https://raw.githubusercontent.com/MathiasPaulenko/bidiwave/main/docs/assets/images/logo-wide.svg" alt="bidiwave" width="480">
+</p>
 
-WebDriver BiDi for Python — talk to any browser via W3C standard.
+<h3 align="center">WebDriver BiDi for Python — talk to any browser via W3C standard</h3>
+
+<p align="center">
+  <strong>Cross-browser · Chrome + Firefox + Edge · async-first · zero Selenium · zero Playwright</strong>
+</p>
+
+---
 
 [![CI](https://github.com/MathiasPaulenko/bidiwave/actions/workflows/ci.yml/badge.svg)](https://github.com/MathiasPaulenko/bidiwave/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/bidiwave)](https://pypi.org/project/bidiwave/)
-[![Python](https://img.shields.io/pypi/pyversions/bidiwave)](https://pypi.org/project/bidiwave/)
-[![License](https://img.shields.io/github/license/MathiasPaulenko/bidiwave)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/bidiwave.svg)](https://pypi.org/project/bidiwave/)
+[![Python](https://img.shields.io/pypi/pyversions/bidiwave.svg)](https://pypi.org/project/bidiwave/)
+[![License](https://img.shields.io/github/license/MathiasPaulenko/bidiwave.svg)](https://github.com/MathiasPaulenko/bidiwave/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://mathiaspaulenko.github.io/bidiwave/)
 
-## Features
+> WebDriver BiDi for Python — talk to any browser via the W3C standard. bidiwave connects to Chrome, Firefox, and Edge using the WebDriver BiDi protocol. No Selenium, no Playwright, no Node.js. Pure async Python with Pydantic v2 models and full type hints.
+
+## Quick demo
+
+**30 seconds to your first BiDi call.**
+
+```bash
+pip install bidiwave
+```
+
+```python
+import asyncio
+from bidiwave import BiDiClient, StringValue
+
+async def main():
+    async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        async with await client.browsing.open("https://example.com") as page:
+            result = await page.evaluate("document.title")
+            match result:
+                case StringValue(value=title):
+                    print(f"Title: {title}")  # "Example Domain"
+
+asyncio.run(main())
+```
+
+## Why bidiwave?
+
+bidiwave is a low-level WebDriver BiDi client for Python. It speaks the W3C WebDriver BiDi protocol directly — no Selenium, no Playwright, no Node.js. Unlike CDP (which is Chromium-specific), BiDi is a W3C standard that works across Chrome, Firefox, and Edge.
+
+It is the BiDi backend that powers [wavexis](https://github.com/MathiasPaulenko/wavexis) and [wavexis-mcp](https://github.com/MathiasPaulenko/wavexis-mcp).
+
+### Key features
 
 - **W3C WebDriver BiDi** — standard protocol, not proprietary CDP
 - **Cross-browser** — Chrome, Firefox, Edge (Safari when BiDi support lands)
 - **Async-first** — native `async/await` with `asyncio`
-- **Browsing** — contexts, navigation, screenshots, viewport control with DPR,
-  element waiting, CSS/XPath locators, PDF printing, dialog handling, download
-  events, history traversal, user prompt management
-- **Script** — evaluate JS, call functions, typed `RemoteValue` with `match`
-  pattern narrowing, preload scripts with channel communication, realm inspection,
-  serialization options, user activation
-- **Input simulation** — clicks, keyboard, scroll, drag & drop, file upload,
-  file dialog events
-- **Network interception** — block, modify, mock requests, cache overrides,
-  response body retrieval, authentication handling, extra headers, data
-  collectors, cache behavior control
-- **Storage** — get, set, delete cookies with full attribute support,
-  partition key support, cookie change monitoring
-- **Emulation** — geolocation, locale, screen orientation, timezone, user agent
-  override, network conditions
+- **Browsing** — contexts, navigation, screenshots, viewport control with DPR, element waiting, CSS/XPath locators, PDF printing, dialog handling, download events, history traversal, user prompt management
+- **Script** — evaluate JS, call functions, typed `RemoteValue` with `match` pattern narrowing, preload scripts with channel communication, realm inspection, serialization options, user activation
+- **Input simulation** — clicks, keyboard, scroll, drag & drop, file upload, file dialog events
+- **Network interception** — block, modify, mock requests, cache overrides, response body retrieval, authentication handling, extra headers, data collectors, cache behavior control
+- **Storage** — get, set, delete cookies with full attribute support, partition key support, cookie change monitoring
+- **Emulation** — geolocation, locale, screen orientation, timezone, user agent override, network conditions
 - **Permissions** — grant or deny browser permissions without user dialogs
-- **Preload scripts** — inject JS before page load for polyfills or monitoring
-  with user context support
+- **Preload scripts** — inject JS before page load for polyfills or monitoring with user context support
 - **Web extensions** — install and uninstall browser extensions
 - **CDP bridge** — access Chrome DevTools Protocol for browser-specific features
 - **Event streaming** — 27 event types with async handlers and error isolation
@@ -37,6 +67,34 @@ WebDriver BiDi for Python — talk to any browser via W3C standard.
 - **Spec-compliant** — W3C WebDriver BiDi (WD 2025-07-28), full coverage
 - **Resilient** — automatic reconnection with exponential backoff
 - **Lightweight** — no Selenium, no Playwright required
+
+### How it works
+
+```text
+Your Python code
+  → BiDiClient.connect() connects to a BiDi endpoint
+    → ChromeDriver / Firefox / EdgeDriver speaks BiDi
+      → client.browsing.open("https://example.com")
+        → Browser navigates and returns a page context
+      ← Typed response parsed into Pydantic models
+    ← Page stays open for chained calls
+  ← Connection closes on context exit
+```
+
+### Core concepts
+
+- **BiDiClient** — The top-level client. Connects to a BiDi endpoint and provides access to all modules.
+- **Page** — A browsing context (tab). Created via `client.browsing.open()`, supports `evaluate()`, `screenshot()`, `navigate()`, etc.
+- **Modules** — `client.browsing`, `client.script`, `client.input`, `client.network`, `client.storage`, `client.emulation`, `client.permissions`, `client.preload`, `client.log`, `client.web_extension`, `client.cdp`.
+- **RemoteValue** — Typed wrapper for BiDi serialized values. Use `match` pattern narrowing to extract `StringValue`, `NumberValue`, `BooleanValue`, `NullValue`, `UndefinedValue`, `ArrayValue`, `ObjectValue`, etc.
+
+## Requirements
+
+- Python 3.11 or higher
+- A BiDi-capable browser endpoint:
+  - **Chrome/Edge**: ChromeDriver or EdgeDriver running with BiDi support
+  - **Firefox**: Firefox with `--remote-debugging-port` (BiDi is native, no driver needed)
+- No Selenium, no Playwright, no Node.js
 
 ## Install
 
@@ -262,6 +320,26 @@ Full documentation at **[mathiaspaulenko.github.io/bidiwave](https://mathiaspaul
 - [API Reference](https://mathiaspaulenko.github.io/bidiwave/api/client/)
 - [Protocol Reference](https://mathiaspaulenko.github.io/bidiwave/reference/protocol-reference/)
 - [Changelog](https://mathiaspaulenko.github.io/bidiwave/reference/changelog/)
+
+## Ecosystem
+
+bidiwave is part of the Wave ecosystem — browser automation tools in 100% Python:
+
+| Project | Description |
+|---------|-------------|
+| **[cdpwave](https://github.com/MathiasPaulenko/cdpwave)** | Chrome DevTools Protocol client |
+| **[bidiwave](https://github.com/MathiasPaulenko/bidiwave)** | WebDriver BiDi client — cross-browser, W3C standard (this repo) |
+| **[wavexis](https://github.com/MathiasPaulenko/wavexis)** | Browser automation CLI — wraps cdpwave + bidiwave |
+| **[wavexis-mcp](https://github.com/MathiasPaulenko/wavexis-mcp)** | MCP server — 220 browser automation tools for LLMs |
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on
+development setup, code style, testing, and pull request process.
+
+## Security
+
+Found a vulnerability? See [SECURITY.md](SECURITY.md) for responsible disclosure.
 
 ## License
 
