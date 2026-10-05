@@ -3,7 +3,6 @@
 import pytest
 
 from bidiwave.protocol.responses import (
-    ErrorData,
     ErrorResponse,
     SuccessResponse,
     parse_response,
@@ -19,34 +18,37 @@ class TestParseResponse:
         assert resp.result == {"sessionId": "abc"}
 
     def test_error_response(self) -> None:
+        """Spec format: `error` is the ErrorCode string, `message` is a sibling."""
         data = {
             "type": "error",
             "id": 2,
-            "error": {"code": "invalid argument", "message": "bad params"},
+            "error": "invalid argument",
+            "message": "bad params",
         }
         resp = parse_response(data)
         assert isinstance(resp, ErrorResponse)
         assert resp.id == 2
-        assert resp.error.code == "invalid argument"
-        assert resp.error.message == "bad params"
+        assert resp.error == "invalid argument"
+        assert resp.message == "bad params"
 
     def test_error_response_with_stacktrace(self) -> None:
         data = {
             "type": "error",
             "id": 3,
-            "error": {
-                "code": "javascript error",
-                "message": "ReferenceError",
-                "stacktrace": "at line 1",
-            },
+            "error": "javascript error",
+            "message": "ReferenceError",
+            "stacktrace": "at line 1",
         }
         resp = parse_response(data)
         assert isinstance(resp, ErrorResponse)
-        assert resp.error.stacktrace == "at line 1"
+        assert resp.stacktrace == "at line 1"
 
-    def test_error_data_optional_stacktrace(self) -> None:
-        err = ErrorData(code="timeout", message="timed out")
-        assert err.stacktrace is None
+    def test_error_response_null_id(self) -> None:
+        """Protocol-level errors can carry a null id per spec."""
+        data = {"type": "error", "id": None, "error": "unknown error", "message": "oops"}
+        resp = parse_response(data)
+        assert isinstance(resp, ErrorResponse)
+        assert resp.id is None
 
     def test_unknown_type_raises(self) -> None:
         with pytest.raises(ValueError, match="Unknown response type"):

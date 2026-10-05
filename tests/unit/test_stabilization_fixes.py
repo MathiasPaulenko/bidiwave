@@ -25,7 +25,15 @@ class TestVersionMatch:
     """Fix: __init__.py version must match pyproject.toml version."""
 
     def test_version_matches_pyproject(self) -> None:
-        assert bidiwave.__version__ == "1.8.2"
+        import re
+        from pathlib import Path
+
+        pyproject = Path(__file__).resolve().parents[2] / "pyproject.toml"
+        match = re.search(
+            r'^version\s*=\s*"([^"]+)"', pyproject.read_text(), re.MULTILINE
+        )
+        assert match is not None
+        assert bidiwave.__version__ == match.group(1)
 
 
 class TestEventDispatcherOnOverload:
@@ -219,6 +227,9 @@ class TestClientConfigLogLevelWired:
             patch("bidiwave.client.Connection") as mock_conn_cls,
         ):
             mock_conn = AsyncMock()
+            mock_conn.send_command = AsyncMock(
+                return_value={"sessionId": "s1", "capabilities": {}}
+            )
             mock_conn_cls.return_value = mock_conn
 
             from bidiwave.client import BiDiClient
@@ -418,19 +429,20 @@ class TestCapabilitiesDetectionWired:
         from bidiwave.config import ClientConfig
         from bidiwave.protocol.capabilities import Capabilities
 
-        mock_session_status = MagicMock()
-        mock_session_status.model_dump.return_value = {
-            "browserName": "chrome",
-            "browserVersion": "120.0",
-            "platformName": "linux",
-            "vendor": "Google",
-        }
-
         with (
             patch("bidiwave.client.setup_logging"),
             patch("bidiwave.client.Connection") as mock_conn_cls,
         ):
             mock_conn = AsyncMock()
+            mock_conn.send_command = AsyncMock(return_value={
+                "sessionId": "s1",
+                "capabilities": {
+                    "browserName": "chrome",
+                    "browserVersion": "120.0",
+                    "platformName": "linux",
+                    "vendor": "Google",
+                },
+            })
             mock_conn_cls.return_value = mock_conn
 
             client = await BiDiClient.connect(
@@ -438,16 +450,8 @@ class TestCapabilitiesDetectionWired:
                 config=ClientConfig(),
             )
 
-            # Patch session.status to return our mock
-            client.session.status = AsyncMock(return_value=mock_session_status)
-            client._capabilities = None
-
-            # Re-run the capability detection logic
-            from bidiwave.protocol.capabilities import detect_capabilities
-            status = await client.session.status()
-            client._capabilities = detect_capabilities(status.model_dump())
-
-            assert client._capabilities is not None
-            assert isinstance(client._capabilities, Capabilities)
-            assert client._capabilities.browser_name == "chrome"
-            assert client._capabilities.browser_version == "120.0"
+            caps = client.capabilities
+            assert caps is not None
+            assert isinstance(caps, Capabilities)
+            assert caps.browser_name == "chrome"
+            assert caps.browser_version == "120.0"

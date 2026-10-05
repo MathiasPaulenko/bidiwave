@@ -254,7 +254,7 @@ class TestScreenshot:
         mock_connection.send_command.return_value = {"data": "/9j/4AAQ="}
         await browsing_module.screenshot(CTX_ID, format="jpeg")
         params = mock_connection.send_command.call_args.args[1]
-        assert params["format"] == "jpeg"
+        assert params["format"] == {"type": "image/jpeg"}
 
     async def test_screenshot_jpeg_with_quality(
         self,
@@ -264,17 +264,14 @@ class TestScreenshot:
         mock_connection.send_command.return_value = {"data": "/9j/4AAQ="}
         await browsing_module.screenshot(CTX_ID, format="jpeg", quality=50)
         params = mock_connection.send_command.call_args.args[1]
-        assert params["quality"] == 50
+        assert params["format"] == {"type": "image/jpeg", "quality": 0.5}
 
-    async def test_screenshot_quality_ignored_for_png(
+    async def test_screenshot_quality_rejected_for_png(
         self,
         browsing_module: BrowsingModule,
-        mock_connection: MockConn,
     ) -> None:
-        mock_connection.send_command.return_value = {"data": "iVBORw0KGgo="}
-        await browsing_module.screenshot(CTX_ID, format="png", quality=50)
-        params = mock_connection.send_command.call_args.args[1]
-        assert "quality" not in params
+        with pytest.raises(ValueError, match="quality"):
+            await browsing_module.screenshot(CTX_ID, format="png", quality=50)
 
     async def test_screenshot_with_browsing_context_object(
         self,
@@ -440,32 +437,6 @@ class TestSetViewportEdge:
         assert params["context"] == CTX_ID
 
 
-class TestGetViewportEdge:
-    async def test_get_viewport_with_browsing_context(
-        self,
-        browsing_module: BrowsingModule,
-        mock_connection: MockConn,
-    ) -> None:
-        mock_connection.send_command.return_value = {
-            "viewport": {"width": 1920, "height": 1080, "devicePixelRatio": 1.0},
-        }
-        ctx = BrowsingContext(id=CTX_ID)
-        result = await browsing_module.get_viewport(ctx)
-        assert result.width == 1920
-        assert result.height == 1080
-
-    async def test_get_viewport_default_dpr(
-        self,
-        browsing_module: BrowsingModule,
-        mock_connection: MockConn,
-    ) -> None:
-        mock_connection.send_command.return_value = {
-            "viewport": {"width": 800, "height": 600},
-        }
-        result = await browsing_module.get_viewport(CTX_ID)
-        assert result.device_pixel_ratio == 1.0
-
-
 class TestBrowsingContextManager:
     async def test_aexit_closes_context(
         self,
@@ -574,19 +545,13 @@ class TestNavigateModelValidation:
             "context": CTX_ID,
             "url": "https://example.com/",
             "navigation": "nav-1",
-            "status": "complete",
         })
         assert nav.context == CTX_ID
         assert nav.url == "https://example.com/"
         assert nav.navigation == "nav-1"
-        assert nav.status == "complete"
 
     def test_navigation_minimal(self) -> None:
         nav = Navigation.model_validate({"url": "about:blank"})
         assert nav.url == "about:blank"
         assert nav.context is None
         assert nav.navigation is None
-
-    def test_navigation_default_status(self) -> None:
-        nav = Navigation.model_validate({"url": "https://example.com/"})
-        assert nav.status == "complete"

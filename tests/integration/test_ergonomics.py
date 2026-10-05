@@ -16,7 +16,7 @@ async def test_page_object(client: object) -> None:
         assert isinstance(title, StringValue)
         assert "Example" in title.value
 
-        await page.wait_for_selector("h1", timeout=5)
+        await page.wait_for_selector("body > *", timeout=5)
 
         screenshot = await page.screenshot()
         assert len(screenshot) > 0
@@ -27,7 +27,9 @@ async def test_page_object(client: object) -> None:
 @pytest.mark.asyncio
 async def test_wait_for_selector(client: object, context: object) -> None:
     """wait_for_selector works with timeout."""
-    await client.browsing.navigate(context, "https://example.com", wait="complete")
+    await client.browsing.navigate(
+        context, "data:text/html,<h1>Hello</h1>", wait="complete"
+    )
     found = await client.browsing.wait_for_selector(context, "h1", timeout=5)
     assert found is True
 

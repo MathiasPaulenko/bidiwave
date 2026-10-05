@@ -212,13 +212,13 @@ class TestBrowsingContextDownloadEndEvent:
         params = {
             "context": "ctx-1",
             "url": "https://example.com/file.zip",
-            "status": "completed",
+            "status": "complete",
             "item": "download-1",
         }
         event = parse_event("browsingContext.downloadEnd", params)
         assert isinstance(event, BrowsingContextDownloadEndEvent)
         assert event.context == "ctx-1"
-        assert event.status == "completed"
+        assert event.status == "complete"
         assert event.item == "download-1"
         assert event.cancel_reason is None
 

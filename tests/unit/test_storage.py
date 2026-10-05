@@ -41,7 +41,8 @@ class TestGetCookies:
         assert result[0].value == "abc123"
         assert result[1].name == "token"
         mock_connection.send_command.assert_called_once_with(
-            "storage.getCookies", {"context": "ctx-1"}
+            "storage.getCookies",
+            {"partition": {"type": "context", "context": "ctx-1"}},
         )
 
     async def test_get_cookies_empty(
@@ -63,7 +64,8 @@ class TestGetCookies:
         mock_connection.send_command.return_value = {"cookies": []}
         await storage_module.get_cookies(ctx)
         mock_connection.send_command.assert_called_once_with(
-            "storage.getCookies", {"context": "ctx-abc"}
+            "storage.getCookies",
+            {"partition": {"type": "context", "context": "ctx-abc"}},
         )
 
     async def test_get_cookies_full_cookie(
@@ -106,7 +108,7 @@ class TestSetCookie:
         call_args = mock_connection.send_command.call_args
         assert call_args.args[0] == "storage.setCookie"
         params = call_args.args[1]
-        assert params["context"] == "ctx-1"
+        assert params["partition"] == {"type": "context", "context": "ctx-1"}
         assert params["cookie"]["name"] == "session"
         assert params["cookie"]["value"] == {"type": "string", "value": "abc123"}
         assert params["cookie"]["domain"] == "example.com"
@@ -121,7 +123,10 @@ class TestSetCookie:
         cookie = Cookie(name="token", value="xyz789")
         await storage_module.set_cookie(ctx, cookie)
         call_args = mock_connection.send_command.call_args
-        assert call_args.args[1]["context"] == "ctx-xyz"
+        assert call_args.args[1]["partition"] == {
+            "type": "context",
+            "context": "ctx-xyz",
+        }
 
     async def test_set_cookie_excludes_none_fields(
         self,
@@ -169,7 +174,8 @@ class TestDeleteCookies:
     ) -> None:
         await storage_module.delete_cookies("ctx-1")
         mock_connection.send_command.assert_called_once_with(
-            "storage.deleteCookies", {"context": "ctx-1"}
+            "storage.deleteCookies",
+            {"partition": {"type": "context", "context": "ctx-1"}},
         )
 
     async def test_delete_cookie_by_name(
@@ -180,7 +186,10 @@ class TestDeleteCookies:
         await storage_module.delete_cookies("ctx-1", name="session")
         mock_connection.send_command.assert_called_once_with(
             "storage.deleteCookies",
-            {"context": "ctx-1", "name": "session"},
+            {
+                "filter": {"name": "session"},
+                "partition": {"type": "context", "context": "ctx-1"},
+            },
         )
 
     async def test_delete_cookie_by_domain(
@@ -191,7 +200,10 @@ class TestDeleteCookies:
         await storage_module.delete_cookies("ctx-1", domain="example.com")
         mock_connection.send_command.assert_called_once_with(
             "storage.deleteCookies",
-            {"context": "ctx-1", "domain": "example.com"},
+            {
+                "filter": {"domain": "example.com"},
+                "partition": {"type": "context", "context": "ctx-1"},
+            },
         )
 
     async def test_delete_cookie_by_path(
@@ -202,7 +214,10 @@ class TestDeleteCookies:
         await storage_module.delete_cookies("ctx-1", path="/app")
         mock_connection.send_command.assert_called_once_with(
             "storage.deleteCookies",
-            {"context": "ctx-1", "path": "/app"},
+            {
+                "filter": {"path": "/app"},
+                "partition": {"type": "context", "context": "ctx-1"},
+            },
         )
 
     async def test_delete_cookie_all_filters(
@@ -216,10 +231,8 @@ class TestDeleteCookies:
         mock_connection.send_command.assert_called_once_with(
             "storage.deleteCookies",
             {
-                "context": "ctx-1",
-                "name": "session",
-                "domain": "example.com",
-                "path": "/",
+                "filter": {"name": "session", "domain": "example.com", "path": "/"},
+                "partition": {"type": "context", "context": "ctx-1"},
             },
         )
 
@@ -232,7 +245,8 @@ class TestDeleteCookies:
         ctx.id = "ctx-del"
         await storage_module.delete_cookies(ctx)
         mock_connection.send_command.assert_called_once_with(
-            "storage.deleteCookies", {"context": "ctx-del"}
+            "storage.deleteCookies",
+            {"partition": {"type": "context", "context": "ctx-del"}},
         )
 
 
@@ -288,48 +302,62 @@ class TestGetCookiesResult:
         assert result.cookies[1].name == "b"
 
 
-class TestPartitionKey:
-    async def test_get_cookies_with_partition_key(
+class TestPartition:
+    async def test_get_cookies_with_partition(
         self,
         storage_module: StorageModule,
         mock_connection: MockConn,
     ) -> None:
         mock_connection.send_command.return_value = {"cookies": []}
         await storage_module.get_cookies(
-            "ctx-1", partition_key={"userContext": "uc-1"}
+            partition={"type": "storageKey", "userContext": "uc-1"}
         )
         params = mock_connection.send_command.call_args.args[1]
-        assert params["partitionKey"] == {"userContext": "uc-1"}
+        assert params["partition"] == {"type": "storageKey", "userContext": "uc-1"}
 
-    async def test_set_cookie_with_partition_key(
+    async def test_set_cookie_with_partition(
         self,
         storage_module: StorageModule,
         mock_connection: MockConn,
     ) -> None:
         cookie = Cookie(name="test", value="abc", domain="example.com")
         await storage_module.set_cookie(
-            "ctx-1", cookie, partition_key={"sourceOrigin": "https://example.com"}
+            None, cookie, partition={"type": "storageKey", "sourceOrigin": "https://example.com"}
         )
         params = mock_connection.send_command.call_args.args[1]
-        assert params["partitionKey"] == {"sourceOrigin": "https://example.com"}
+        assert params["partition"] == {
+            "type": "storageKey",
+            "sourceOrigin": "https://example.com",
+        }
 
-    async def test_delete_cookies_with_partition_key(
+    async def test_delete_cookies_with_partition(
         self,
         storage_module: StorageModule,
         mock_connection: MockConn,
     ) -> None:
         await storage_module.delete_cookies(
-            "ctx-1", partition_key={"userContext": "uc-1"}
+            partition={"type": "storageKey", "userContext": "uc-1"}
         )
         params = mock_connection.send_command.call_args.args[1]
-        assert params["partitionKey"] == {"userContext": "uc-1"}
+        assert params["partition"] == {"type": "storageKey", "userContext": "uc-1"}
 
-    async def test_get_cookies_without_partition_key_omitted(
+    async def test_get_cookies_without_context_omits_partition(
         self,
         storage_module: StorageModule,
         mock_connection: MockConn,
     ) -> None:
         mock_connection.send_command.return_value = {"cookies": []}
-        await storage_module.get_cookies("ctx-1")
+        await storage_module.get_cookies()
         params = mock_connection.send_command.call_args.args[1]
-        assert "partitionKey" not in params
+        assert "partition" not in params
+
+    async def test_get_cookies_with_filter(
+        self,
+        storage_module: StorageModule,
+        mock_connection: MockConn,
+    ) -> None:
+        mock_connection.send_command.return_value = {"cookies": []}
+        await storage_module.get_cookies(filter={"name": "session"})
+        mock_connection.send_command.assert_called_once_with(
+            "storage.getCookies", {"filter": {"name": "session"}}
+        )

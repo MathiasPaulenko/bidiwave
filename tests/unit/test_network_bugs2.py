@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from bidiwave.modules.network import NetworkModule
-from bidiwave.protocol.results import ResponseBodyResult
 
 MockConn = MagicMock
 
@@ -40,19 +39,6 @@ class TestContinueResponseCookies:
         params = mock_connection.send_command.call_args.args[1]
         assert "cookies" in params
         assert len(params["cookies"]) == 1
-
-
-class TestResponseBodyResultTotalSizeDefault:
-    """Bug 20: ResponseBodyResult.total_size has no default — crashes if browser omits it."""
-
-    def test_response_body_result_without_total_size(self) -> None:
-        result = ResponseBodyResult.model_validate({"body": "SGVsbG8="})
-        assert result.body == "SGVsbG8="
-        assert result.total_size == 0
-
-    def test_response_body_result_with_total_size(self) -> None:
-        result = ResponseBodyResult.model_validate({"body": "SGVsbG8=", "totalSize": 5})
-        assert result.total_size == 5
 
 
 class TestContinueWithAuthCredentialsValidation:
@@ -139,15 +125,6 @@ class TestNetworkEventModelFixes:
             "headers": [{"name": "Content-Type", "value": {"text": "application/json"}}],
         })
         assert data.headers[0]["value"] == {"text": "application/json"}
-
-    def test_data_received_event_without_data_size(self) -> None:
-        from bidiwave.protocol.events import NetworkDataReceivedEvent
-
-        event = NetworkDataReceivedEvent.model_validate({
-            "request": "req-1",
-            "data": "SGVsbG8=",
-        })
-        assert event.data_size == 0
 
     def test_auth_required_event_with_response(self) -> None:
         from bidiwave.protocol.events import NetworkAuthRequiredEvent

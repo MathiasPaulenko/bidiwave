@@ -187,9 +187,10 @@ class TestPressKey:
         actions = call_args.args[1]["actions"]
         assert actions[0]["type"] == "key"
         assert len(actions[0]["actions"]) == 2
-        assert actions[0]["actions"][0]["value"] == "Enter"
+        # "Enter" is translated to the WebDriver key codepoint.
+        assert actions[0]["actions"][0]["value"] == "\uE007"
         assert actions[0]["actions"][0]["type"] == "keyDown"
-        assert actions[0]["actions"][1]["value"] == "Enter"
+        assert actions[0]["actions"][1]["value"] == "\uE007"
         assert actions[0]["actions"][1]["type"] == "keyUp"
 
 

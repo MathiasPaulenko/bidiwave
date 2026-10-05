@@ -135,10 +135,10 @@ class TestCDPGetSession:
     ) -> None:
         mock_connection.send_command.return_value = {"session": "cdp-session-1"}
         cdp = CDPModule(mock_connection)
-        result = await cdp.get_session()
+        result = await cdp.get_session("ctx-1")
         assert result == "cdp-session-1"
         mock_connection.send_command.assert_called_once_with(
-            "browser.cdp.getSession", {}
+            "cdp.getSession", {"context": "ctx-1"}
         )
 
     async def test_get_session_none(
@@ -147,7 +147,7 @@ class TestCDPGetSession:
     ) -> None:
         mock_connection.send_command.return_value = {}
         cdp = CDPModule(mock_connection)
-        result = await cdp.get_session()
+        result = await cdp.get_session("ctx-1")
         assert result is None
 
 
@@ -160,8 +160,8 @@ class TestCDPSendCommand:
         cdp = CDPModule(mock_connection)
         await cdp.send_command("Page.reload")
         call = mock_connection.send_command.call_args
-        assert call.args[0] == "browser.cdp.sendCommand"
-        assert call.args[1]["cmd"] == "Page.reload"
+        assert call.args[0] == "cdp.sendCommand"
+        assert call.args[1]["method"] == "Page.reload"
 
     async def test_send_command_with_params(
         self,

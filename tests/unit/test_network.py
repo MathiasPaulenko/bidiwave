@@ -294,22 +294,22 @@ class TestSetCacheBehavior:
         mock_connection: MockConn,
     ) -> None:
         await network_module.set_cache_behavior(
-            "default", contexts=["ctx-1"], user_contexts=["uc-1"]
+            "default", contexts=["ctx-1"]
         )
         call_args = mock_connection.send_command.call_args
         assert call_args.args[0] == "network.setCacheBehavior"
         assert call_args.args[1]["cacheBehavior"] == "default"
         assert call_args.args[1]["contexts"] == ["ctx-1"]
-        assert call_args.args[1]["userContexts"] == ["uc-1"]
 
     async def test_set_cache_behavior_clear(
         self,
         network_module: NetworkModule,
         mock_connection: MockConn,
     ) -> None:
-        await network_module.set_cache_behavior()
+        """Per spec, "default" (not an omitted param) restores normal caching."""
+        await network_module.set_cache_behavior("default")
         mock_connection.send_command.assert_called_once_with(
-            "network.setCacheBehavior", {}
+            "network.setCacheBehavior", {"cacheBehavior": "default"}
         )
 
 

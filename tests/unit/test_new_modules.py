@@ -6,12 +6,10 @@ import pytest
 
 from bidiwave.modules.browsing import BrowsingModule
 from bidiwave.modules.emulation import EmulationModule
-from bidiwave.modules.log import LogModule
 from bidiwave.modules.permissions import PermissionsModule
 from bidiwave.modules.preload import PreloadModule
 from bidiwave.modules.script import ScriptModule
 from bidiwave.modules.webextension import WebExtensionModule
-from bidiwave.protocol.results import Viewport
 
 MockConn = MagicMock
 
@@ -39,11 +37,6 @@ def permissions_module(mock_connection: MockConn) -> PermissionsModule:
 
 
 @pytest.fixture
-def log_module(mock_connection: MockConn) -> LogModule:
-    return LogModule(mock_connection)
-
-
-@pytest.fixture
 def browsing_module(mock_connection: MockConn) -> BrowsingModule:
     script = ScriptModule(mock_connection)
     return BrowsingModule(mock_connection, script_module=script)
@@ -64,7 +57,7 @@ class TestPreloadAddScript:
         result = await preload_module.add_script("() => { window.x = 1; }")
         assert result == "preload-1"
         mock_connection.send_command.assert_called_once_with(
-            "preload.addPreloadScript",
+            "script.addPreloadScript",
             {"functionDeclaration": "() => { window.x = 1; }"},
         )
 
@@ -80,7 +73,7 @@ class TestPreloadAddScript:
         )
         assert result == "preload-2"
         call_args = mock_connection.send_command.call_args
-        assert call_args.args[0] == "preload.addPreloadScript"
+        assert call_args.args[0] == "script.addPreloadScript"
         assert call_args.args[1]["arguments"] == [{"type": "string", "value": "hello"}]
 
     async def test_add_script_with_contexts_and_sandbox(
@@ -120,7 +113,7 @@ class TestPreloadRemoveScript:
     ) -> None:
         await preload_module.remove_script("preload-1")
         mock_connection.send_command.assert_called_once_with(
-            "preload.removePreloadScript", {"script": "preload-1"}
+            "script.removePreloadScript", {"script": "preload-1"}
         )
 
 
@@ -150,7 +143,7 @@ class TestEmulationGeolocation:
         await emulation_module.set_geolocation()
         call_args = mock_connection.send_command.call_args
         assert call_args.args[0] == "emulation.setGeolocationOverride"
-        assert call_args.args[1] == {}
+        assert call_args.args[1]["coordinates"] is None
 
     async def test_set_geolocation_with_user_contexts(
         self,
@@ -299,7 +292,7 @@ class TestEmulationLocale:
     ) -> None:
         await emulation_module.set_locale()
         mock_connection.send_command.assert_called_once_with(
-            "emulation.setLocaleOverride", {}
+            "emulation.setLocaleOverride", {"locale": None}
         )
 
 
@@ -355,14 +348,14 @@ class TestPermissionsSet:
         await permissions_module.set_permission(
             descriptor={"name": "geolocation"},
             state="granted",
-            contexts=["ctx-1"],
+            origin="https://example.com",
         )
         mock_connection.send_command.assert_called_once_with(
             "permissions.setPermission",
             {
                 "descriptor": {"name": "geolocation"},
                 "state": "granted",
-                "contexts": ["ctx-1"],
+                "origin": "https://example.com",
             },
         )
 
@@ -375,51 +368,11 @@ class TestPermissionsSet:
             descriptor={"name": "notifications"},
             state="denied",
             origin="https://example.com",
+            user_context="uc-1",
         )
         call_args = mock_connection.send_command.call_args
         assert call_args.args[1]["origin"] == "https://example.com"
-        assert "contexts" not in call_args.args[1]
-
-
-class TestLogClear:
-    async def test_clear_all(
-        self,
-        log_module: LogModule,
-        mock_connection: MockConn,
-    ) -> None:
-        await log_module.clear()
-        mock_connection.send_command.assert_called_once_with(
-            "log.clear", {}
-        )
-
-    async def test_clear_context(
-        self,
-        log_module: LogModule,
-        mock_connection: MockConn,
-    ) -> None:
-        await log_module.clear("ctx-1")
-        mock_connection.send_command.assert_called_once_with(
-            "log.clear", {"context": "ctx-1"}
-        )
-
-
-class TestGetViewport:
-    async def test_get_viewport(
-        self,
-        browsing_module: BrowsingModule,
-        mock_connection: MockConn,
-    ) -> None:
-        mock_connection.send_command.return_value = {
-            "viewport": {"width": 1920, "height": 1080, "devicePixelRatio": 2.0},
-        }
-        result = await browsing_module.get_viewport("ctx-1")
-        assert isinstance(result, Viewport)
-        assert result.width == 1920
-        assert result.height == 1080
-        assert result.device_pixel_ratio == 2.0
-        mock_connection.send_command.assert_called_once_with(
-            "browsingContext.getViewport", {"context": "ctx-1"}
-        )
+        assert call_args.args[1]["userContext"] == "uc-1"
 
 
 class TestWebExtensionInstall:
@@ -431,7 +384,8 @@ class TestWebExtensionInstall:
         mock_connection.send_command.return_value = {"extension": "ext-123"}
         result = await web_extension_module.install("/path/to/ext.zip")
         mock_connection.send_command.assert_called_once_with(
-            "webExtension.install", {"archivePath": "/path/to/ext.zip"}
+            "webExtension.install",
+            {"extensionData": {"type": "archivePath", "path": "/path/to/ext.zip"}},
         )
         assert result.extension == "ext-123"
 

@@ -1,25 +1,57 @@
-"""Fixtures para integration tests con EdgeDriver real."""
+"""Fixtures para integration tests con un WebDriver real.
+
+Se busca un driver ejecutable en este orden:
+
+1. Variables de entorno ``EDGEDRIVER_PATH`` / ``CHROMEDRIVER_PATH``.
+2. ``msedgedriver`` o ``chromedriver`` en el PATH.
+3. ``bin/edgedriver/msedgedriver.exe`` o ``bin/chromedriver/chromedriver.exe``
+   relativos a la raíz del repo.
+
+Si no se encuentra ninguno, los tests de integración se saltan.
+"""
 
 from __future__ import annotations
 
 import contextlib
 import json
+import os
+import shutil
 import subprocess
 import time
 import urllib.error
 import urllib.request
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
 import pytest_asyncio
 
-EDGEDRIVER_PATH = r"D:\Codigo\bidiwave\bin\edgedriver\msedgedriver.exe"
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DRIVER_PORT = 9516
 
 
+def _find_driver() -> tuple[str, str] | None:
+    """Returns (driver_path, browser_kind) or None. kind is "edge"|"chrome"."""
+    candidates = [
+        ("EDGEDRIVER_PATH", "msedgedriver", "edge"),
+        ("CHROMEDRIVER_PATH", "chromedriver", "chrome"),
+    ]
+    for env_var, exe, kind in candidates:
+        env_path = os.environ.get(env_var)
+        if env_path and Path(env_path).is_file():
+            return env_path, kind
+        on_path = shutil.which(exe)
+        if on_path:
+            return on_path, kind
+        bundled = REPO_ROOT / "bin" / f"{kind}driver" / f"{exe}.exe"
+        if bundled.is_file():
+            return str(bundled), kind
+    return None
+
+
 def _wait_for_port(port: int, timeout: float = 30.0) -> bool:
-    """Wait for EdgeDriver to become available."""
+    """Wait for the driver to become available."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
@@ -32,15 +64,18 @@ def _wait_for_port(port: int, timeout: float = 30.0) -> bool:
     return False
 
 
-def _create_webdriver_session(port: int = DRIVER_PORT) -> str:
+def _create_webdriver_session(
+    browser: str = "edge", port: int = DRIVER_PORT
+) -> str:
     """Creates a WebDriver session and returns the BiDi WebSocket URL."""
+    options_key = "ms:edgeOptions" if browser == "edge" else "goog:chromeOptions"
     payload = json.dumps(
         {
             "capabilities": {
                 "alwaysMatch": {
                     "webSocketUrl": True,
                     "acceptInsecureCerts": True,
-                    "ms:edgeOptions": {
+                    options_key: {
                         "args": ["--headless", "--no-sandbox", "--disable-gpu"],
                     },
                 }
@@ -60,18 +95,18 @@ def _create_webdriver_session(port: int = DRIVER_PORT) -> str:
 
 
 @pytest.fixture(scope="session")
-def _edgedriver_proc() -> Iterator[subprocess.Popen[bytes]]:
-    """Launches EdgeDriver once per session."""
-    with contextlib.suppress(Exception):
-        subprocess.run(
-            ["taskkill", "/F", "/IM", "msedgedriver.exe"],
-            capture_output=True,
-            timeout=5,
+def _driver_proc() -> Iterator[tuple[subprocess.Popen[bytes], str]]:
+    """Launches the driver once per session."""
+    found = _find_driver()
+    if found is None:
+        pytest.skip(
+            "no WebDriver found — set EDGEDRIVER_PATH/CHROMEDRIVER_PATH "
+            "or put msedgedriver/chromedriver on PATH"
         )
-        time.sleep(1)
+    driver, browser = found
 
     proc = subprocess.Popen(
-        [EDGEDRIVER_PATH, f"--port={DRIVER_PORT}"],
+        [driver, f"--port={DRIVER_PORT}"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
@@ -82,28 +117,23 @@ def _edgedriver_proc() -> Iterator[subprocess.Popen[bytes]]:
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             proc.kill()
-        pytest.fail(f"EdgeDriver did not start on port {DRIVER_PORT}")
+        pytest.fail(f"Driver did not start on port {DRIVER_PORT}")
 
-    yield proc
+    yield proc, browser
 
+    # Only terminate the driver process we launched.
     proc.terminate()
     try:
         proc.wait(timeout=10)
     except subprocess.TimeoutExpired:
         proc.kill()
-    # Only kill msedgedriver, never kill user's Edge browser
-    with contextlib.suppress(Exception):
-        subprocess.run(
-            ["taskkill", "/F", "/IM", "msedgedriver.exe"],
-            capture_output=True,
-            timeout=5,
-        )
 
 
 @pytest.fixture
-def chrome_bidi(_edgedriver_proc: subprocess.Popen[bytes]) -> str:
+def chrome_bidi(_driver_proc: tuple[subprocess.Popen[bytes], str]) -> str:
     """Creates a new WebDriver session per test and returns the BiDi URL."""
-    return _create_webdriver_session()
+    _, browser = _driver_proc
+    return _create_webdriver_session(browser)
 
 
 @pytest_asyncio.fixture

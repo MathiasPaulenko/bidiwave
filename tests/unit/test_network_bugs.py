@@ -78,44 +78,6 @@ class TestCancelAuthCommand:
         assert params["action"] == "cancel"
 
 
-class TestAddCacheOverrideBody:
-    """Bug 15: add_cache_override body should be sent as structured field per spec.
-
-    The W3C spec says body should be a string (base64), but the current
-    implementation passes it raw. Verify it's passed correctly.
-    """
-
-    async def test_add_cache_override_with_body(
-        self,
-        network_module: NetworkModule,
-        mock_connection: MockConn,
-    ) -> None:
-        mock_connection.send_command.return_value = {"cache": "cache-1"}
-        await network_module.add_cache_override(
-            url="https://example.com/api",
-            body="SGVsbG8=",
-        )
-        params = mock_connection.send_command.call_args.args[1]
-        assert params["body"] == "SGVsbG8="
-
-
-class TestResponseBodyMissingFields:
-    """Bug 16: response_body doesn't handle missing body field gracefully."""
-
-    async def test_response_body_with_empty_body(
-        self,
-        network_module: NetworkModule,
-        mock_connection: MockConn,
-    ) -> None:
-        mock_connection.send_command.return_value = {
-            "body": "",
-            "totalSize": 0,
-        }
-        result = await network_module.response_body("req-1")
-        assert result.body == ""
-        assert result.total_size == 0
-
-
 class TestContinueRequestPostData:
     """Bug 17: continue_request missing post_data parameter per W3C spec.
 

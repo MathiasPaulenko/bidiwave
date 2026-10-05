@@ -108,8 +108,8 @@ class TestDeleteCookieUsesDeleteCookies:
         command = mock_connection.send_command.call_args.args[0]
         assert command == "storage.deleteCookies"
         params = mock_connection.send_command.call_args.args[1]
-        assert params["name"] == "session"
-        assert params["context"] == "ctx-1"
+        assert params["filter"] == {"name": "session"}
+        assert params["partition"] == {"type": "context", "context": "ctx-1"}
 
 
 class TestSetCookieDomainValidation:

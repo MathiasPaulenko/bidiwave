@@ -1,8 +1,7 @@
 """Tests unitarios para protocol/commands.py."""
 
-import json
 
-from bidiwave.protocol.commands import Command, EvaluateParams, NavigateParams, NewSessionParams
+from bidiwave.protocol.commands import Command, NewSessionParams, ViewportSize
 
 
 class TestCommand:
@@ -22,11 +21,11 @@ class TestCommand:
         assert cmd.model_dump()["extra_field"] == "value"
 
     def test_round_trip(self) -> None:
-        cmd = Command(id=42, method="browsing.navigate", params={"context": "abc"})
+        cmd = Command(id=42, method="browsingContext.navigate", params={"context": "abc"})
         json_str = cmd.model_dump_json()
         restored = Command.model_validate_json(json_str)
         assert restored.id == 42
-        assert restored.method == "browsing.navigate"
+        assert restored.method == "browsingContext.navigate"
         assert restored.params == {"context": "abc"}
 
 
@@ -40,45 +39,7 @@ class TestNewSessionParams:
         assert params.capabilities == {"webSocketUrl": True}
 
 
-class TestNavigateParams:
-    def test_defaults(self) -> None:
-        params = NavigateParams(context="ctx1", url="https://example.com")
-        assert params.wait == "complete"
-
-    def test_custom_wait(self) -> None:
-        params = NavigateParams(context="ctx1", url="https://example.com", wait="none")
-        assert params.wait == "none"
-
-    def test_extra_allowed(self) -> None:
-        params = NavigateParams(context="ctx1", url="https://example.com", extra="foo")
-        assert params.model_dump()["extra"] == "foo"
-
-
-class TestEvaluateParams:
-    def test_defaults(self) -> None:
-        params = EvaluateParams(expression="1+1", target={"context": "ctx1"})
-        assert params.await_promise is False
-
-    def test_with_await_promise(self) -> None:
-        params = EvaluateParams(
-            expression="Promise.resolve(1)", target={"context": "ctx1"}, await_promise=True
-        )
-        assert params.await_promise is True
-
-    def test_serialization_round_trip(self) -> None:
-        params = EvaluateParams(expression="document.title", target={"context": "ctx1"})
-        data = json.loads(params.model_dump_json())
-        assert data["expression"] == "document.title"
-        assert data["target"] == {"context": "ctx1"}
-        assert data["await_promise"] is False
-
-    def test_serialization_options_and_user_activation(self) -> None:
-        params = EvaluateParams(
-            expression="1+1",
-            target={"context": "ctx1"},
-            serialization_options={"maxDomDepth": 1},
-            user_activation=True,
-        )
-        data = params.model_dump(by_alias=True)
-        assert data["serializationOptions"] == {"maxDomDepth": 1}
-        assert data["userActivation"] is True
+class TestViewportSize:
+    def test_fields(self) -> None:
+        size = ViewportSize(width=800, height=600)
+        assert size.model_dump() == {"width": 800, "height": 600}

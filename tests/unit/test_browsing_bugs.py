@@ -26,7 +26,7 @@ def browsing_module(mock_connection: MockConn) -> BrowsingModule:
 
 
 class TestNavigateUpdatesContextUrl:
-    """Bug 1: navigate/reload/traverse_history must update BrowsingContext.url."""
+    """Bug 1: navigate/reload must update BrowsingContext.url."""
 
     async def test_navigate_updates_context_url(
         self,
@@ -69,18 +69,18 @@ class TestNavigateUpdatesContextUrl:
         await browsing_module.reload(ctx)
         assert ctx.url == "https://example.com/"
 
-    async def test_traverse_history_updates_context_url(
+    async def test_traverse_history_sends_delta(
         self,
         browsing_module: BrowsingModule,
         mock_connection: MockConn,
     ) -> None:
-        mock_connection.send_command.return_value = {
-            "context": CTX_ID,
-            "url": "https://previous.com/",
-        }
-        ctx = BrowsingContext(id=CTX_ID, url="https://current.com", _module=browsing_module)
-        await browsing_module.traverse_history(ctx, "back")
-        assert ctx.url == "https://previous.com/"
+        """traverseHistory takes a numeric delta and returns an empty
+        result per spec, so it cannot update the context URL."""
+        mock_connection.send_command.return_value = {}
+        await browsing_module.traverse_history(CTX_ID, -1)
+        params = mock_connection.send_command.call_args.args[1]
+        assert params["context"] == CTX_ID
+        assert params["delta"] == -1
 
 
 class TestWaitForSelectorNullBody:

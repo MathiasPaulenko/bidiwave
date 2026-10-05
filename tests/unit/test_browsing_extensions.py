@@ -77,31 +77,23 @@ class TestTraverseHistory:
         browsing_module: BrowsingModule,
         mock_connection: MockConn,
     ) -> None:
-        mock_connection.send_command.return_value = {
-            "context": CTX_ID,
-            "url": "https://previous.example.com/",
-        }
-        result = await browsing_module.traverse_history(CTX_ID, "back")
-        assert isinstance(result, Navigation)
-        assert result.url == "https://previous.example.com/"
+        mock_connection.send_command.return_value = {}
+        result = await browsing_module.traverse_history(CTX_ID, -1)
+        assert result is None
         call = mock_connection.send_command.call_args
         assert call.args[0] == "browsingContext.traverseHistory"
-        assert call.args[1]["direction"] == "back"
+        assert call.args[1]["context"] == CTX_ID
+        assert call.args[1]["delta"] == -1
 
     async def test_traverse_forward(
         self,
         browsing_module: BrowsingModule,
         mock_connection: MockConn,
     ) -> None:
-        mock_connection.send_command.return_value = {
-            "context": CTX_ID,
-            "url": "https://next.example.com/",
-        }
-        result = await browsing_module.traverse_history(CTX_ID, "forward")
-        assert isinstance(result, Navigation)
-        assert result.url == "https://next.example.com/"
+        mock_connection.send_command.return_value = {}
+        await browsing_module.traverse_history(CTX_ID, 2)
         params = mock_connection.send_command.call_args.args[1]
-        assert params["direction"] == "forward"
+        assert params["delta"] == 2
 
 
 class TestHandleUserPrompt:
@@ -178,7 +170,7 @@ class TestPrint:
             shrink_to_fit=False,
         )
         params = mock_connection.send_command.call_args.args[1]
-        assert params["printBackground"] is True
+        assert params["background"] is True
         assert params["orientation"] == "landscape"
         assert params["scale"] == 0.5
         assert params["margin"] == {"top": 1, "bottom": 1, "left": 1, "right": 1}
@@ -194,7 +186,7 @@ class TestPrint:
         mock_connection.send_command.return_value = {"data": ""}
         await browsing_module.print(CTX_ID)
         params = mock_connection.send_command.call_args.args[1]
-        assert params["printBackground"] is False
+        assert params["background"] is False
         assert params["orientation"] == "portrait"
         assert params["scale"] == 1.0
         assert params["shrinkToFit"] is True

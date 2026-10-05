@@ -428,6 +428,9 @@ async def test_call_function_with_this(client: object, context: object) -> None:
 
 @pytest.mark.parametrize("client", ["chrome_bidi"], indirect=True)
 @pytest.mark.asyncio
+@pytest.mark.xfail(
+    reason="EdgeDriver 154 implements locateNodes but always returns empty nodes"
+)
 async def test_locate_nodes_with_start_nodes(client: object, context: object) -> None:
     """browsing.locate_nodes with start_nodes works."""
     await client.browsing.navigate(context, "https://example.com", wait="complete")

@@ -6,7 +6,6 @@ import pytest
 from pydantic import ValidationError
 
 from bidiwave.protocol.events import (
-    BrowsingContextNavigationCompletedEvent,
     BrowsingContextNavigationStartedEvent,
     BrowsingContextUserPromptOpenedEvent,
     ScriptRealmCreatedEvent,
@@ -49,7 +48,7 @@ class TestUserPromptOpenedTypeLiteral:
 
 
 class TestUserPromptOpenedHandlerLiteral:
-    """Bug 48: handler should be Literal["accept","dismiss","default"]|None per spec."""
+    """handler is Literal["accept","dismiss","ignore"]|None per spec."""
 
     def test_handler_accept(self) -> None:
         event = BrowsingContextUserPromptOpenedEvent.model_validate({
@@ -63,11 +62,11 @@ class TestUserPromptOpenedHandlerLiteral:
         })
         assert event.handler == "dismiss"
 
-    def test_handler_default(self) -> None:
+    def test_handler_ignore(self) -> None:
         event = BrowsingContextUserPromptOpenedEvent.model_validate({
-            "context": "ctx-1", "handler": "default",
+            "context": "ctx-1", "handler": "ignore",
         })
-        assert event.handler == "default"
+        assert event.handler == "ignore"
 
     def test_handler_none(self) -> None:
         event = BrowsingContextUserPromptOpenedEvent.model_validate({
@@ -80,38 +79,6 @@ class TestUserPromptOpenedHandlerLiteral:
             BrowsingContextUserPromptOpenedEvent.model_validate({
                 "context": "ctx-1", "handler": "maybe",
             })
-
-
-class TestNavigationCompletedCanceledField:
-    """Bug 42: navigationCompleted should have canceled field per spec."""
-
-    def test_canceled_true(self) -> None:
-        event = BrowsingContextNavigationCompletedEvent.model_validate({
-            "context": "ctx-1", "url": "https://example.com", "canceled": True,
-        })
-        assert event.canceled is True
-
-    def test_canceled_default_false(self) -> None:
-        event = BrowsingContextNavigationCompletedEvent.model_validate({
-            "context": "ctx-1", "url": "https://example.com",
-        })
-        assert event.canceled is False
-
-
-class TestNavigationStartedCanceledField:
-    """Bug 44: navigationStarted should have canceled field per spec."""
-
-    def test_canceled_true(self) -> None:
-        event = BrowsingContextNavigationStartedEvent.model_validate({
-            "context": "ctx-1", "url": "https://example.com", "canceled": True,
-        })
-        assert event.canceled is True
-
-    def test_canceled_default_false(self) -> None:
-        event = BrowsingContextNavigationStartedEvent.model_validate({
-            "context": "ctx-1", "url": "https://example.com",
-        })
-        assert event.canceled is False
 
 
 class TestScriptRealmCreatedTypeLiteral:
@@ -256,7 +223,6 @@ class TestNavigationStartedEventAlias:
     def test_alias_is_same_class(self) -> None:
         from bidiwave.protocol.events import (
             BrowsingContextNavigatedEvent,
-            BrowsingContextNavigationStartedEvent,
         )
         assert BrowsingContextNavigatedEvent is BrowsingContextNavigationStartedEvent
 

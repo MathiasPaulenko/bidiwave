@@ -27,6 +27,7 @@ async def test_page_evaluate_calls_script():
         sandbox=None,
         serialization_options=None,
         user_activation=False,
+        result_ownership=None,
     )
     assert isinstance(result, StringValue)
     assert result.value == "title"
@@ -50,6 +51,7 @@ async def test_page_evaluate_with_serialization_options():
         sandbox=None,
         serialization_options=ser_opts,
         user_activation=True,
+        result_ownership=None,
     )
 
 
@@ -74,6 +76,7 @@ async def test_page_call_with_this_and_serialization():
         this=this_val,
         serialization_options=ser_opts,
         user_activation=True,
+        result_ownership=None,
     )
 
 

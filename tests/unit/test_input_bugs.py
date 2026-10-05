@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from bidiwave.modules.input import InputModule
-from bidiwave.protocol.results import InputSource, PointerAction
+from bidiwave.modules.input import SPECIAL_KEYS, InputModule
+from bidiwave.protocol.results import InputSource
 
 MockConn = MagicMock
 
@@ -25,7 +25,7 @@ def input_module(mock_connection: MockConn) -> InputModule:
 
 
 class TestInputSourceParameters:
-    """Bug 36: InputSource should support parameters field with pointerType per spec."""
+    """InputSource should support parameters field with pointerType per spec."""
 
     def test_pointer_source_with_parameters(self) -> None:
         source = InputSource(
@@ -42,44 +42,6 @@ class TestInputSourceParameters:
         source = InputSource(type="pointer", id="mouse", actions=[])
         dumped = source.model_dump(by_alias=True, exclude_none=True)
         assert "parameters" not in dumped
-
-
-class TestPointerActionPointerType:
-    """Bug 37: PointerAction should support pointerType field per spec."""
-
-    def test_pointer_action_with_pointer_type(self) -> None:
-        action = PointerAction(
-            type="pointerDown",
-            button=0,
-            pointer_type="mouse",
-        )
-        dumped = action.model_dump(by_alias=True, exclude_none=True)
-        assert dumped["pointerType"] == "mouse"
-
-    def test_pointer_action_without_pointer_type(self) -> None:
-        action = PointerAction(type="pointerDown", button=0)
-        dumped = action.model_dump(by_alias=True, exclude_none=True)
-        assert "pointerType" not in dumped
-
-
-class TestPointerActionElementOrigin:
-    """Bug 38: PointerAction.origin should support ElementOrigin {type: 'element', element: ...}."""
-
-    def test_origin_element(self) -> None:
-        action = PointerAction(
-            type="pointerMove",
-            origin={"type": "element", "element": {"sharedId": "elem-1"}},
-        )
-        assert isinstance(action.origin, dict)
-        assert action.origin["type"] == "element"
-
-    def test_origin_viewport(self) -> None:
-        action = PointerAction(type="pointerMove")
-        assert action.origin == "viewport"
-
-    def test_origin_pointer(self) -> None:
-        action = PointerAction(type="pointerMove", origin="pointer")
-        assert action.origin == "pointer"
 
 
 class TestPerformActionsWithParameters:
@@ -114,3 +76,45 @@ class TestSetFilesElementFormat:
         await input_module.set_files("ctx-1", "elem-1", ["/path/to/file.txt"])
         params = mock_connection.send_command.call_args.args[1]
         assert params["element"] == {"sharedId": "elem-1"}
+
+
+class TestPressKey:
+    """press_key translates friendly names to WebDriver key codepoints."""
+
+    async def test_named_key_translates_to_codepoint(
+        self,
+        input_module: InputModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await input_module.press_key("ctx-1", "Enter")
+        params = mock_connection.send_command.call_args.args[1]
+        actions = params["actions"][0]["actions"]
+        assert actions[0]["value"] == SPECIAL_KEYS["Enter"]
+        assert actions[1]["value"] == SPECIAL_KEYS["Enter"]
+
+    async def test_single_char_passthrough(
+        self,
+        input_module: InputModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await input_module.press_key("ctx-1", "a")
+        params = mock_connection.send_command.call_args.args[1]
+        actions = params["actions"][0]["actions"]
+        assert actions[0]["value"] == "a"
+
+    async def test_raw_codepoint_passthrough(
+        self,
+        input_module: InputModule,
+        mock_connection: MockConn,
+    ) -> None:
+        await input_module.press_key("ctx-1", "\uE008")
+        params = mock_connection.send_command.call_args.args[1]
+        actions = params["actions"][0]["actions"]
+        assert actions[0]["value"] == "\uE008"
+
+    async def test_unknown_name_raises(
+        self,
+        input_module: InputModule,
+    ) -> None:
+        with pytest.raises(ValueError, match="Unknown key"):
+            await input_module.press_key("ctx-1", "NotAKey")
