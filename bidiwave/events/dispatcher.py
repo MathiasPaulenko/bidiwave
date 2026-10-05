@@ -84,6 +84,10 @@ class EventDispatcher:
             if not handlers:
                 del self._handlers[subscription.event_type]
 
+    def has_handlers(self, event_type: str) -> bool:
+        """Returns True if any handler is registered for the event type."""
+        return bool(self._handlers.get(event_type))
+
     async def dispatch(self, method: str, params: dict[str, Any]) -> None:
         """Dispatches an event to all subscribed handlers.
 

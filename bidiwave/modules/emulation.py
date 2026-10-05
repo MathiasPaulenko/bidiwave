@@ -47,16 +47,19 @@ class EmulationModule:
 
         Args:
             coordinates: Dict with 'latitude' and 'longitude' keys.
-                None to clear the override.
+                None to clear the override (sends ``coordinates: null``).
             contexts: Context IDs to apply to. None = all.
             user_contexts: User context IDs to apply to. None = all.
             error: Error dict to simulate, e.g. {"type": "positionUnavailable"}.
+                Mutually exclusive with `coordinates`.
         """
-        params: dict[str, Any] = {}
-        if coordinates is not None:
-            params["coordinates"] = coordinates
+        if coordinates is not None and error is not None:
+            raise ValueError("coordinates and error are mutually exclusive")
+        # Spec requires exactly one of `coordinates` (or null) / `error`.
         if error is not None:
-            params["error"] = error
+            params: dict[str, Any] = {"error": error}
+        else:
+            params = {"coordinates": coordinates}
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
@@ -93,7 +96,7 @@ class EmulationModule:
 
     async def set_timezone(
         self,
-        timezone: str,
+        timezone: str | None,
         contexts: list[str] | None = None,
         user_contexts: list[str] | None = None,
     ) -> None:
@@ -101,6 +104,7 @@ class EmulationModule:
 
         Args:
             timezone: IANA timezone identifier (e.g. "America/New_York").
+                None to clear the override (sends ``timezone: null``).
             contexts: Context IDs to apply to. None = all.
             user_contexts: User context IDs to apply to. None = all.
         """
@@ -144,13 +148,11 @@ class EmulationModule:
 
         Args:
             locale: Locale identifier (e.g. "en-US", "fr-FR").
-                None to clear the override.
+                None to clear the override (sends ``locale: null``).
             contexts: Context IDs to apply to. None = all.
             user_contexts: User context IDs to apply to. None = all.
         """
-        params: dict[str, Any] = {}
-        if locale is not None:
-            params["locale"] = locale
+        params: dict[str, Any] = {"locale": locale}
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:

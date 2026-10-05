@@ -93,20 +93,31 @@ class Connection:
         self._reconnecting = True
         delay = self._config.retry_delay
 
-        for attempt in range(self._config.max_retries):
-            logger.info(
-                "Reconnect attempt %d/%d (delay=%.1fs)",
-                attempt + 1,
-                self._config.max_retries,
-                delay,
-            )
-            await asyncio.sleep(delay)
-
-            try:
-                self._ws = await asyncio.wait_for(
-                    websockets.connect(self._url),
-                    timeout=self._config.timeout,
+        try:
+            for attempt in range(self._config.max_retries):
+                if self._closed:
+                    return False
+                logger.info(
+                    "Reconnect attempt %d/%d (delay=%.1fs)",
+                    attempt + 1,
+                    self._config.max_retries,
+                    delay,
                 )
+                await asyncio.sleep(delay)
+
+                try:
+                    ws = await asyncio.wait_for(
+                        websockets.connect(self._url),
+                        timeout=self._config.timeout,
+                    )
+                except Exception as e:
+                    logger.warning("Reconnect failed: %s", e)
+                    delay *= self._config.retry_backoff
+                    continue
+                if self._closed:
+                    await ws.close()
+                    return False
+                self._ws = ws
                 self._receive_task = asyncio.create_task(self._receive_loop())
                 logger.info("Reconnected successfully")
 
@@ -116,14 +127,10 @@ class Connection:
                     except Exception as e:
                         logger.error("Reconnect handler error: %s", e)
 
-                self._reconnecting = False
                 return True
-            except Exception as e:
-                logger.warning("Reconnect failed: %s", e)
-                delay *= self._config.retry_backoff
-
-        self._reconnecting = False
-        return False
+            return False
+        finally:
+            self._reconnecting = False
 
     async def _receive_loop(self) -> None:
         assert self._ws is not None
@@ -136,11 +143,16 @@ class Connection:
                 except (ValueError, TypeError) as e:
                     logger.warning("Malformed message from browser: %s", e)
                     continue
+                if not isinstance(data, dict):
+                    logger.warning("Non-object message from browser: %r", data)
+                    continue
                 msg_type = data.get("type")
 
                 if msg_type in ("success", "error"):
                     command_id = data.get("id")
                     if command_id is None:
+                        # Per spec, protocol-level errors can carry id: null
+                        # when the remote end can't correlate the command.
                         logger.warning("Response without id: %s", data)
                         continue
 
@@ -148,15 +160,17 @@ class Connection:
                         self._correlator.resolve(command_id, data.get("result", {}))
                         logger.debug("← [%d] success", command_id)
                     else:
-                        error_data = data.get("error", {})
-                        if isinstance(error_data, str):
-                            error_data = {"code": "unknown", "message": error_data}
-                        error = map_error(
-                            error_data.get("code", "unknown"),
-                            error_data.get("message", "Unknown error"),
-                        )
+                        # Per W3C BiDi, `error` is the ErrorCode string and
+                        # `message` is a sibling text field.
+                        code = data.get("error", "unknown")
+                        message = data.get("message", "Unknown error")
+                        if not isinstance(code, str):
+                            code = "unknown"
+                        if not isinstance(message, str):
+                            message = "Unknown error"
+                        error = map_error(code, message)
                         self._correlator.reject(command_id, error)
-                        logger.debug("← [%d] error: %s", command_id, error_data.get("message"))
+                        logger.debug("← [%d] error: %s", command_id, message)
                 else:
                     method = data.get("method", "unknown")
                     params = data.get("params", {})

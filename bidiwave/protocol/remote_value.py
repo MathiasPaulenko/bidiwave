@@ -132,6 +132,10 @@ class ObjectValue(RemoteValue):
             for pair in v:
                 if isinstance(pair, list) and len(pair) == 2:
                     key, val = pair
+                    # Object keys can be RemoteValues in the wire format;
+                    # coerce non-string keys to a stable string form.
+                    if not isinstance(key, str):
+                        key = str(key)
                     if isinstance(val, dict) and val.get("type"):
                         result[key] = RemoteValue.parse(val)
                     elif isinstance(val, dict) and "value" in val:
@@ -144,6 +148,19 @@ class ObjectValue(RemoteValue):
         return v  # type: ignore[no-any-return]
 
 
+def _parse_items(v: Any) -> list[Any] | None:
+    """Parses nested RemoteValues inside a serialized list."""
+    if isinstance(v, list):
+        result: list[Any] = []
+        for item in v:
+            if isinstance(item, dict) and item.get("type"):
+                result.append(RemoteValue.parse(item))
+            else:
+                result.append(item)
+        return result
+    return v  # type: ignore[no-any-return]
+
+
 class ArrayValue(RemoteValue):
     type: Literal["array"] = "array"
     value: list[Any] | None = None
@@ -154,15 +171,7 @@ class ArrayValue(RemoteValue):
     @field_validator("value", mode="before")
     @classmethod
     def normalize_value(cls, v: Any) -> list[Any] | None:
-        if isinstance(v, list):
-            result: list[Any] = []
-            for item in v:
-                if isinstance(item, dict) and item.get("type"):
-                    result.append(RemoteValue.parse(item))
-                else:
-                    result.append(item)
-            return result
-        return v  # type: ignore[no-any-return]
+        return _parse_items(v)
 
 
 class HandleValue(RemoteValue):
@@ -219,6 +228,22 @@ class MapValue(RemoteValue):
     value: list[list[Any]] | None = None
     handle: str | None = None
 
+    @field_validator("value", mode="before")
+    @classmethod
+    def normalize_value(cls, v: Any) -> list[list[Any]] | None:
+        if isinstance(v, list):
+            result: list[list[Any]] = []
+            for pair in v:
+                if isinstance(pair, list) and len(pair) == 2:
+                    result.append(
+                        [RemoteValue.parse(e) if isinstance(e, dict) and e.get("type") else e
+                         for e in pair]
+                    )
+                else:
+                    result.append(pair)
+            return result
+        return v  # type: ignore[no-any-return]
+
 
 class SetValue(RemoteValue):
     """JavaScript Set object — value is list of entries."""
@@ -226,6 +251,11 @@ class SetValue(RemoteValue):
     type: Literal["set"] = "set"
     value: list[Any] | None = None
     handle: str | None = None
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def normalize_value(cls, v: Any) -> list[Any] | None:
+        return _parse_items(v)
 
 
 class WeakMapValue(RemoteValue):
@@ -278,6 +308,11 @@ class TypedArrayValue(RemoteValue):
     value: list[Any] | None = None
     handle: str | None = None
 
+    @field_validator("value", mode="before")
+    @classmethod
+    def normalize_value(cls, v: Any) -> list[Any] | None:
+        return _parse_items(v)
+
 
 class ArrayBufferValue(RemoteValue):
     """JavaScript ArrayBuffer object."""
@@ -294,6 +329,11 @@ class NodeListValue(RemoteValue):
     value: list[Any] | None = None
     handle: str | None = None
 
+    @field_validator("value", mode="before")
+    @classmethod
+    def normalize_value(cls, v: Any) -> list[Any] | None:
+        return _parse_items(v)
+
 
 class HTMLCollectionValue(RemoteValue):
     """DOM HTMLCollection object."""
@@ -301,6 +341,11 @@ class HTMLCollectionValue(RemoteValue):
     type: Literal["htmlcollection"] = "htmlcollection"
     value: list[Any] | None = None
     handle: str | None = None
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def normalize_value(cls, v: Any) -> list[Any] | None:
+        return _parse_items(v)
 
 
 class WindowValue(RemoteValue):

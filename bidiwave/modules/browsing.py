@@ -22,7 +22,6 @@ from bidiwave.protocol.constants import (
     BROWSING_CLOSE,
     BROWSING_CREATE_CONTEXT,
     BROWSING_GET_TREE,
-    BROWSING_GET_VIEWPORT,
     BROWSING_HANDLE_USER_PROMPT,
     BROWSING_LOCATE_NODES,
     BROWSING_NAVIGATE,
@@ -30,19 +29,18 @@ from bidiwave.protocol.constants import (
     BROWSING_RELOAD,
     BROWSING_SET_VIEWPORT,
     BROWSING_TRAVERSE_HISTORY,
+    SCRIPT_EVALUATE,
 )
 from bidiwave.protocol.results import (
     ClientWindowInfo,
     GetClientWindowsResult,
     GetTreeResult,
     GetUserContextsResult,
-    GetViewportResult,
     LocateNodesResult,
     Navigation,
     PrintResult,
     Screenshot,
     UserContextInfo,
-    Viewport,
 )
 from bidiwave.transport.connection import Connection
 
@@ -216,12 +214,28 @@ class BrowsingModule:
         clip: dict[str, Any] | None = None,
         origin: Literal["viewport", "document"] | None = None,
     ) -> Screenshot:
+        """Captures a screenshot of the context.
+
+        Args:
+            context: BrowsingContext or context ID.
+            format: "png" (default) or "jpeg".
+            quality: JPEG quality from 0 to 100. Only valid with "jpeg".
+            clip: Optional ClipRectangle, e.g.
+                {"type": "box", "x": 0, "y": 0, "width": 100, "height": 100}
+                or {"type": "element", "element": {"sharedId": "..."}}.
+            origin: "viewport" or "document".
+        """
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {"context": ctx_id}
-        if format != "png":
-            params["format"] = format
-        if quality is not None and format == "jpeg":
-            params["quality"] = quality
+        # Spec: format is an ImageFormat object, e.g. {"type": "image/jpeg",
+        # "quality": 0.0-1.0}. quality is only allowed for jpeg.
+        if format == "jpeg":
+            image_format: dict[str, Any] = {"type": "image/jpeg"}
+            if quality is not None:
+                image_format["quality"] = quality / 100
+            params["format"] = image_format
+        elif quality is not None:
+            raise ValueError("quality is only supported with format='jpeg'")
         if clip is not None:
             params["clip"] = clip
         if origin is not None:
@@ -270,7 +284,7 @@ class BrowsingModule:
         )
         result = await asyncio.wait_for(
             self._connection.send_command(
-                "script.evaluate",
+                SCRIPT_EVALUATE,
                 {
                     "target": {"context": ctx_id},
                     "expression": expression,
@@ -315,7 +329,7 @@ class BrowsingModule:
         )
         result = await asyncio.wait_for(
             self._connection.send_command(
-                "script.evaluate",
+                SCRIPT_EVALUATE,
                 {
                     "target": {"context": ctx_id},
                     "expression": wrapped,
@@ -355,18 +369,22 @@ class BrowsingModule:
     async def traverse_history(
         self,
         context: BrowsingContext | str,
-        direction: Literal["back", "forward"],
-    ) -> Navigation:
-        """Navigates back or forward in history."""
+        delta: int,
+    ) -> None:
+        """Traverses the session history by the given offset.
+
+        Args:
+            context: BrowsingContext or context ID.
+            delta: Number of steps relative to the current entry —
+                negative goes back (-1 = previous page), positive goes
+                forward. Per spec this command returns an empty result;
+                the resulting URL is not reported back.
+        """
         ctx_id = context.id if hasattr(context, "id") else context
-        result = await self._connection.send_command(
+        await self._connection.send_command(
             BROWSING_TRAVERSE_HISTORY,
-            {"context": ctx_id, "direction": direction},
+            {"context": ctx_id, "delta": delta},
         )
-        nav = Navigation.model_validate(result)
-        if isinstance(context, BrowsingContext):
-            context.url = nav.url
-        return nav
 
     async def handle_user_prompt(
         self,
@@ -400,7 +418,6 @@ class BrowsingModule:
 
         Args:
             background: Whether to print background graphics.
-                Also accepted as ``printBackground`` per spec.
             margin: Page margins dict.
             orientation: Page orientation.
             page: Page size dict.
@@ -411,7 +428,7 @@ class BrowsingModule:
         ctx_id = context.id if hasattr(context, "id") else context
         params: dict[str, Any] = {
             "context": ctx_id,
-            "printBackground": background,
+            "background": background,
             "orientation": orientation,
             "scale": scale,
             "shrinkToFit": shrink_to_fit,
@@ -468,20 +485,26 @@ class BrowsingModule:
 
     async def set_viewport(
         self,
-        context: BrowsingContext | str,
+        context: BrowsingContext | str | None = None,
         viewport: ViewportSize | dict[str, int] | None = None,
         device_pixel_ratio: float | None = None,
+        user_contexts: list[str] | None = None,
     ) -> None:
-        """Sets the viewport and device pixel ratio of a context.
+        """Sets the viewport and device pixel ratio.
 
         Args:
-            context: BrowsingContext or context ID.
+            context: BrowsingContext or context ID. Optional when
+                `user_contexts` is given.
             viewport: ViewportSize or dict with "width" and "height"
-                in CSS pixels. Pass None to reset to the original viewport.
+                in CSS pixels. Use `reset_viewport` to restore the default.
             device_pixel_ratio: Ratio of physical pixels to CSS pixels.
+            user_contexts: Apply the override to all browsing contexts of
+                the given user contexts.
         """
-        ctx_id = context.id if hasattr(context, "id") else context
-        params: dict[str, Any] = {"context": ctx_id}
+        params: dict[str, Any] = {}
+        if context is not None:
+            ctx_id = context.id if hasattr(context, "id") else context
+            params["context"] = ctx_id
         if viewport is not None:
             if isinstance(viewport, ViewportSize):
                 params["viewport"] = viewport.model_dump()
@@ -489,28 +512,32 @@ class BrowsingModule:
                 params["viewport"] = viewport
         if device_pixel_ratio is not None:
             params["devicePixelRatio"] = device_pixel_ratio
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
         await self._connection.send_command(
             BROWSING_SET_VIEWPORT, params
         )
 
-    async def get_viewport(
+    async def reset_viewport(
         self,
-        context: BrowsingContext | str,
-    ) -> Viewport:
-        """Gets the current viewport and device pixel ratio of a context.
+        context: BrowsingContext | str | None = None,
+        user_contexts: list[str] | None = None,
+    ) -> None:
+        """Resets the viewport and device pixel ratio to the default.
 
-        Args:
-            context: BrowsingContext or context ID.
-
-        Returns:
-            Viewport with width, height, and device pixel ratio.
+        The spec resets an override by sending an explicit null for the
+        parameter, so this sends ``{"viewport": null,
+        "devicePixelRatio": null}``.
         """
-        ctx_id = context.id if hasattr(context, "id") else context
-        result = await self._connection.send_command(
-            BROWSING_GET_VIEWPORT, {"context": ctx_id}
+        params: dict[str, Any] = {"viewport": None, "devicePixelRatio": None}
+        if context is not None:
+            ctx_id = context.id if hasattr(context, "id") else context
+            params["context"] = ctx_id
+        if user_contexts is not None:
+            params["userContexts"] = user_contexts
+        await self._connection.send_command(
+            BROWSING_SET_VIEWPORT, params
         )
-        parsed = GetViewportResult.model_validate(result)
-        return parsed.viewport
 
     async def open(
         self,

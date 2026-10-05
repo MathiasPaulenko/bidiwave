@@ -34,18 +34,26 @@ class WebExtensionModule:
     def __init__(self, connection: Connection) -> None:
         self._connection = connection
 
-    async def install(self, archive_path: str) -> WebExtensionInfo:
-        """Installs a web extension from an archive file.
+    async def install(
+        self, extension_data: dict[str, str] | str
+    ) -> WebExtensionInfo:
+        """Installs a web extension.
 
         Args:
-            archive_path: File system path to the extension archive
-                (e.g. .zip or .crx file).
+            extension_data: Either a path to a packed extension archive
+                (sent as ``{"type": "archivePath", "path": ...}``) or a
+                full ExtensionData dict per the spec:
+                ``{"type": "path", "path": ...}`` for an unpacked
+                directory, ``{"type": "archivePath", "path": ...}`` for a
+                packed archive, or ``{"type": "base64", "value": ...}``.
 
         Returns:
             WebExtensionInfo with the extension ID.
         """
+        if isinstance(extension_data, str):
+            extension_data = {"type": "archivePath", "path": extension_data}
         result = await self._connection.send_command(
-            WEB_EXTENSION_INSTALL, {"archivePath": archive_path}
+            WEB_EXTENSION_INSTALL, {"extensionData": extension_data}
         )
         return WebExtensionInfo.model_validate(result)
 

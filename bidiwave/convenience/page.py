@@ -51,6 +51,7 @@ class Page:
         sandbox: str | None = None,
         serialization_options: dict[str, Any] | None = None,
         user_activation: bool = False,
+        result_ownership: str | None = None,
     ) -> RemoteValue:
         if self._script is None:
             raise RuntimeError("ScriptModule not available")
@@ -61,6 +62,7 @@ class Page:
             sandbox=sandbox,
             serialization_options=serialization_options,
             user_activation=user_activation,
+            result_ownership=result_ownership,
         )
 
     async def call(
@@ -72,6 +74,7 @@ class Page:
         this: dict[str, Any] | None = None,
         serialization_options: dict[str, Any] | None = None,
         user_activation: bool = False,
+        result_ownership: str | None = None,
     ) -> RemoteValue:
         if self._script is None:
             raise RuntimeError("ScriptModule not available")
@@ -84,6 +87,7 @@ class Page:
             this=this,
             serialization_options=serialization_options,
             user_activation=user_activation,
+            result_ownership=result_ownership,
         )
 
     async def navigate(
@@ -100,11 +104,11 @@ class Page:
     ) -> Any:
         return await self._browsing.reload(self._context, wait, ignore_cache)
 
-    async def back(self) -> Any:
-        return await self._browsing.traverse_history(self._context, "back")
+    async def back(self) -> None:
+        await self._browsing.traverse_history(self._context, -1)
 
-    async def forward(self) -> Any:
-        return await self._browsing.traverse_history(self._context, "forward")
+    async def forward(self) -> None:
+        await self._browsing.traverse_history(self._context, 1)
 
     async def handle_user_prompt(
         self,

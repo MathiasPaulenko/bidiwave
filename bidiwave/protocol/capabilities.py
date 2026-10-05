@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Capabilities(BaseModel):
-    """Browser capabilities detected via session.status."""
+    """Browser capabilities detected via session.new."""
 
     model_config = ConfigDict(extra="allow")
 

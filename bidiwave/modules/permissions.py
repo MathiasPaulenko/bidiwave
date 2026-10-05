@@ -18,7 +18,7 @@ class PermissionsModule:
         await client.permissions.set_permission(
             descriptor={"name": "geolocation"},
             state="granted",
-            contexts=[ctx_id],
+            origin="https://example.com",
         )
     """
 
@@ -29,23 +29,28 @@ class PermissionsModule:
         self,
         descriptor: dict[str, Any],
         state: Literal["granted", "denied", "prompt"],
-        contexts: list[str] | None = None,
-        origin: str | None = None,
+        origin: str,
+        embedded_origin: str | None = None,
+        user_context: str | None = None,
     ) -> None:
         """Sets the state of a browser permission.
 
         Args:
             descriptor: Permission descriptor (e.g. {"name": "geolocation"}).
             state: Permission state to set.
-            contexts: Context IDs to apply to. None = all.
-            origin: Origin to apply the permission to. Required if no contexts.
+            origin: Top-level origin to apply the permission to. Required
+                per the W3C Permissions spec.
+            embedded_origin: Origin of a document embedded in `origin`
+                (optional).
+            user_context: User context ID to scope to (optional).
         """
         params: dict[str, Any] = {
             "descriptor": descriptor,
             "state": state,
+            "origin": origin,
         }
-        if contexts is not None:
-            params["contexts"] = contexts
-        if origin is not None:
-            params["origin"] = origin
+        if embedded_origin is not None:
+            params["embeddedOrigin"] = embedded_origin
+        if user_context is not None:
+            params["userContext"] = user_context
         await self._connection.send_command(PERMISSIONS_SET, params)

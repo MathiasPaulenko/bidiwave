@@ -17,6 +17,44 @@ if TYPE_CHECKING:
 
 PointerType = Literal["mouse", "pen", "touch"]
 
+# WebDriver key codepoints for named keys. The protocol expects single
+# characters or these codepoints — a literal "Enter" string is invalid.
+SPECIAL_KEYS: dict[str, str] = {
+    "Backspace": "\uE003",
+    "Tab": "\uE004",
+    "Clear": "\uE005",
+    "Enter": "\uE007",
+    "Shift": "\uE008",
+    "Control": "\uE009",
+    "Alt": "\uE00A",
+    "Pause": "\uE00B",
+    "Escape": "\uE00C",
+    "Space": "\uE00D",
+    "PageUp": "\uE00E",
+    "PageDown": "\uE00F",
+    "End": "\uE010",
+    "Home": "\uE011",
+    "ArrowLeft": "\uE012",
+    "ArrowUp": "\uE013",
+    "ArrowRight": "\uE014",
+    "ArrowDown": "\uE015",
+    "Insert": "\uE016",
+    "Delete": "\uE017",
+    "Meta": "\uE03D",
+    "F1": "\uE031",
+    "F2": "\uE032",
+    "F3": "\uE033",
+    "F4": "\uE034",
+    "F5": "\uE035",
+    "F6": "\uE036",
+    "F7": "\uE037",
+    "F8": "\uE038",
+    "F9": "\uE039",
+    "F10": "\uE03A",
+    "F11": "\uE03B",
+    "F12": "\uE03C",
+}
+
 
 class InputModule:
     """Module for simulating user input (keyboard, mouse, scroll).
@@ -188,20 +226,27 @@ class InputModule:
     ) -> None:
         """Convenience: presses and releases a key.
 
-        Uses the protocol key format (e.g: "Enter", "Tab", "Escape",
-        or a literal character like "a").
+        Accepts friendly names ("Enter", "Tab", "Escape", "ArrowDown",
+        F1-F12, modifiers...) which are translated to the WebDriver
+        codepoints required by the protocol, or any single character.
 
         Args:
             context: BrowsingContext or context ID.
             key: Key to press (e.g: "Enter", "a", "Escape").
         """
+        value = SPECIAL_KEYS.get(key, key)
+        if len(value) != 1:
+            raise ValueError(
+                f"Unknown key {key!r}: pass a single character or a name "
+                f"from SPECIAL_KEYS"
+            )
         actions = [
             InputSource(
                 type="key",
                 id="keyboard",
                 actions=[
-                    {"type": "keyDown", "value": key},
-                    {"type": "keyUp", "value": key},
+                    {"type": "keyDown", "value": value},
+                    {"type": "keyUp", "value": value},
                 ],
             ),
         ]

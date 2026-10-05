@@ -8,8 +8,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class Session(BaseModel):
     """Result of session.new."""
 
-    model_config = ConfigDict(extra="allow")
-    session_id: str
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+    session_id: str = Field(alias="sessionId")
     capabilities: dict[str, Any]
 
 
@@ -22,14 +22,13 @@ class SessionStatus(BaseModel):
 
 
 class Navigation(BaseModel):
-    """Result of browsing.navigate."""
+    """Result of browsingContext.navigate."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     context: str | None = None
     url: str = ""
     navigation: str | None = None
-    status: str = "complete"
 
 
 class Screenshot(BaseModel):
@@ -55,61 +54,6 @@ class InputSource(BaseModel):
     id: str
     actions: list[dict[str, Any]] = []
     parameters: dict[str, Any] | None = None
-
-
-class KeyAction(BaseModel):
-    """An individual keyboard action."""
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    type: Literal["keyDown", "keyUp"]
-    value: str
-    duration: int | None = None
-
-
-class PointerAction(BaseModel):
-    """An individual pointer action (mouse/touch)."""
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    type: Literal["pointerMove", "pointerDown", "pointerUp", "pointerCancel"]
-    button: int | None = None
-    x: int | float | None = None
-    y: int | float | None = None
-    width: int | None = None
-    height: int | None = None
-    pressure: float | None = None
-    tangential_pressure: float | None = Field(
-        default=None, alias="tangentialPressure"
-    )
-    tilt_x: int | None = Field(default=None, alias="tiltX")
-    tilt_y: int | None = Field(default=None, alias="tiltY")
-    twist: int | None = None
-    altitude_angle: float | None = Field(
-        default=None, alias="altitudeAngle"
-    )
-    azimuth_angle: float | None = Field(
-        default=None, alias="azimuthAngle"
-    )
-    duration: int | None = None
-    origin: Literal["pointer", "viewport"] | dict[str, Any] = "viewport"
-    pointer_type: Literal["mouse", "pen", "touch"] | None = Field(
-        default=None, alias="pointerType"
-    )
-
-
-class WheelAction(BaseModel):
-    """An individual scroll action."""
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    type: Literal["scroll"] = "scroll"
-    x: int = 0
-    y: int = 0
-    delta_x: int = Field(default=0, alias="deltaX")
-    delta_y: int = Field(default=0, alias="deltaY")
-    duration: int | None = None
-    origin: Literal["pointer", "viewport"] | dict[str, Any] = "viewport"
 
 
 class Cookie(BaseModel):
@@ -149,9 +93,10 @@ class Cookie(BaseModel):
 class GetCookiesResult(BaseModel):
     """Result of storage.getCookies."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     cookies: list[Cookie] = []
+    partition_key: dict[str, Any] | None = Field(default=None, alias="partitionKey")
 
 
 class PrintResult(BaseModel):
@@ -207,7 +152,7 @@ class GetUserContextsResult(BaseModel):
 
 
 class CDPGetSessionResult(BaseModel):
-    """Result of browser.cdp.getSession."""
+    """Result of cdp.getSession (Chromium extension)."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -215,64 +160,11 @@ class CDPGetSessionResult(BaseModel):
 
 
 class AddPreloadScriptResult(BaseModel):
-    """Result of preload.addPreloadScript."""
+    """Result of script.addPreloadScript."""
 
     model_config = ConfigDict(extra="allow")
 
     script: str
-
-
-class Viewport(BaseModel):
-    """Viewport dimensions (browsingContext.getViewport)."""
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    width: int
-    height: int
-    device_pixel_ratio: float = Field(default=1.0, alias="devicePixelRatio")
-
-
-class GetViewportResult(BaseModel):
-    """Result of browsingContext.getViewport."""
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    viewport: Viewport
-    device_pixel_ratio: float = Field(default=1.0, alias="devicePixelRatio")
-
-
-class AddCacheOverrideResult(BaseModel):
-    """Result of network.addCacheOverride."""
-
-    model_config = ConfigDict(extra="allow")
-
-    cache: str
-
-
-class ResponseBodyResult(BaseModel):
-    """Result of network.responseBody.
-
-    Returns the response body as base64-encoded content with
-    the total size of the body.
-    """
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    body: str
-    total_size: int = Field(default=0, alias="totalSize")
-
-
-class ScriptAddPreloadScriptResult(BaseModel):
-    """Result of script.addPreloadScript.
-
-    Returns the preload script ID and optionally a channel
-    for bidirectional communication.
-    """
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    script: str
-    channel: str | None = None
 
 
 class BrowsingContextInfo(BaseModel):

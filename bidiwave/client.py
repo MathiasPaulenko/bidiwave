@@ -58,6 +58,8 @@ class BiDiClient:
         self._auto_prompt_text: str | None = None
         self._auto_prompt_sub: Subscription | None = None
         self._auto_prompt_subscribed: bool = False
+        # Pick up negotiated capabilities when session.new completes.
+        self.session.on_new = self._set_capabilities
 
     @classmethod
     async def connect(
@@ -76,17 +78,23 @@ class BiDiClient:
         connection = Connection(url, config=transport_config)
         await connection.connect()
         client = cls(connection)
+        # session.new negotiates capabilities; some drivers reject it on an
+        # already-established session — fall back to session.status then.
         try:
-            status = await client.session.status()
-            client._capabilities = detect_capabilities(
-                status.model_dump()
-            )
-        except Exception as e:
-            logger.warning("Failed to detect capabilities: %s", e)
+            await client.session.new()
+        except Exception:
+            try:
+                await client.session.status()
+            except Exception as e:
+                logger.warning("session.status failed during connect: %s", e)
         return client
+
+    def _set_capabilities(self, result: dict[str, Any]) -> None:
+        self._capabilities = detect_capabilities(result)
 
     @property
     def capabilities(self) -> Capabilities | None:
+        """Negotiated capabilities — populated after ``session.new()``."""
         return self._capabilities
 
     def on(self, event_type: str, handler: AsyncHandler) -> Subscription:
@@ -129,10 +137,6 @@ class BiDiClient:
         """Convenience for network.responseStarted."""
         return self._dispatcher.on("network.responseStarted", handler)
 
-    def on_data_received(self, handler: AsyncHandler) -> Subscription:
-        """Convenience for network.dataReceived."""
-        return self._dispatcher.on("network.dataReceived", handler)
-
     def on_navigation_completed(self, handler: AsyncHandler) -> Subscription:
         """Convenience for browsingContext.navigationCompleted."""
         return self._dispatcher.on("browsingContext.navigationCompleted", handler)
@@ -152,10 +156,6 @@ class BiDiClient:
     def on_history_updated(self, handler: AsyncHandler) -> Subscription:
         """Convenience for browsingContext.historyUpdated."""
         return self._dispatcher.on("browsingContext.historyUpdated", handler)
-
-    def on_sampling_state_changed(self, handler: AsyncHandler) -> Subscription:
-        """Convenience for network.samplingStateChanged."""
-        return self._dispatcher.on("network.samplingStateChanged", handler)
 
     def on_realm_created(self, handler: AsyncHandler) -> Subscription:
         """Convenience for script.realmCreated."""
@@ -250,7 +250,13 @@ class BiDiClient:
             self._auto_prompt_sub = None
         self._auto_prompt_accept = None
         self._auto_prompt_text = None
-        if getattr(self, "_auto_prompt_subscribed", False):
+        # Only drop the session-level subscription if the user has no
+        # handlers left on the event — unsubscribing anyway would kill
+        # subscriptions they made themselves.
+        if (
+            getattr(self, "_auto_prompt_subscribed", False)
+            and not self._dispatcher.has_handlers("browsingContext.userPromptOpened")
+        ):
             try:
                 await self.session.unsubscribe(["browsingContext.userPromptOpened"])
             except Exception as e:

@@ -67,6 +67,8 @@ class BrowsingContextCreatedEvent(BaseModel):
     url: str
     user_context: str = Field(default="default", alias="userContext")
     original_opener: str | None = Field(default=None, alias="originalOpener")
+    client_window: str | None = Field(default=None, alias="clientWindow")
+    has_planned_navigation: bool = Field(default=False, alias="hasPlannedNavigation")
 
 
 class BrowsingContextDestroyedEvent(BaseModel):
@@ -85,8 +87,6 @@ class BrowsingContextNavigationStartedEvent(BaseModel):
     context: str
     url: str
     navigation: str | None = None
-    status: Literal["pending", "complete", "canceled"] = "pending"
-    canceled: bool = False
 
 
 # Backward-compatible alias
@@ -229,7 +229,16 @@ class ScriptRealmCreatedEvent(BaseModel):
 
     realm: str
     origin: str
-    type: Literal["window", "dedicated-worker", "shared-worker", "service-worker", "worker"]
+    type: Literal[
+        "window",
+        "dedicated-worker",
+        "shared-worker",
+        "service-worker",
+        "worker",
+        "paint-worklet",
+        "audio-worklet",
+        "worklet",
+    ]
     context: str | None = None
     sandbox: str | None = None
 
@@ -251,10 +260,11 @@ class BrowsingContextUserPromptOpenedEvent(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     context: str
-    handler: Literal["accept", "dismiss", "default"] | None = None
+    handler: Literal["accept", "dismiss", "ignore"] | None = None
     message: str = ""
     default_value: str = Field(default="", alias="defaultValue")
     type: Literal["alert", "confirm", "prompt", "beforeunload"] = "alert"
+    user_context: str | None = Field(default=None, alias="userContext")
 
 
 class BrowsingContextUserPromptClosedEvent(BaseModel):
@@ -297,25 +307,8 @@ class BrowsingContextDownloadEndEvent(BaseModel):
     navigation: str | None = None
     url: str
     user_context: str | None = Field(default=None, alias="userContext")
-    status: Literal["completed", "canceled"] = "completed"
+    status: Literal["complete", "canceled"] = "complete"
     cancel_reason: str | None = Field(default=None, alias="cancelReason")
-    item: str | None = None
-
-
-class NetworkDataReceivedEvent(BaseModel):
-    """network.dataReceived event — emitted when response body data arrives.
-
-    Fires in chunks as the response body is received, allowing streaming
-    processing of large responses.
-    """
-
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
-
-    context: str | None = None
-    request: str
-    redirect_count: int = Field(default=0, alias="redirectCount")
-    data: str
-    data_size: int = Field(default=0, alias="dataSize")
 
 
 class BrowsingContextNavigationCompletedEvent(BaseModel):
@@ -330,8 +323,6 @@ class BrowsingContextNavigationCompletedEvent(BaseModel):
     context: str
     url: str
     navigation: str | None = None
-    status: Literal["pending", "complete", "canceled"] = "complete"
-    canceled: bool = False
 
 
 class NetworkAuthRequiredEvent(BaseModel):
@@ -391,24 +382,11 @@ class BrowsingContextDOMContentLoadedEvent(BaseModel):
     url: str
 
 
-class NetworkSamplingStateChangedEvent(BaseModel):
-    """network.samplingStateChanged event — emitted when network sampling changes.
-
-    Sampling determines which requests emit events. When sampling is enabled,
-    only a subset of requests trigger network events.
-    """
-
-    model_config = ConfigDict(extra="allow")
-
-    context: str | None = None
-    sampling: Literal["all", "none"] = "all"
-
-
 class BrowsingContextHistoryUpdatedEvent(BaseModel):
     """browsingContext.historyUpdated event — emitted when history changes.
 
-    Chrome-specific event fired when the browsing context's history entries
-    are updated (e.g. pushState, replaceState, or navigation).
+    Fired when the browsing context's history entries are updated
+    (e.g. pushState, replaceState, or navigation).
     """
 
     model_config = ConfigDict(extra="allow")
@@ -478,12 +456,8 @@ def parse_event(method: str, params: dict[str, Any]) -> BaseModel:
             return NetworkResponseStartedEvent.model_validate(params)
         case "network.responseCompleted":
             return NetworkResponseCompletedEvent.model_validate(params)
-        case "network.dataReceived":
-            return NetworkDataReceivedEvent.model_validate(params)
         case "network.authRequired":
             return NetworkAuthRequiredEvent.model_validate(params)
-        case "network.samplingStateChanged":
-            return NetworkSamplingStateChangedEvent.model_validate(params)
         case "network.fetchError":
             return NetworkFetchErrorEvent.model_validate(params)
         case "input.fileDialogOpened":

@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from bidiwave.protocol.constants import (
-    NETWORK_ADD_CACHE_OVERRIDE,
     NETWORK_ADD_DATA_COLLECTOR,
     NETWORK_ADD_INTERCEPT,
     NETWORK_CONTINUE_REQUEST,
@@ -15,19 +14,12 @@ from bidiwave.protocol.constants import (
     NETWORK_FAIL_REQUEST,
     NETWORK_GET_DATA,
     NETWORK_PROVIDE_RESPONSE,
-    NETWORK_REMOVE_CACHE_OVERRIDE,
     NETWORK_REMOVE_DATA_COLLECTOR,
     NETWORK_REMOVE_INTERCEPT,
-    NETWORK_RESPONSE_BODY,
     NETWORK_SET_CACHE_BEHAVIOR,
-    NETWORK_SET_CACHE_OVERRIDE,
     NETWORK_SET_EXTRA_HEADERS,
 )
-from bidiwave.protocol.results import (
-    AddCacheOverrideResult,
-    InterceptResult,
-    ResponseBodyResult,
-)
+from bidiwave.protocol.results import InterceptResult
 from bidiwave.transport.connection import Connection
 
 InterceptPhase = Literal["beforeRequestSent", "responseStarted", "authRequired"]
@@ -41,13 +33,13 @@ class NetworkModule:
         - continue_request / continue_response — continue an intercepted request/response
         - fail_request — fail an intercepted request
         - provide_response — provide a synthetic response
-        - add_cache_override / remove_cache_override — cached response override
+        - set_cache_behavior — control caching for intercepted requests
+        - data collectors — collect request/response bodies per spec
 
     Events (via subscribe):
         - network.beforeRequestSent — before a request is sent
         - network.responseStarted — when response headers arrive
         - network.responseCompleted — when a response completes
-        - network.dataReceived — when response body data arrives
         - network.fetchError — when a request fails
     """
 
@@ -250,112 +242,6 @@ class NetworkModule:
             NETWORK_CONTINUE_WITH_AUTH, {"request": request, "action": "cancel"}
         )
 
-    async def add_cache_override(
-        self,
-        url: str,
-        method: str = "GET",
-        status_code: int = 200,
-        headers: list[dict[str, Any]] | None = None,
-        body: str | None = None,
-        contexts: list[str] | None = None,
-    ) -> str:
-        """Adds a cached response override for matching requests.
-
-        Requests matching the URL and method will receive the cached response
-        instead of going to the network.
-
-        Args:
-            url: URL to match.
-            method: HTTP method to match (default GET).
-            status_code: HTTP status code for the cached response.
-            headers: Response headers.
-            body: Response body in base64.
-            contexts: Context IDs to apply to. None = all.
-
-        Returns:
-            Cache override ID for later removal.
-        """
-        params: dict[str, Any] = {
-            "url": url,
-            "method": method,
-            "statusCode": status_code,
-        }
-        if headers is not None:
-            params["headers"] = headers
-        if body is not None:
-            params["body"] = body
-        if contexts is not None:
-            params["contexts"] = contexts
-        result = await self._connection.send_command(
-            NETWORK_ADD_CACHE_OVERRIDE, params
-        )
-        parsed = AddCacheOverrideResult.model_validate(result)
-        return parsed.cache
-
-    async def remove_cache_override(self, cache_id: str) -> None:
-        """Removes a previously added cache override.
-
-        Args:
-            cache_id: ID returned by add_cache_override.
-        """
-        await self._connection.send_command(
-            NETWORK_REMOVE_CACHE_OVERRIDE, {"cache": cache_id}
-        )
-
-    async def set_cache_override(
-        self,
-        url: str,
-        method: str = "GET",
-        status_code: int = 200,
-        headers: list[dict[str, Any]] | None = None,
-        body: str | None = None,
-        contexts: list[str] | None = None,
-    ) -> None:
-        """Sets a cache override, replacing all existing overrides.
-
-        Unlike add_cache_override which returns an ID for later removal,
-        set_cache_override replaces all existing overrides in a single call.
-
-        Args:
-            url: URL to match.
-            method: HTTP method to match (default GET).
-            status_code: HTTP status code for the cached response.
-            headers: Response headers.
-            body: Response body in base64.
-            contexts: Context IDs to apply to. None = all.
-        """
-        params: dict[str, Any] = {
-            "url": url,
-            "method": method,
-            "statusCode": status_code,
-        }
-        if headers is not None:
-            params["headers"] = headers
-        if body is not None:
-            params["body"] = body
-        if contexts is not None:
-            params["contexts"] = contexts
-        await self._connection.send_command(
-            NETWORK_SET_CACHE_OVERRIDE, params
-        )
-
-    async def response_body(self, request: str) -> ResponseBodyResult:
-        """Retrieves the body of a completed response.
-
-        Useful for debugging or inspecting response content after
-        a network.responseCompleted event.
-
-        Args:
-            request: ID of the request whose response body to fetch.
-
-        Returns:
-            ResponseBodyResult with base64-encoded body and total size.
-        """
-        result = await self._connection.send_command(
-            NETWORK_RESPONSE_BODY, {"request": request}
-        )
-        return ResponseBodyResult.model_validate(result)
-
     async def set_extra_headers(
         self,
         headers: list[dict[str, Any]],
@@ -378,28 +264,20 @@ class NetworkModule:
 
     async def set_cache_behavior(
         self,
-        cache_behavior: Literal["bypass", "default"] | None = None,
+        cache_behavior: Literal["bypass", "default"],
         contexts: list[str] | None = None,
-        user_contexts: list[str] | None = None,
     ) -> None:
         """Sets the cache behavior for future network requests.
 
-        This replaces the non-standard addCacheOverride/removeCacheOverride/
-        setCacheOverride commands with the spec-compliant single command.
-
         Args:
             cache_behavior: "bypass" to bypass cache, "default" for normal
-                cache behavior. None to clear the override.
+                cache behavior. Required per spec — use "default" to
+                clear a bypass override.
             contexts: Context IDs to apply to. None = all.
-            user_contexts: User context IDs to apply to. None = all.
         """
-        params: dict[str, Any] = {}
-        if cache_behavior is not None:
-            params["cacheBehavior"] = cache_behavior
+        params: dict[str, Any] = {"cacheBehavior": cache_behavior}
         if contexts is not None:
             params["contexts"] = contexts
-        if user_contexts is not None:
-            params["userContexts"] = user_contexts
         await self._connection.send_command(
             NETWORK_SET_CACHE_BEHAVIOR, params
         )

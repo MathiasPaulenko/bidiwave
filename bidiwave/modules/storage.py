@@ -1,4 +1,10 @@
-"""Storage module for the WebDriver BiDi protocol."""
+"""Storage module — cookie operations.
+
+Wire format follows the W3C BiDi spec: commands take an optional
+`filter` (CookieFilter) and `partition` (PartitionDescriptor). A
+browsing context can be scoped via `partition = {"type": "context",
+"context": <id>}` — the `context` argument does that for you.
+"""
 
 from __future__ import annotations
 
@@ -10,133 +16,99 @@ from bidiwave.protocol.constants import (
     STORAGE_SET_COOKIE,
 )
 from bidiwave.protocol.results import Cookie, GetCookiesResult
-from bidiwave.transport.connection import Connection
 
 if TYPE_CHECKING:
-    from bidiwave.modules.browsing import BrowsingContext
+    from bidiwave.transport.connection import Connection
 
 
 class StorageModule:
-    """Module for managing browser cookies.
-
-    Commands:
-        - get_cookies — gets cookies from a context
-        - set_cookie — creates or updates a cookie
-        - delete_cookies — deletes cookies by filter
-        - delete_cookie — deletes a single cookie by name
-
-    Example:
-        cookies = await client.storage.get_cookies(context)
-        for cookie in cookies:
-            print(f"{cookie.name}={cookie.value}")
-
-        await client.storage.set_cookie(
-            context,
-            cookie=Cookie(name="session", value="abc123", domain="example.com"),
-        )
-    """
+    """Cookie storage operations."""
 
     def __init__(self, connection: Connection) -> None:
         self._connection = connection
 
     async def get_cookies(
         self,
-        context: BrowsingContext | str,
+        context: Any | None = None,
         filter: dict[str, Any] | None = None,
-        partition_key: dict[str, Any] | None = None,
+        partition: dict[str, Any] | None = None,
     ) -> list[Cookie]:
-        """Gets cookies from a browsing context, optionally filtered.
+        """Gets cookies, optionally filtered.
 
         Args:
-            context: BrowsingContext or context ID.
-            filter: Optional filter dict (e.g. {"name": "session"}).
-            partition_key: Optional partition key with userContext/sourceOrigin.
-
-        Returns:
-            List of Cookie.
+            context: Context to scope to (mapped to a context partition).
+            filter: CookieFilter dict, e.g. {"name": "...", "domain": "..."}.
+            partition: PartitionDescriptor dict
+                ({"type": "context", ...} or {"type": "storageKey", ...}).
         """
-        ctx_id = context.id if hasattr(context, "id") else context
-        params: dict[str, Any] = {"context": ctx_id}
+        params: dict[str, Any] = {}
         if filter is not None:
             params["filter"] = filter
-        if partition_key is not None:
-            params["partitionKey"] = partition_key
-        result = await self._connection.send_command(
-            STORAGE_GET_COOKIES, params
-        )
+        if partition is not None:
+            params["partition"] = partition
+        elif context is not None:
+            ctx_id = context.id if hasattr(context, "id") else str(context)
+            params["partition"] = {"type": "context", "context": ctx_id}
+        result = await self._connection.send_command(STORAGE_GET_COOKIES, params)
         parsed = GetCookiesResult.model_validate(result)
         return parsed.cookies
 
     async def set_cookie(
         self,
-        context: BrowsingContext | str,
+        context: Any | None,
         cookie: Cookie,
-        partition_key: dict[str, Any] | None = None,
+        partition: dict[str, Any] | None = None,
     ) -> None:
-        """Creates or updates a cookie in a browsing context.
+        """Sets a cookie.
 
         Args:
-            context: BrowsingContext or context ID.
-            cookie: Cookie to set.
-            partition_key: Optional partition key with userContext/sourceOrigin.
+            context: Context to scope to (ignored when `partition` is given).
+            cookie: Cookie model to store.
+            partition: PartitionDescriptor dict.
         """
-        ctx_id = context.id if hasattr(context, "id") else context
         cookie_dict = cookie.model_dump(by_alias=True, exclude_none=True)
-        cookie_dict["value"] = {"type": "string", "value": cookie_dict["value"]}
-        params: dict[str, Any] = {
-            "context": ctx_id,
-            "cookie": cookie_dict,
-        }
-        if partition_key is not None:
-            params["partitionKey"] = partition_key
+        # Spec: cookie value is a network.BytesValue, not a raw string.
+        cookie_dict["value"] = {"type": "string", "value": cookie.value}
+        params: dict[str, Any] = {"cookie": cookie_dict}
+        if partition is not None:
+            params["partition"] = partition
+        elif context is not None:
+            ctx_id = context.id if hasattr(context, "id") else str(context)
+            params["partition"] = {"type": "context", "context": ctx_id}
         await self._connection.send_command(STORAGE_SET_COOKIE, params)
 
     async def delete_cookies(
         self,
-        context: BrowsingContext | str,
+        context: Any | None = None,
         name: str | None = None,
         domain: str | None = None,
         path: str | None = None,
-        partition_key: dict[str, Any] | None = None,
+        partition: dict[str, Any] | None = None,
     ) -> None:
-        """Deletes cookies from a browsing context.
-
-        If name, domain or path are not specified, deletes all cookies.
+        """Deletes cookies matching the filter.
 
         Args:
-            context: BrowsingContext or context ID.
-            name: Name of the cookie to delete. None = all.
-            domain: Domain of cookies to delete.
-            path: Path of cookies to delete.
-            partition_key: Optional partition key with userContext/sourceOrigin.
+            context: Context to scope to (ignored when `partition` is given).
+            name: Delete only cookies with this name.
+            domain: Delete only cookies for this domain.
+            path: Delete only cookies with this path.
+            partition: PartitionDescriptor dict.
         """
-        ctx_id = context.id if hasattr(context, "id") else context
-        params: dict[str, Any] = {"context": ctx_id}
-        if name is not None:
-            params["name"] = name
-        if domain is not None:
-            params["domain"] = domain
-        if path is not None:
-            params["path"] = path
-        if partition_key is not None:
-            params["partitionKey"] = partition_key
+        params: dict[str, Any] = {}
+        cookie_filter = {
+            k: v
+            for k, v in {"name": name, "domain": domain, "path": path}.items()
+            if v is not None
+        }
+        if cookie_filter:
+            params["filter"] = cookie_filter
+        if partition is not None:
+            params["partition"] = partition
+        elif context is not None:
+            ctx_id = context.id if hasattr(context, "id") else str(context)
+            params["partition"] = {"type": "context", "context": ctx_id}
         await self._connection.send_command(STORAGE_DELETE_COOKIES, params)
 
-    async def delete_cookie(
-        self,
-        context: BrowsingContext | str,
-        name: str,
-    ) -> None:
-        """Deletes a single cookie by name from a browsing context.
-
-        Convenience wrapper around delete_cookies with a name filter.
-
-        Args:
-            context: BrowsingContext or context ID.
-            name: Name of the cookie to delete.
-        """
-        ctx_id = context.id if hasattr(context, "id") else context
-        await self._connection.send_command(
-            STORAGE_DELETE_COOKIES,
-            {"context": ctx_id, "name": name},
-        )
+    async def delete_cookie(self, context: Any | None, name: str) -> None:
+        """Deletes a single cookie by name."""
+        await self.delete_cookies(context, name=name)

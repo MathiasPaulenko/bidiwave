@@ -125,28 +125,88 @@ class ProtocolTimeoutError(CommandError):
     """Protocol-level timeout error from the browser."""
 
 
+class InvalidSessionIdError(CommandError):
+    """Invalid session id."""
+
+
+class NoSuchHandleError(CommandError):
+    """No such handle."""
+
+
+class NoSuchHistoryEntryError(CommandError):
+    """No such history entry."""
+
+
+class NoSuchInterceptError(CommandError):
+    """No such intercept."""
+
+
+class NoSuchNodeError(CommandError):
+    """No such node."""
+
+
+class NoSuchRequestError(CommandError):
+    """No such request."""
+
+
+class NoSuchScriptError(CommandError):
+    """No such script."""
+
+
+class NoSuchStoragePartitionError(CommandError):
+    """No such storage partition."""
+
+
+class UnableToCloseBrowsingContextError(CommandError):
+    """Unable to close browsing context."""
+
+
+class UnableToSetFileInputError(CommandError):
+    """Unable to set file input."""
+
+
+class UnderspecifiedStoragePartitionError(CommandError):
+    """Underspecified storage partition."""
+
+
+class UnknownBiDiError(CommandError):
+    """Unknown error."""
+
+
 ERROR_CODE_MAP: dict[str, type[CommandError]] = {
     "invalid argument": InvalidArgumentError,
-    "no such frame": NoSuchFrameError,
-    "no such window": NoSuchWindowError,
-    "javascript error": JavaScriptError,
     "invalid session": InvalidSessionError,
-    "session not found": SessionNotFoundError,
-    "session not created": SessionNotCreatedError,
-    "unable to capture screen": UnableToCaptureScreenError,
-    "unknown command": UnknownCommandError,
-    "unsupported operation": UnsupportedOperationError,
-    "no such element": NoSuchElementError,
+    "invalid session id": InvalidSessionIdError,
+    "javascript error": JavaScriptError,
+    "no such alert": NoSuchAlertError,
     "no such cookie": NoSuchCookieError,
+    "no such element": NoSuchElementError,
+    "no such frame": NoSuchFrameError,
+    "no such handle": NoSuchHandleError,
+    "no such history entry": NoSuchHistoryEntryError,
+    "no such intercept": NoSuchInterceptError,
+    "no such node": NoSuchNodeError,
+    "no such request": NoSuchRequestError,
+    "no such script": NoSuchScriptError,
+    "no such shadow root": NoSuchShadowRootError,
+    "detached shadow root": DetachedShadowRootError,
+    "no such storage partition": NoSuchStoragePartitionError,
+    "no such user context": NoSuchUserContextError,
+    "no such window": NoSuchWindowError,
+    "session not created": SessionNotCreatedError,
+    "session not found": SessionNotFoundError,
+    "unable to capture screen": UnableToCaptureScreenError,
+    "unable to close browsing context": UnableToCloseBrowsingContextError,
+    "unable to set file input": UnableToSetFileInputError,
+    "underspecified storage partition": UnderspecifiedStoragePartitionError,
+    "unknown command": UnknownCommandError,
+    "unknown error": UnknownBiDiError,
+    "unsupported operation": UnsupportedOperationError,
     "stale element reference": StaleElementReferenceError,
     "element not interactable": ElementNotInteractableError,
     "insecure certificate": InsecureCertificateError,
     "move target out of bounds": MoveTargetOutOfBoundsError,
-    "no such alert": NoSuchAlertError,
-    "no such shadow root": NoSuchShadowRootError,
-    "detached shadow root": DetachedShadowRootError,
     "invalid web extension": InvalidWebExtensionError,
-    "no such user context": NoSuchUserContextError,
     "timeout": ProtocolTimeoutError,
 }
 

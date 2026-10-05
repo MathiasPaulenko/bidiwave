@@ -14,9 +14,9 @@ from bidiwave.protocol.constants import (
 )
 from bidiwave.protocol.remote_value import RemoteValue
 from bidiwave.protocol.results import (
+    AddPreloadScriptResult,
     GetRealmsResult,
     RealmInfo,
-    ScriptAddPreloadScriptResult,
 )
 from bidiwave.transport.connection import Connection
 
@@ -39,7 +39,15 @@ class ScriptModule:
         realm: str | None = None,
         serialization_options: dict[str, Any] | None = None,
         user_activation: bool = False,
+        result_ownership: str | None = None,
     ) -> RemoteValue:
+        """Evaluates a JS expression and returns a RemoteValue.
+
+        Args:
+            result_ownership: "root" to keep handles alive (they can later
+                be passed to call_function/disown), "none" for the spec
+                default. Required if you need `handle` fields populated.
+        """
         target = self._build_target(context, sandbox, realm)
         params: dict[str, Any] = {
             "target": target,
@@ -49,6 +57,8 @@ class ScriptModule:
         }
         if serialization_options is not None:
             params["serializationOptions"] = serialization_options
+        if result_ownership is not None:
+            params["resultOwnership"] = result_ownership
         result = await self._connection.send_command(SCRIPT_EVALUATE, params)
         return RemoteValue.parse(result)
 
@@ -63,6 +73,7 @@ class ScriptModule:
         this: dict[str, Any] | None = None,
         serialization_options: dict[str, Any] | None = None,
         user_activation: bool = False,
+        result_ownership: str | None = None,
     ) -> RemoteValue:
         target = self._build_target(context, sandbox, realm)
         params: dict[str, Any] = {
@@ -75,6 +86,8 @@ class ScriptModule:
         }
         if serialization_options is not None:
             params["serializationOptions"] = serialization_options
+        if result_ownership is not None:
+            params["resultOwnership"] = result_ownership
         result = await self._connection.send_command(SCRIPT_CALL_FUNCTION, params)
         return RemoteValue.parse(result)
 
@@ -124,22 +137,23 @@ class ScriptModule:
         contexts: list[str] | None = None,
         user_contexts: list[str] | None = None,
         sandbox: str | None = None,
-    ) -> ScriptAddPreloadScriptResult:
+    ) -> AddPreloadScriptResult:
         """Adds a preload script with optional channel support.
 
-        Unlike preload.addPreloadScript, this variant supports channels
-        for bidirectional communication between the preload script and
-        the client via script.message events.
+        Preload scripts can declare channels (via ChannelValue arguments)
+        for bidirectional communication with the client through
+        script.message events.
 
         Args:
             function_declaration: JavaScript function to execute.
-            arguments: Arguments to pass to the function.
+            arguments: ChannelValue dicts to pass to the function,
+                e.g. {"type": "channel", "value": {"channel": "id"}}.
             contexts: Context IDs to apply to. None = all.
             user_contexts: User context IDs to apply to.
             sandbox: Sandbox name to run the script in.
 
         Returns:
-            ScriptAddPreloadScriptResult with script ID and channel.
+            AddPreloadScriptResult with the script ID.
         """
         params: dict[str, Any] = {
             "functionDeclaration": function_declaration,
@@ -155,7 +169,7 @@ class ScriptModule:
         result = await self._connection.send_command(
             SCRIPT_ADD_PRELOAD_SCRIPT, params
         )
-        return ScriptAddPreloadScriptResult.model_validate(result)
+        return AddPreloadScriptResult.model_validate(result)
 
     async def remove_preload_script(
         self,

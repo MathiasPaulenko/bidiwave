@@ -1,45 +1,50 @@
-"""Response models for the WebDriver BiDi protocol."""
+"""Response types for BiDi protocol messages.
+
+Per the W3C WebDriver BiDi spec, every command response is either:
+
+    SuccessResponse = {type: "success", id: js-uint, result: ResultData}
+    ErrorResponse   = {type: "error", id: js-uint / null,
+                       error: ErrorCode, message: text, ?stacktrace: text}
+"""
 
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
 
-class ErrorData(BaseModel):
-    """Error data in an ErrorResponse."""
-
-    model_config = ConfigDict(extra="allow")
-
-    code: str
-    message: str
-    stacktrace: str | None = None
-
-
 class SuccessResponse(BaseModel):
-    """Successful response from the browser."""
+    """Successful command response."""
 
     model_config = ConfigDict(extra="allow")
 
     type: Literal["success"]
     id: int
-    result: dict[str, Any] = {}
+    result: dict[str, Any]
 
 
 class ErrorResponse(BaseModel):
-    """Error response from the browser."""
+    """Error response to a command.
+
+    `error` carries the ErrorCode string (e.g. "invalid argument"),
+    `message` is a human-readable description, and `stacktrace` is
+    optionally provided by the remote end. `id` may be null when the
+    remote end cannot correlate the error with a command.
+    """
 
     model_config = ConfigDict(extra="allow")
 
     type: Literal["error"]
-    id: int
-    error: ErrorData
+    id: int | None
+    error: str
+    message: str
+    stacktrace: str | None = None
 
 
 def parse_response(data: dict[str, Any]) -> SuccessResponse | ErrorResponse:
-    """Factory that returns SuccessResponse or ErrorResponse based on the type field."""
-    if data.get("type") == "success":
+    """Parses a raw response dict into the appropriate model."""
+    resp_type = data.get("type")
+    if resp_type == "success":
         return SuccessResponse.model_validate(data)
-    if data.get("type") == "error":
+    if resp_type == "error":
         return ErrorResponse.model_validate(data)
-    msg = f"Unknown response type: {data.get('type')}"
-    raise ValueError(msg)
+    raise ValueError(f"Unknown response type: {resp_type}")
