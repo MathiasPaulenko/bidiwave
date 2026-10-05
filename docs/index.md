@@ -32,10 +32,11 @@ standard API with real-time event streaming.
 - **Input** — simulate mouse clicks, keyboard typing, scrolling,
   drag-and-drop, and file uploads with action sequences
 - **Network** — monitor requests/responses, intercept and block, modify
-  headers/URLs, provide synthetic responses, cache overrides, retrieve
-  response bodies, handle authentication challenges
+  headers/URLs, provide synthetic responses, cache behavior control,
+  retrieve response bodies via data collectors, handle authentication
+  challenges
 - **Storage** — get, set, and delete cookies with full attribute support
-  (HttpOnly, Secure, SameSite, expires, etc.), monitor cookie changes
+  (HttpOnly, Secure, SameSite, expires, etc.)
 - **Emulation** — override geolocation, network conditions, time zone,
   and user agent for device simulation
 - **Permissions** — grant or deny browser permissions (geolocation, camera,
@@ -100,9 +101,9 @@ asyncio.run(main())
 - [Script](usage/script.md) — evaluate JS, call functions, RemoteValue, preload scripts, realms
 - [Events](usage/events.md) — real-time event subscriptions
 - [Input Simulation](usage/input.md) — clicks, keyboard, scroll, drag
-- [Network Interception](usage/network.md) — block, modify, mock, cache overrides, response bodies, auth
-- [Cookies & Storage](usage/storage.md) — get, set, delete cookies, cookie change events
-- [Emulation](usage/emulation.md) — geolocation, network conditions, timezone, user agent
+- [Network Interception](usage/network.md) — block, modify, mock, cache behavior, data collectors, auth
+- [Cookies & Storage](usage/storage.md) — get, set, delete cookies
+- [Emulation](usage/emulation.md) — geolocation, offline mode, timezone, user agent
 - [Permissions](usage/permissions.md) — grant or deny browser permissions
 - [Preload Scripts](usage/preload.md) — inject scripts before page load
 - [CDP](usage/cdp.md) — Chrome DevTools Protocol access

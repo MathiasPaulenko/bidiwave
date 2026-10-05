@@ -13,7 +13,7 @@ Grant, deny, or reset a browser permission:
 await client.permissions.set_permission(
     descriptor={"name": "geolocation"},
     state="granted",
-    contexts=["context-id-1"],
+    origin="https://example.com",
 )
 ```
 

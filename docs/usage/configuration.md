@@ -82,11 +82,12 @@ config = ClientConfig(
 ## TransportConfig
 
 `TransportConfig` is the low-level configuration for the WebSocket
-transport layer. It's derived from `ClientConfig` automatically, but you
-can create and pass it directly if you need fine-grained control:
+transport layer. `BiDiClient.connect()` derives it from `ClientConfig`
+automatically — you only construct one yourself if you're driving the
+`Connection` class directly:
 
 ```python
-from bidiwave import BiDiClient, TransportConfig
+from bidiwave import Connection, TransportConfig
 
 transport = TransportConfig(
     timeout=60.0,
@@ -95,10 +96,7 @@ transport = TransportConfig(
     retry_backoff=2.0,
 )
 
-client = await BiDiClient.connect(
-    "ws://localhost:9515/session",
-    transport_config=transport,
-)
+connection = Connection("ws://localhost:9515/session", config=transport)
 ```
 
 The `TransportConfig` has the same fields as `ClientConfig` except

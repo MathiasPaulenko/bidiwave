@@ -75,9 +75,10 @@ actions = [
         type="key",
         id="keyboard",
         actions=[
-            {"type": "key", "value": "a"},
-            {"type": "key", "value": "b"},
-            {"type": "key", "value": "c"},
+            {"type": "keyDown", "value": "a"},
+            {"type": "keyUp", "value": "a"},
+            {"type": "keyDown", "value": "b"},
+            {"type": "keyUp", "value": "b"},
         ],
     ),
 ]

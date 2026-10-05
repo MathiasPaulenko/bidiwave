@@ -28,7 +28,7 @@ await client.storage.set_cookie(
         path="/",
         http_only=True,
         secure=True,
-        same_site="Strict",
+        same_site="strict",
         expires=1735689600,
     ),
 )

@@ -5,30 +5,33 @@ The permissions module lets you grant or deny browser permissions
 interaction. This is essential for automated testing of features that
 normally require user consent dialogs.
 
+Permissions are scoped to an **origin** — the `origin` parameter is
+required by the W3C Permissions spec.
+
 ## Set permission
 
-Grant or deny a specific permission for a browsing context:
+Grant or deny a specific permission for an origin:
 
 ```python
 # Grant geolocation permission
 await client.permissions.set_permission(
     descriptor={"name": "geolocation"},
     state="granted",
-    contexts=["context-id-1"],
+    origin="https://example.com",
 )
 
 # Deny camera access
 await client.permissions.set_permission(
     descriptor={"name": "camera"},
     state="denied",
-    contexts=["context-id-1"],
+    origin="https://example.com",
 )
 
 # Prompt the user (default behavior)
 await client.permissions.set_permission(
     descriptor={"name": "notifications"},
     state="prompt",
-    contexts=["context-id-1"],
+    origin="https://example.com",
 )
 ```
 
@@ -38,7 +41,9 @@ await client.permissions.set_permission(
 | --------- | ---- | ------- | ----------- |
 | `descriptor` | `dict` | (required) | Permission descriptor with `name` field |
 | `state` | `str` | (required) | `"granted"`, `"denied"`, or `"prompt"` |
-| `contexts` | `list[str] \| None` | `None` | Context IDs to scope. `None` = all contexts. |
+| `origin` | `str` | (required) | Top-level origin the permission applies to |
+| `embedded_origin` | `str \| None` | `None` | Origin of a document embedded in `origin` |
+| `user_context` | `str \| None` | `None` | User context ID to scope to |
 
 ### Permission states
 
@@ -76,11 +81,11 @@ async with await client.browsing.open("https://maps.example.com") as page:
     await client.permissions.set_permission(
         descriptor={"name": "geolocation"},
         state="granted",
-        contexts=[page.id],
+        origin="https://maps.example.com",
     )
 
     # Also set a simulated location
-    await client.emulation.set_geolocation_override(
+    await client.emulation.set_geolocation(
         coordinates={"latitude": 40.7128, "longitude": -74.0060, "accuracy": 1.0},
         contexts=[page.id],
     )
@@ -102,7 +107,7 @@ async with await client.browsing.open("https://maps.example.com") as page:
 await client.permissions.set_permission(
     descriptor={"name": "camera"},
     state="denied",
-    contexts=[ctx],
+    origin="https://example.com",
 )
 
 # The page should show a fallback UI
@@ -116,7 +121,7 @@ result = await page.evaluate("document.querySelector('.camera-error')?.textConte
 await client.permissions.set_permission(
     descriptor={"name": "geolocation"},
     state="prompt",
-    contexts=[ctx],
+    origin="https://example.com",
 )
 ```
 

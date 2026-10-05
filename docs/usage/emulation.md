@@ -10,7 +10,7 @@ needing physical devices.
 Simulate a specific geographic location:
 
 ```python
-await client.emulation.set_geolocation_override(
+await client.emulation.set_geolocation(
     coordinates={
         "latitude": 37.7749,
         "longitude": -122.4194,
@@ -20,12 +20,28 @@ await client.emulation.set_geolocation_override(
 )
 ```
 
+To simulate a geolocation error instead of coordinates:
+
+```python
+await client.emulation.set_geolocation(
+    error={"type": "positionUnavailable"},
+)
+```
+
+Clear the override (sends `coordinates: null` per spec):
+
+```python
+await client.emulation.set_geolocation()
+```
+
 ### Parameters
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
 | `coordinates` | `dict \| None` | `None` | `{"latitude": float, "longitude": float, "accuracy": float}`. `None` clears the override. |
 | `contexts` | `list[str] \| None` | `None` | Context IDs to scope. `None` = all contexts. |
+| `user_contexts` | `list[str] \| None` | `None` | User context IDs to scope. |
+| `error` | `dict \| None` | `None` | Error to simulate, e.g. `{"type": "positionUnavailable"}`. Mutually exclusive with `coordinates`. |
 
 ### Use cases
 
@@ -35,75 +51,42 @@ await client.emulation.set_geolocation_override(
 
 ## Network conditions
 
-Simulate slow or unreliable network conditions:
+Per the W3C spec, the only supported network condition is **offline
+emulation** — throughput and latency throttling are not part of
+`emulation.setNetworkConditions`.
 
 ```python
-await client.emulation.set_network_conditions(
-    network_conditions={
-        "offline": False,
-        "download_throughput": 50000,   # 50 KB/s
-        "upload_throughput": 20000,     # 20 KB/s
-        "latency": 500,                 # 500ms latency
-    },
-    contexts=["context-id-1"],
-)
+# Simulate offline mode
+await client.emulation.set_network_conditions(offline=True, contexts=["context-id-1"])
+
+# Restore normal connectivity (sends networkConditions: null)
+await client.emulation.set_network_conditions(offline=False)
 ```
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
-| `network_conditions` | `dict \| None` | `None` | Network constraints. `None` clears. |
+| `offline` | `bool` | `True` | `True` simulates offline, `False` clears the override |
 | `contexts` | `list[str] \| None` | `None` | Context IDs to scope. |
-
-### Network condition fields
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| `offline` | `bool` | Simulate being offline |
-| `download_throughput` | `int` | Download speed in bytes/s. `-1` = unlimited. |
-| `upload_throughput` | `int` | Upload speed in bytes/s. `-1` = unlimited. |
-| `latency` | `int` | Latency in milliseconds |
-
-### Preset conditions
-
-```python
-# 3G slow
-await client.emulation.set_network_conditions(
-    network_conditions={
-        "offline": False,
-        "download_throughput": 50000,
-        "upload_throughput": 25000,
-        "latency": 400,
-    },
-)
-
-# Offline
-await client.emulation.set_network_conditions(
-    network_conditions={"offline": True, "download_throughput": -1, "upload_throughput": -1, "latency": 0},
-)
-
-# Reset to normal
-await client.emulation.set_network_conditions(network_conditions=None)
-```
+| `user_contexts` | `list[str] \| None` | `None` | User context IDs to scope. |
 
 ## Time zone override
 
 Simulate a different time zone:
 
 ```python
-await client.emulation.set_timezone_override(
-    timezone="America/New_York",
+await client.emulation.set_timezone(
+    "America/New_York",
     contexts=["context-id-1"],
 )
 ```
 
-### Parameters
+Clear the override (sends `timezone: null`):
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `timezone` | `str \| None` | `None` | IANA timezone ID (e.g., `"Europe/London"`). `None` clears. |
-| `contexts` | `list[str] \| None` | `None` | Context IDs to scope. |
+```python
+await client.emulation.set_timezone(None)
+```
 
 ### Common timezones
 
@@ -119,36 +102,47 @@ await client.emulation.set_timezone_override(
 
 ```python
 # Test date/time display
-await client.emulation.set_timezone_override(timezone="Asia/Tokyo")
+await client.emulation.set_timezone("Asia/Tokyo")
 result = await page.evaluate("new Date().toLocaleString()")
 # Result will show Tokyo time
 ```
 
 ## User agent override
 
-Override the browser's User-Agent string:
+Override the browser's User-Agent string. Per spec, only the UA string
+itself can be overridden:
 
 ```python
-await client.emulation.set_user_agent_override(
-    user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
-    accept_language="ja-JP",
+await client.emulation.set_user_agent(
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
     contexts=["context-id-1"],
 )
 ```
 
-### Parameters
+Clear the override (sends `userAgent: null`):
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-| `user_agent` | `str \| None` | `None` | Custom User-Agent string. `None` clears. |
-| `accept_language` | `str \| None` | `None` | Accept-Language header value. |
-| `contexts` | `list[str] \| None` | `None` | Context IDs to scope. |
+```python
+await client.emulation.set_user_agent(None)
+```
 
 ### Use cases
 
 - Test responsive designs that check User-Agent
 - Verify server-side content negotiation
 - Simulate mobile or tablet browsers
+
+## Locale and screen orientation
+
+```python
+# Override locale (None clears)
+await client.emulation.set_locale("fr-FR", contexts=["context-id-1"])
+
+# Override screen orientation (None clears)
+await client.emulation.set_screen_orientation(
+    {"type": "portrait-primary", "natural": "portrait"},
+    contexts=["context-id-1"],
+)
+```
 
 ## Combining overrides
 
@@ -158,19 +152,15 @@ You can combine multiple emulation overrides to simulate a complete device:
 async with await client.browsing.open("https://example.com") as page:
     ctx = page.id
 
-    # Simulate an iPhone in Tokyo on 3G
-    await client.emulation.set_geolocation_override(
+    # Simulate an iPhone in Tokyo, offline
+    await client.emulation.set_geolocation(
         coordinates={"latitude": 35.6762, "longitude": 139.6503, "accuracy": 1.0},
         contexts=[ctx],
     )
-    await client.emulation.set_network_conditions(
-        network_conditions={"offline": False, "download_throughput": 50000, "upload_throughput": 25000, "latency": 400},
-        contexts=[ctx],
-    )
-    await client.emulation.set_timezone_override(timezone="Asia/Tokyo", contexts=[ctx])
-    await client.emulation.set_user_agent_override(
-        user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
-        accept_language="ja-JP",
+    await client.emulation.set_network_conditions(offline=True, contexts=[ctx])
+    await client.emulation.set_timezone("Asia/Tokyo", contexts=[ctx])
+    await client.emulation.set_user_agent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
         contexts=[ctx],
     )
 

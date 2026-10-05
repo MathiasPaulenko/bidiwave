@@ -1,16 +1,7 @@
 # Log
 
-The log module manages browser console logs and log entry events.
-
-## Methods
-
-### clear
-
-Clear all log entries for specific contexts:
-
-```python
-await client.log.clear(contexts=["context-id-1"])
-```
+The W3C BiDi spec defines no log commands — only the `log.entryAdded`
+event. `client.log` exists as a stable namespace.
 
 ## Events
 
@@ -21,6 +12,7 @@ async def on_log(entry):
     print(f"[{entry.level.upper()}] {entry.text}")
 
 client.on("log.entryAdded", on_log)
+# or: client.on_log_entry(on_log)
 await client.session.subscribe(["log.entryAdded"])
 ```
 

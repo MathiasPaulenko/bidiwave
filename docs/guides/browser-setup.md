@@ -38,7 +38,8 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9515/session") as client:
-        print(f"Connected to {client.capabilities.browser_name}")
+        caps = client.capabilities
+        print(f"Connected to {caps.browser_name if caps else 'browser'}")
         # ... your code ...
 
 asyncio.run(main())
@@ -49,10 +50,12 @@ asyncio.run(main())
 When bidiwave connects to `ws://localhost:9515/session`:
 
 1. ChromeDriver accepts the WebSocket connection.
-2. bidiwave sends a `session.new` command with `{"webSocketUrl": true}`.
-3. ChromeDriver creates a BiDi session and returns the WebSocket URL for
-   BiDi communication.
-4. bidiwave switches to the BiDi WebSocket and starts the receive loop.
+2. bidiwave sends a `session.new` command with `{"webSocketUrl": true}`
+   to negotiate capabilities. Some drivers reject `session.new` on an
+   already-established session — bidiwave falls back to `session.status`
+   in that case.
+3. bidiwave starts the receive loop, and `client.capabilities` is
+   populated with the result.
 
 You don't need to handle this manually — `BiDiClient.connect()` does it
 all.
@@ -75,7 +78,8 @@ msedgedriver --port=9516
 
 ```python
 async with await BiDiClient.connect("ws://localhost:9516/session") as client:
-    print(f"Connected to {client.capabilities.browser_name}")
+    caps = client.capabilities
+        print(f"Connected to {caps.browser_name if caps else 'browser'}")
 ```
 
 ### Edge-specific notes
@@ -103,7 +107,8 @@ firefox --headless --remote-debugging-port=9223 --no-remote
 
 ```python
 async with await BiDiClient.connect("ws://127.0.0.1:9223/session") as client:
-    print(f"Connected to {client.capabilities.browser_name}")
+    caps = client.capabilities
+        print(f"Connected to {caps.browser_name if caps else 'browser'}")
 ```
 
 ### Firefox advantages
@@ -161,13 +166,14 @@ supports:
 ```python
 async with await BiDiClient.connect(url) as client:
     caps = client.capabilities
-    print(f"Browser: {caps.browser_name} {caps.browser_version}")
-    print(f"Platform: {caps.platform_name}")
-    print(f"Vendor: {caps.vendor}")
-    print(f"Browsing: {caps.supports_browsing}")
-    print(f"Script: {caps.supports_script}")
-    print(f"Network: {caps.supports_network}")
-    print(f"Input: {caps.supports_input}")
+    if caps is not None:
+        print(f"Browser: {caps.browser_name} {caps.browser_version}")
+        print(f"Platform: {caps.platform_name}")
+        print(f"Vendor: {caps.vendor}")
+        print(f"Browsing: {caps.supports_browsing}")
+        print(f"Script: {caps.supports_script}")
+        print(f"Network: {caps.supports_network}")
+        print(f"Input: {caps.supports_input}")
 ```
 
 ### Capability fields
@@ -180,15 +186,22 @@ async with await BiDiClient.connect(url) as client:
 | `vendor` | `str` | Browser vendor |
 | `supports_browsing` | `bool` | Browsing context commands available |
 | `supports_script` | `bool` | Script evaluation available |
-| `supports_network` | `bool` | Network interception available (Firefox only currently) |
-| `supports_input` | `bool` | Input simulation available (Firefox only currently) |
+| `supports_network` | `bool` | Network module available |
+| `supports_input` | `bool` | Input simulation available |
+
+`client.capabilities` is `None` only if the driver rejects both
+`session.new` and `session.status` — guard with `if caps is not None`
+before reading fields. The `supports_*` flags are only populated when
+the driver reports browser identification in the `session.new` result —
+they can't distinguish individual feature support within a module.
 
 ### Capability-aware code
 
 Write code that adapts to the browser's capabilities:
 
 ```python
-if client.capabilities.supports_network:
+caps = client.capabilities
+if caps is not None and caps.supports_network:
     await client.network.add_intercept(...)
 else:
     print("Network interception not supported on this browser")

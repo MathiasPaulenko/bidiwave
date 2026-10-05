@@ -29,7 +29,7 @@ InputSource (type="key", id="keyboard")
 | Type | Description | Actions |
 | ---- | ----------- | ------- |
 | `"pointer"` | Mouse, pen, or touch | `pointerMove`, `pointerDown`, `pointerUp`, `pointerCancel` |
-| `"key"` | Keyboard | `key` (press and release) |
+| `"key"` | Keyboard | `keyDown`, `keyUp` |
 | `"wheel"` | Scroll wheel | `scroll` (horizontal and vertical) |
 | `"none"` | No-op (used for pauses) | `pause` |
 
@@ -74,7 +74,8 @@ await client.input.type_text(ctx, "Hello, world!")
 
 ### Press a key
 
-Presses and releases a single key. Use the WebDriver key format:
+Presses and releases a single key. Friendly names are translated to the
+WebDriver key codepoints the protocol requires:
 
 ```python
 await client.input.press_key(ctx, "Enter")
@@ -83,9 +84,10 @@ await client.input.press_key(ctx, "Escape")
 await client.input.press_key(ctx, "a")
 ```
 
-Common key names: `Enter`, `Tab`, `Escape`, `Backspace`, `Delete`, `ArrowUp`,
-`ArrowDown`, `ArrowLeft`, `ArrowRight`, `Home`, `End`, `PageUp`, `PageDown`,
-`Space`, `Shift`, `Control`, `Alt`, `Meta`.
+Supported key names: `Enter`, `Tab`, `Escape`, `Backspace`, `Delete`,
+`Insert`, `ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `Home`, `End`,
+`PageUp`, `PageDown`, `Space`, `Pause`, `Clear`, `Shift`, `Control`, `Alt`,
+`Meta`, and `F1`–`F12`. Single characters pass through unchanged.
 
 ### Scroll
 
@@ -143,9 +145,10 @@ actions = [
         type="key",
         id="keyboard",
         actions=[
-            {"type": "key", "value": "a"},
-            {"type": "key", "value": "b"},
-            {"type": "key", "value": "c"},
+            {"type": "keyDown", "value": "a"},
+            {"type": "keyUp", "value": "a"},
+            {"type": "keyDown", "value": "b"},
+            {"type": "keyUp", "value": "b"},
         ],
     ),
 ]
@@ -172,13 +175,14 @@ The `origin` field controls the coordinate system:
 
 | Action type | Parameters | Description |
 | ----------- | ---------- | ----------- |
-| `key` | `value` | Press and release a key |
+| `keyDown` | `value` | Press a key (single character or WebDriver codepoint) |
+| `keyUp` | `value` | Release a key |
 | `pause` | `duration` | Wait for `duration` ms |
 
-Each `key` action sends a `keydown` followed by a `keyup`. To hold a key
-(e.g., Shift while clicking), use two separate actions: `{"type": "key",
-"value": "Shift"}` to press, then later `{"type": "key", "value": "Shift"}`
-to release.
+To hold a key (e.g., Shift while clicking), send `keyDown` and delay the
+matching `keyUp` until after the click. Key `value`s are single characters
+or WebDriver codepoints (e.g. `\uE007` for Enter) — the `SPECIAL_KEYS`
+dict in `bidiwave.modules.input` maps friendly names to codepoints.
 
 ### Wheel actions
 
@@ -210,16 +214,15 @@ await client.input.set_files(
 )
 ```
 
-To get the `shared_id`, evaluate JavaScript to find the element:
+To get the `shared_id`, use `locate_nodes` — its results carry the
+`sharedId` the command needs:
 
 ```python
-from bidiwave import ObjectValue
-
-result = await page.evaluate("document.querySelector('input[type=file]')")
-match result:
-    case ObjectValue(handle=h) if h:
-        await client.input.set_files(ctx, element=h, files=["/path/to/file.pdf"])
-        await page.disown([h])
+nodes = await client.browsing.locate_nodes(
+    ctx, locator={"type": "css", "value": "input[type=file]"}
+)
+shared_id = nodes.nodes[0]["sharedId"]
+await client.input.set_files(ctx, element=shared_id, files=["/path/to/file.pdf"])
 ```
 
 !!! note "Firefox only"

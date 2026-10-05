@@ -1,13 +1,13 @@
 # CDP (Chrome DevTools Protocol)
 
 The CDP module provides access to Chrome DevTools Protocol commands for
-browser-specific features not yet covered by the W3C BiDi standard. This
+browser-specific features not covered by the W3C BiDi standard. This
 is useful for accessing Chrome-only capabilities like performance tracing,
 coverage profiling, or service worker management.
 
-!!! warning "Chrome/Edge only"
-    CDP commands are only supported by Chrome and Edge (Chromium-based
-    browsers). Firefox does not support CDP.
+!!! warning "Chrome/Edge only, not part of BiDi"
+    `cdp.sendCommand`/`cdp.getSession` are Chromium driver extensions —
+    they are **not** in the W3C BiDi spec and are not available on Firefox.
 
 ## When to use CDP
 
@@ -19,14 +19,11 @@ coverage profiling, or service worker management.
 
 ## Send a CDP command
 
-Send a raw CDP command and receive the response:
+Send a raw CDP command and receive the response as a dict:
 
 ```python
-result = await client.cdp.send_command(
-    method="Performance.getMetrics",
-    params={},
-)
-print(result.result)  # CDP response data
+result = await client.cdp.send_command("Performance.getMetrics")
+print(result)  # raw CDP response dict
 ```
 
 ### Parameters
@@ -35,25 +32,21 @@ print(result.result)  # CDP response data
 | --------- | ---- | ------- | ----------- |
 | `method` | `str` | (required) | CDP method name (e.g., `"Page.reload"`) |
 | `params` | `dict \| None` | `None` | CDP command parameters |
+| `session` | `str \| None` | `None` | CDP session ID to target (from `get_session`) |
 
-Returns a `CDPResult` with:
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| `result` | `dict` | CDP response data |
-| `session` | `str \| None` | CDP session ID (if applicable) |
+Returns the raw command result as a `dict`.
 
 ## Get CDP session
 
-Get the current CDP session ID for a specific browsing context:
+Get the CDP session ID for a browsing context. The context is required:
 
 ```python
-session = await client.cdp.get_session(context="context-id-1")
-print(session.session)  # CDP session ID
+session_id = await client.cdp.get_session("context-id-1")
+print(session_id)  # "cdp-session-id" or None
 ```
 
-This is useful when you need to target a specific context's CDP session
-(e.g., for iframe-specific commands).
+Pass the returned ID as the `session` argument of `send_command` to
+target that context's CDP session.
 
 ## Examples
 
@@ -61,21 +54,21 @@ This is useful when you need to target a specific context's CDP session
 
 ```python
 # Enable Performance domain
-await client.cdp.send_command(method="Performance.enable", params={})
+await client.cdp.send_command("Performance.enable")
 
 # Get metrics
-metrics = await client.cdp.send_command(method="Performance.getMetrics", params={})
-for metric in metrics.result["metrics"]:
+metrics = await client.cdp.send_command("Performance.getMetrics")
+for metric in metrics["metrics"]:
     print(f"{metric['name']}: {metric['value']}")
 ```
 
 ### Take a heap snapshot
 
 ```python
-await client.cdp.send_command(method="HeapProfiler.enable", params={})
+await client.cdp.send_command("HeapProfiler.enable")
 await client.cdp.send_command(
-    method="HeapProfiler.takeHeapSnapshot",
-    params={"reportProgress": False},
+    "HeapProfiler.takeHeapSnapshot",
+    {"reportProgress": False},
 )
 ```
 
@@ -83,17 +76,14 @@ await client.cdp.send_command(
 
 ```python
 # Enable ServiceWorker domain
-await client.cdp.send_command(method="ServiceWorker.enable", params={})
+await client.cdp.send_command("ServiceWorker.enable")
 
 # Unregister all service workers
-registrations = await client.cdp.send_command(
-    method="ServiceWorker.getRegistrations",
-    params={},
-)
-for reg in registrations.result["registrations"]:
+registrations = await client.cdp.send_command("ServiceWorker.getRegistrations")
+for reg in registrations["registrations"]:
     await client.cdp.send_command(
-        method="ServiceWorker.unregister",
-        params={"scope": reg["scopeURL"]},
+        "ServiceWorker.unregister",
+        {"scope": reg["scopeURL"]},
     )
 ```
 
@@ -107,8 +97,8 @@ async with await client.browsing.open("https://example.com") as page:
     title = await page.evaluate("document.title")
 
     # CDP: get performance metrics
-    await client.cdp.send_command(method="Performance.enable", params={})
-    metrics = await client.cdp.send_command(method="Performance.getMetrics", params={})
+    await client.cdp.send_command("Performance.enable")
+    metrics = await client.cdp.send_command("Performance.getMetrics")
 
     # BiDi: take a screenshot
     screenshot = await page.screenshot()

@@ -6,6 +6,7 @@ Capture all console logs from a page.
 
 ```python
 import asyncio
+from datetime import datetime
 from bidiwave import BiDiClient
 
 async def main():
@@ -13,7 +14,7 @@ async def main():
         logs: list[str] = []
 
         async def on_log(entry):
-            ts = entry.datetime.strftime("%H:%M:%S.%f")[:-3]
+            ts = datetime.fromtimestamp(entry.timestamp / 1000).strftime("%H:%M:%S.%f")[:-3]
             logs.append(f"[{ts}] [{entry.level.upper()}] {entry.text}")
             print(logs[-1])
 
@@ -127,13 +128,13 @@ from bidiwave import BiDiClient, ClientConfig
 async def main():
     config = ClientConfig(max_retries=5)
     async with await BiDiClient.connect("ws://localhost:9222/session", config=config) as client:
-        async def on_reconnect():
+        async def on_reconnect(_):
             print("Reconnected. Recreating session...")
             await client.session.subscribe(["log.entryAdded"])
 
         client.on_reconnect(on_reconnect)
 
-        async def on_disconnect():
+        async def on_disconnect(_):
             print("Connection lost. Retrying...")
 
         client.on_disconnect(on_disconnect)
@@ -175,7 +176,7 @@ from bidiwave import BiDiClient
 async def main():
     async with await BiDiClient.connect("ws://localhost:9222/session") as client:
         async with await client.browsing.open("https://example.com") as page:
-            ctx = page.context
+            ctx = page.id
 
             # Click an element
             await client.input.click(ctx, x=100, y=200)
@@ -213,7 +214,7 @@ async def main():
             await asyncio.sleep(3)
 
         # Remove the intercept
-        await client.network.remove_intercept(intercept.intercept_id)
+        await client.network.remove_intercept(intercept.intercept)
 
 asyncio.run(main())
 ```
@@ -282,7 +283,7 @@ async def main():
         async with await client.browsing.open("https://example.com") as page:
             await asyncio.sleep(3)
 
-        await client.network.remove_intercept(intercept.intercept_id)
+        await client.network.remove_intercept(intercept.intercept)
 
 asyncio.run(main())
 ```
@@ -311,32 +312,22 @@ async def main():
 asyncio.run(main())
 ```
 
-## Example 13: Cache override for offline testing
+## Example 13: Bypass the browser cache
 
 ```python
 import asyncio
-import base64
 from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9515/session") as client:
-        # Serve a cached response without hitting the network
-        body = base64.b64encode(b'{"status": "cached"}').decode()
-        cache = await client.network.add_cache_override(
-            url="https://api.example.com/status",
-            method="GET",
-            status_code=200,
-            body=body,
-        )
-
         async with await client.browsing.open("https://example.com") as page:
-            result = await page.evaluate(
-                "fetch('https://api.example.com/status').then(r => r.json())",
-                await_promise=True,
-            )
-            print(f"Response from cache: {result.value}")
+            # Force every request in this context to hit the network
+            await client.network.set_cache_behavior("bypass", contexts=[page.id])
 
-        await client.network.remove_cache_override(cache.cache)
+            await page.reload()
+
+            # Restore normal caching
+            await client.network.set_cache_behavior("default", contexts=[page.id])
 
 asyncio.run(main())
 ```
@@ -360,32 +351,20 @@ async def main():
             )
 
             # Simulate Tokyo location
-            await client.emulation.set_geolocation_override(
+            await client.emulation.set_geolocation(
                 coordinates={"latitude": 35.6762, "longitude": 139.6503, "accuracy": 1.0},
                 contexts=[ctx],
             )
 
-            # Simulate 3G network
-            await client.emulation.set_network_conditions(
-                network_conditions={
-                    "offline": False,
-                    "download_throughput": 50000,
-                    "upload_throughput": 25000,
-                    "latency": 400,
-                },
-                contexts=[ctx],
-            )
+            # Simulate offline mode
+            await client.emulation.set_network_conditions(offline=True, contexts=[ctx])
 
             # Set Tokyo timezone
-            await client.emulation.set_timezone_override(
-                timezone="Asia/Tokyo",
-                contexts=[ctx],
-            )
+            await client.emulation.set_timezone("Asia/Tokyo", contexts=[ctx])
 
             # Set mobile user agent
-            await client.emulation.set_user_agent_override(
-                user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
-                accept_language="ja-JP",
+            await client.emulation.set_user_agent(
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
                 contexts=[ctx],
             )
 
@@ -393,7 +372,7 @@ async def main():
             await client.permissions.set_permission(
                 descriptor={"name": "geolocation"},
                 state="granted",
-                contexts=[ctx],
+                origin="https://example.com",
             )
 
             # Now test the page under these conditions
@@ -412,8 +391,8 @@ from bidiwave import BiDiClient
 async def main():
     async with await BiDiClient.connect("ws://localhost:9515/session") as client:
         # Inject a preload script that intercepts console.log
-        result = await client.preload.add_preload_script(
-            function_declaration="""() => {
+        script_id = await client.preload.add_script(
+            """() => {
                 const origLog = console.log;
                 window.__logs = [];
                 console.log = function(...args) {
@@ -428,12 +407,12 @@ async def main():
             logs = await page.evaluate("window.__logs")
             print(f"Captured logs: {logs.value}")
 
-        await client.preload.remove_preload_script(result.script)
+        await client.preload.remove_script(script_id)
 
 asyncio.run(main())
 ```
 
-## Example 16: Monitor cookie changes
+## Example 16: Auto-accept dialogs
 
 ```python
 import asyncio
@@ -441,22 +420,18 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9515/session") as client:
-        async def on_cookie_changed(event):
-            if event.type == "added":
-                print(f"Cookie added: {event.cookie.name}={event.cookie.value}")
-            elif event.type == "deleted":
-                print(f"Cookie deleted: {event.cookie.name}")
-            elif event.type == "changed":
-                print(f"Cookie changed: {event.cookie.name}={event.cookie.value}")
-
-        client.on("storage.cookieChanged", on_cookie_changed)
-        await client.session.subscribe(["storage.cookieChanged"])
+        # Accept every alert/confirm/prompt automatically
+        await client.set_auto_prompt(accept=True)
 
         async with await client.browsing.open("https://example.com") as page:
-            await asyncio.sleep(5)
+            await page.evaluate("alert('hello')")
+            await asyncio.sleep(1)
 
 asyncio.run(main())
 ```
+
+For prompts that need a value, use `set_auto_prompt(accept=True,
+user_text="...")`. Disable with `await client.disable_auto_prompt()`.
 
 ## Example 17: Retrieve response body
 
@@ -467,17 +442,27 @@ from bidiwave import BiDiClient
 
 async def main():
     async with await BiDiClient.connect("ws://localhost:9515/session") as client:
+        collector = await client.network.add_data_collector(
+            data_types=["response"],
+            max_encoded_data_size=1_000_000,
+        )
+        request_ids: list[str] = []
+
         async def on_response(event):
-            # Get the response body
-            body_result = await client.network.response_body(event.request.request)
-            content = base64.b64decode(body_result.body)
-            print(f"Response from {event.request.url}: {len(content)} bytes")
+            request_ids.append(event.request.request)
 
         client.on_response(on_response)
         await client.session.subscribe(["network.responseCompleted"])
 
         async with await client.browsing.open("https://example.com") as page:
             await asyncio.sleep(3)
+
+        for rid in request_ids:
+            data = await client.network.get_data(rid, data_type="response")
+            content = base64.b64decode(data["bytes"]["value"])
+            print(f"Response body: {len(content)} bytes")
+
+        await client.network.remove_data_collector(collector)
 
 asyncio.run(main())
 ```
@@ -491,17 +476,14 @@ from bidiwave import BiDiClient
 async def main():
     async with await BiDiClient.connect("ws://localhost:9515/session") as client:
         # Enable Performance domain via CDP
-        await client.cdp.send_command(method="Performance.enable", params={})
+        await client.cdp.send_command("Performance.enable")
 
         async with await client.browsing.open("https://example.com") as page:
             await asyncio.sleep(2)
 
             # Get performance metrics
-            metrics = await client.cdp.send_command(
-                method="Performance.getMetrics",
-                params={},
-            )
-            for metric in metrics.result["metrics"]:
+            metrics = await client.cdp.send_command("Performance.getMetrics")
+            for metric in metrics["metrics"]:
                 print(f"{metric['name']}: {metric['value']}")
 
 asyncio.run(main())

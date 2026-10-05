@@ -99,16 +99,21 @@ match result:
 
 ### Handles and disown
 
-When JavaScript returns a function, symbol, or an object with circular
-references, the protocol returns a **handle** instead of the value. Handles
-are string references to objects living in the browser. Use `disown` to
+When JavaScript returns a function, symbol, or a non-serializable object,
+the protocol can return a **handle** instead of the value — a string
+reference to the object living in the browser. Handles are only returned
+when you request them with `result_ownership="root"`. Use `disown` to
 release them and free memory:
 
 ```python
-result = await client.script.evaluate(ctx, "document.querySelector('button')")
+result = await client.script.evaluate(
+    ctx,
+    "document.querySelector('button')",
+    result_ownership="root",
+)
 match result:
     case ObjectValue(handle=h) if h:
-        # h is a handle string like "element-1234"
+        # h is a handle string
         # Use it as an argument in call_function
         await client.script.call_function(
             ctx,
@@ -163,7 +168,9 @@ Handles from `evaluate` can be passed to `call_function`:
 
 ```python
 # Get a reference to an element
-element = await client.script.evaluate(ctx, "document.querySelector('#btn')")
+element = await client.script.evaluate(
+    ctx, "document.querySelector('#btn')", result_ownership="root"
+)
 match element:
     case ObjectValue(handle=h) if h:
         # Pass the handle as an argument
@@ -200,43 +207,44 @@ the very start.
 
 ### script.addPreloadScript (with channels)
 
-Unlike `preload.addPreloadScript`, `script.addPreloadScript` supports
-**channels** for bidirectional communication between the preload script
-and the client via `script.message` events:
+`script.addPreloadScript` supports **channels** for bidirectional
+communication between the preload script and the client via
+`script.message` events. The channel is declared as a `ChannelValue`
+argument — the command result only contains the script ID:
 
 ```python
 result = await client.script.add_preload_script(
-    function_declaration="(channel) => { channel('hello from page'); }",
+    "(channel) => { channel('hello from page'); }",
     arguments=[{"type": "channel", "value": {"channel": "my-channel"}}],
     contexts=["context-id-1"],
 )
 print(result.script)  # preload script ID
-print(result.channel) # channel name for communication
 ```
 
 ### Receiving messages from preload scripts
 
 ```python
 async def on_message(event):
-    print(f"Message from preload: {event.data}")
+    print(f"Message on {event.channel}: {event.data}")
 
 client.on("script.message", on_message)
 await client.session.subscribe(["script.message"])
 ```
 
-### preload.addPreloadScript (without channels)
+### Preload module (simple API)
 
-For simpler use cases where you don't need bidirectional communication:
+`client.preload` is a thin alias over the same `script.*` commands for
+cases where you don't need the channel plumbing:
 
 ```python
-result = await client.preload.add_preload_script(
-    function_declaration="() => { window.myPolyfill = true; }",
+script_id = await client.preload.add_script(
+    "() => { window.myPolyfill = true; }",
     contexts=["context-id-1"],
 )
-# result.script = "preload-script-id"
+# script_id = "preload-script-id"
 
 # Remove when done
-await client.preload.remove_preload_script(result.script)
+await client.preload.remove_script(script_id)
 ```
 
 ### add_preload_script parameters
@@ -272,10 +280,10 @@ realms = await client.script.get_realms(context="context-id-1")
 
 ```python
 # Only main realms
-realms = await client.script.get_realms(realm_type="window")
+realms = await client.script.get_realms(type="window")
 
 # Service worker realms
-realms = await client.script.get_realms(realm_type="service-worker")
+realms = await client.script.get_realms(type="service-worker")
 ```
 
 | Realm type | Description |

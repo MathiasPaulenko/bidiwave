@@ -9,11 +9,18 @@ BiDiError (base)
 ├── CapabilityError          # Browser does not support the capability
 ├── ProtocolError            # Invalid or unexpected protocol message
 ├── SessionError             # Invalid or expired session
-└── CommandError             # Browser rejected the command
-    ├── InvalidArgumentError # Invalid argument
-    ├── NoSuchFrameError     # Context not found
-    └── JavaScriptError      # Error evaluating JS
+└── CommandError             # Browser rejected the command (code + message)
+    ├── InvalidArgumentError      # "invalid argument"
+    ├── NoSuchFrameError          # "no such frame"
+    ├── JavaScriptError           # "javascript error"
+    ├── UnknownCommandError       # "unknown command"
+    ├── UnsupportedOperationError # "unsupported operation"
+    └── ...                       # see ERROR_CODE_MAP in exceptions.py
 ```
+
+Every spec error code maps to a dedicated `CommandError` subclass via
+`ERROR_CODE_MAP` — the exception's `.code` is the wire error code and
+`.message` is the browser's error message.
 
 ## Errors by scenario
 
@@ -98,7 +105,7 @@ async def safe_navigate(client, ctx, url):
 ```python
 async def safe_screenshot(client, ctx):
     if not client.capabilities.supports_browsing:
-        raise CapabilityError("Browser does not support browsing.captureScreenshot")
+        raise CapabilityError("Browser does not support browsingContext.captureScreenshot")
     return await client.browsing.screenshot(ctx)
 ```
 

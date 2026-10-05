@@ -3,8 +3,8 @@
 The CDP module provides access to Chrome DevTools Protocol commands.
 For full usage examples, see [CDP](../usage/cdp.md).
 
-!!! warning "Chrome/Edge only"
-    CDP commands are only supported by Chromium-based browsers.
+!!! warning "Chrome/Edge only, not part of BiDi"
+    `cdp.*` commands are Chromium driver extensions — not in the W3C spec.
 
 ## Methods
 
@@ -14,19 +14,20 @@ Send a raw CDP command:
 
 ```python
 result = await client.cdp.send_command(
-    method="Performance.getMetrics",
+    "Performance.getMetrics",
     params={},
+    session=None,  # optional CDP session to target
 )
-# result.result contains the CDP response
+# result is the raw response dict
 ```
 
 ### get_session
 
-Get the CDP session ID for a specific browsing context:
+Get the CDP session ID for a browsing context (context required):
 
 ```python
-session = await client.cdp.get_session(context="context-id-1")
-# session.session = "cdp-session-id"
+session_id = await client.cdp.get_session("context-id-1")
+# session_id = "cdp-session-id" or None
 ```
 
 ## Reference

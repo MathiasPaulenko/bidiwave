@@ -4,14 +4,19 @@
 
 ## Events
 
-Subscribe to network events via `client.session.subscribe()`:
+Subscribe to network events via `client.session.subscribe()` — handlers
+must be `async`:
 
 ```python
 await client.session.subscribe(["network.beforeRequestSent", "network.responseCompleted"])
 
-client.on_request(lambda req: print(f"→ {req.request.url}"))
-client.on_response(lambda res: print(f"← {res.response.status} {res.request.url}"))
-client.on_fetch_error(lambda err: print(f"✗ {err.request.url}: {err.errorText}"))
+async def on_req(req): print(f"→ {req.request.url}")
+async def on_res(res): print(f"← {res.response.status} {res.request.url}")
+async def on_err(err): print(f"✗ {err.request.url}: {err.error_text}")
+
+client.on_request(on_req)
+client.on_response(on_res)
+client.on_fetch_error(on_err)
 ```
 
 ## Interception
@@ -26,7 +31,7 @@ intercept = await client.network.add_intercept(
 )
 
 # Later, remove the intercept
-await client.network.remove_intercept(intercept.intercept_id)
+await client.network.remove_intercept(intercept.intercept)
 ```
 
 Provide a synthetic response without making the real request:
@@ -40,47 +45,6 @@ await client.network.provide_response(
 )
 ```
 
-## Cache overrides
-
-Cache overrides let you serve cached responses without hitting the network.
-
-### add / remove pattern
-
-```python
-# Add a cache override — returns a cache ID
-cache = await client.network.add_cache_override(
-    url="https://example.com/api",
-    method="GET",
-    status_code=200,
-    body="eyJkYXRhIjogInRlc3QifQ==",
-)
-# cache.cache = "cache-id-1"
-
-# Remove it later
-await client.network.remove_cache_override(cache.cache)
-```
-
-### set pattern (replace all)
-
-```python
-# Replaces ALL existing cache overrides in a single call
-await client.network.set_cache_override(
-    url="https://example.com/api",
-    method="GET",
-    status_code=204,
-)
-```
-
-## Response body
-
-Retrieve the body of a completed response by request ID:
-
-```python
-result = await client.network.response_body("request-id-1")
-print(result.body)        # base64-encoded content
-print(result.total_size)  # size in bytes
-```
-
 ## Authentication
 
 Handle `network.authRequired` events:
@@ -89,10 +53,11 @@ Handle `network.authRequired` events:
 # Continue with credentials
 await client.network.continue_with_auth(
     request=request_id,
+    action="provideCredentials",
     credentials={"type": "password", "username": "user", "password": "pass"},
 )
 
-# Cancel the auth challenge
+# Cancel the auth challenge (continueWithAuth action="cancel")
 await client.network.cancel_auth(request=request_id)
 ```
 
@@ -101,10 +66,14 @@ await client.network.cancel_auth(request=request_id)
 Control browser cache behavior for specific contexts:
 
 ```python
+# Bypass the cache
 await client.network.set_cache_behavior(
     cache_behavior="bypass",
     contexts=["context-id-1"],
 )
+
+# Restore normal caching
+await client.network.set_cache_behavior(cache_behavior="default")
 ```
 
 ## Extra headers
@@ -113,30 +82,30 @@ Add, modify, or remove HTTP headers for outgoing requests:
 
 ```python
 await client.network.set_extra_headers(
-    headers={"X-Custom-Header": "my-value"},
+    headers=[{"name": "X-Custom-Header", "value": "my-value"}],
     contexts=["context-id-1"],
 )
 ```
 
 ## Data collectors
 
-Collect response body data for later retrieval:
+Collect response bodies for later retrieval:
 
 ```python
-# Start collecting data for a request
-collector = await client.network.add_data_collector(
-    request=request_id,
-    context="context-id-1",
+# Start collecting responses (before the requests happen)
+collector_id = await client.network.add_data_collector(
+    data_types=["response"],
+    max_encoded_data_size=1_000_000,
+    contexts=["context-id-1"],
 )
-# collector.data_collector = "collector-id"
 
-# Retrieve collected data
-data = await client.network.get_data(collector.data_collector)
-print(data.data)  # base64-encoded content
+# Retrieve collected data for a request
+data = await client.network.get_data("request-id-1", data_type="response")
+body = data["bytes"]["value"]  # base64-encoded content
 
-# Disown the data when done
-await client.network.disown_data(collector.data_collector)
+# Disown the collected data
+await client.network.disown_data(collector_id, "request-id-1", data_type="response")
 
 # Remove the data collector
-await client.network.remove_data_collector(collector.data_collector)
+await client.network.remove_data_collector(collector_id)
 ```

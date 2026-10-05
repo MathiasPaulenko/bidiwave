@@ -55,16 +55,16 @@ It is the BiDi backend that powers [wavexis](https://github.com/MathiasPaulenko/
 - **Browsing** — contexts, navigation, screenshots, viewport control with DPR, element waiting, CSS/XPath locators, PDF printing, dialog handling, download events, history traversal, user prompt management
 - **Script** — evaluate JS, call functions, typed `RemoteValue` with `match` pattern narrowing, preload scripts with channel communication, realm inspection, serialization options, user activation
 - **Input simulation** — clicks, keyboard, scroll, drag & drop, file upload, file dialog events
-- **Network interception** — block, modify, mock requests, cache overrides, response body retrieval, authentication handling, extra headers, data collectors, cache behavior control
-- **Storage** — get, set, delete cookies with full attribute support, partition key support, cookie change monitoring
+- **Network interception** — block, modify, mock requests, cache behavior control, response body retrieval via data collectors, authentication handling, extra headers
+- **Storage** — get, set, delete cookies with full attribute and partition descriptor support
 - **Emulation** — geolocation, locale, screen orientation, timezone, user agent override, network conditions
 - **Permissions** — grant or deny browser permissions without user dialogs
 - **Preload scripts** — inject JS before page load for polyfills or monitoring with user context support
 - **Web extensions** — install and uninstall browser extensions
 - **CDP bridge** — access Chrome DevTools Protocol for browser-specific features
-- **Event streaming** — 27 event types with async handlers and error isolation
+- **Event streaming** — 25 typed events with async handlers and error isolation
 - **Type-safe** — Pydantic v2 models, full type hints, `mypy` clean
-- **Spec-compliant** — W3C WebDriver BiDi (WD 2025-07-28), full coverage
+- **Spec-compliant** — W3C WebDriver BiDi wire format aligned with the spec
 - **Resilient** — automatic reconnection with exponential backoff
 - **Lightweight** — no Selenium, no Playwright required
 
@@ -85,7 +85,7 @@ Your Python code
 
 - **BiDiClient** — The top-level client. Connects to a BiDi endpoint and provides access to all modules.
 - **Page** — A browsing context (tab). Created via `client.browsing.open()`, supports `evaluate()`, `screenshot()`, `navigate()`, etc.
-- **Modules** — `client.browsing`, `client.script`, `client.input`, `client.network`, `client.storage`, `client.emulation`, `client.permissions`, `client.preload`, `client.log`, `client.web_extension`, `client.cdp`.
+- **Modules** — `client.session`, `client.browsing`, `client.script`, `client.input`, `client.network`, `client.storage`, `client.emulation`, `client.permissions`, `client.preload`, `client.log`, `client.web_extension`, `client.cdp`.
 - **RemoteValue** — Typed wrapper for BiDi serialized values. Use `match` pattern narrowing to extract `StringValue`, `NumberValue`, `BooleanValue`, `NullValue`, `UndefinedValue`, `ArrayValue`, `ObjectValue`, etc.
 
 ## Requirements
@@ -176,7 +176,7 @@ async with await BiDiClient.connect(url) as client:
     async with await client.browsing.open("https://example.com") as page:
         await asyncio.sleep(2)
 
-    await client.network.remove_intercept(intercept.intercept_id)
+    await client.network.remove_intercept(intercept.intercept)
 ```
 
 ## Cookies & storage
@@ -223,26 +223,18 @@ async with await BiDiClient.connect(url) as client:
             device_pixel_ratio=3.0,
         )
 
-        # Simulate Tokyo location on 3G
-        await client.emulation.set_geolocation_override(
+        # Simulate Tokyo location + offline mode
+        await client.emulation.set_geolocation(
             coordinates={"latitude": 35.6762, "longitude": 139.6503, "accuracy": 1.0},
             contexts=[ctx],
         )
-        await client.emulation.set_network_conditions(
-            network_conditions={
-                "offline": False,
-                "download_throughput": 50000,
-                "upload_throughput": 25000,
-                "latency": 400,
-            },
-            contexts=[ctx],
-        )
+        await client.emulation.set_network_conditions(offline=True, contexts=[ctx])
 
-        # Grant geolocation permission
+        # Grant geolocation permission for an origin
         await client.permissions.set_permission(
             descriptor={"name": "geolocation"},
             state="granted",
-            contexts=[ctx],
+            origin="https://example.com",
         )
 ```
 
@@ -251,15 +243,15 @@ async with await BiDiClient.connect(url) as client:
 ```python
 async with await BiDiClient.connect(url) as client:
     # Inject a script that runs before every page load
-    result = await client.preload.add_preload_script(
-        function_declaration="() => { window.__testMode = true; }",
+    script_id = await client.preload.add_script(
+        "() => { window.__testMode = true; }",
     )
 
     async with await client.browsing.open("https://example.com") as page:
         value = await page.evaluate("window.__testMode")
         print(f"Test mode: {value}")
 
-    await client.preload.remove_preload_script(result.script)
+    await client.preload.remove_script(script_id)
 ```
 
 ## Web extensions

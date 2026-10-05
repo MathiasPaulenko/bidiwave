@@ -5,11 +5,11 @@ for injecting polyfills, overriding globals, monitoring page behavior,
 or setting up test fixtures — all before the page's `DOMContentLoaded`
 event.
 
-bidiwave provides two ways to add preload scripts:
-
-1. **`preload.addPreloadScript`** — simple, no channels
-2. **`script.addPreloadScript`** — supports channels for bidirectional
-   communication (see [Script](script.md#preload-scripts) for details)
+Under the hood everything goes through `script.addPreloadScript` —
+`client.preload` is just a convenience namespace with a shorter API.
+For `arguments` (channels) or `sandbox` support, call
+`client.script.add_preload_script` directly (see
+[Script](script.md#preload-scripts)).
 
 ## When to use preload scripts
 
@@ -24,11 +24,11 @@ bidiwave provides two ways to add preload scripts:
 ## Add a preload script
 
 ```python
-result = await client.preload.add_preload_script(
-    function_declaration="() => { window.__testMode = true; }",
+script_id = await client.preload.add_script(
+    "() => { window.__testMode = true; }",
     contexts=["context-id-1"],
 )
-print(result.script)  # preload script ID, e.g., "preload-1234"
+print(script_id)  # preload script ID, e.g., "preload-1234"
 ```
 
 ### Parameters
@@ -46,7 +46,7 @@ matching contexts.
 ## Remove a preload script
 
 ```python
-await client.preload.remove_preload_script(result.script)
+await client.preload.remove_script(script_id)
 ```
 
 Always remove preload scripts when done to avoid affecting subsequent
@@ -57,8 +57,8 @@ page loads.
 ### Inject a console logger
 
 ```python
-result = await client.preload.add_preload_script(
-    function_declaration="""() => {
+script_id = await client.preload.add_script(
+    """() => {
         const origLog = console.log;
         window.__logs = [];
         console.log = function(...args) {
@@ -74,14 +74,14 @@ async with await client.browsing.open("https://example.com") as page:
     logs = await page.evaluate("window.__logs")
     # ... process logs ...
 
-await client.preload.remove_preload_script(result.script)
+await client.preload.remove_script(script_id)
 ```
 
 ### Mock `Date.now()`
 
 ```python
-result = await client.preload.add_preload_script(
-    function_declaration="""() => {
+script_id = await client.preload.add_script(
+    """() => {
         const fixedTime = 1700000000000;
         Date.now = () => fixedTime;
         Date.prototype.getTime = () => fixedTime;
@@ -93,8 +93,8 @@ result = await client.preload.add_preload_script(
 ### Intercept `fetch` calls
 
 ```python
-result = await client.preload.add_preload_script(
-    function_declaration="""() => {
+script_id = await client.preload.add_script(
+    """() => {
         const origFetch = window.fetch;
         window.__fetchCalls = [];
         window.fetch = function(...args) {
@@ -108,9 +108,10 @@ result = await client.preload.add_preload_script(
 
 ## Preload vs script.addPreloadScript
 
-| Feature | `preload.addPreloadScript` | `script.addPreloadScript` |
-| ------- | -------------------------- | ------------------------- |
-| Channels | No | Yes — bidirectional communication |
+| Feature | `client.preload` | `client.script` |
+| ------- | ---------------- | --------------- |
+| Channels / arguments | No | Yes — `arguments` with `ChannelValue` |
+| Sandbox | No | Yes — `sandbox` parameter |
 | Scope | Contexts or user contexts | Contexts or user contexts |
 | Message events | No | `script.message` events |
 | Use case | Simple injection | Interactive communication |

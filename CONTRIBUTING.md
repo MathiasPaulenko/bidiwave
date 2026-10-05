@@ -59,14 +59,14 @@ pip install -e ".[dev]"
 ```
 bidiwave/
 ├── bidiwave/
-│   ├── protocol/      # Pydantic models for commands, events, results
-│   ├── transport/     # WebSocket connection, correlator, serializer
-│   ├── events/        # Event dispatcher, queue, handlers
+│   ├── protocol/      # Pydantic models for commands, events, results, capabilities
+│   ├── transport/     # WebSocket connection, correlator, serializer, TransportConfig
+│   ├── events/        # Event dispatcher and handlers
 │   ├── modules/       # High-level API modules (browsing, script, etc.)
 │   ├── convenience/   # Page object, high-level helpers
 │   ├── _internal/     # Logging
 │   ├── client.py      # BiDiClient — main entry point
-│   ├── config.py      # ClientConfig, TransportConfig
+│   ├── config.py      # ClientConfig
 │   └── exceptions.py  # Error hierarchy
 ├── tests/
 │   ├── unit/          # Unit tests (no browser needed)

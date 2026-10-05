@@ -4,18 +4,18 @@
 
 ## Add preload script with channels
 
-Unlike `preload.addPreloadScript`, `script.addPreloadScript` supports
-channels for bidirectional communication between the preload script and
-the client via `script.message` events.
+`script.addPreloadScript` accepts `arguments`, so it supports channels
+for bidirectional communication between the preload script and the
+client via `script.message` events — something `client.preload` doesn't
+expose.
 
 ```python
 result = await client.script.add_preload_script(
-    function_declaration="(channel) => { channel('hello from page'); }",
+    "(channel) => { channel('hello from page'); }",
     arguments=[{"type": "channel", "value": {"channel": "my-channel"}}],
     contexts=["context-id-1"],
 )
 print(result.script)  # preload script ID
-print(result.channel) # channel name for communication
 ```
 
 Receive messages from the preload script:

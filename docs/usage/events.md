@@ -92,12 +92,12 @@ The handler receives a `LogEntryAddedEvent` with:
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| `level` | `"debug" \| "info" \| "warn" \| "error"` | Console level |
+| `level` | `"debug" \| "info" \| "warning" \| "error"` | Console level (spec's `"warn"` is normalized to `"warning"`) |
 | `text` | `str` | The log message text |
 | `timestamp` | `int` | Unix timestamp in ms |
-| `source` | `dict` | Source info (realm, context) |
-| `args` | `list[dict]` | Raw argument values |
-| `type` | `str` | Usually `"console"` |
+| `source` | `ScriptSource` | Source info (`.realm`, `.context`) |
+| `args` | `list[RemoteValue]` | Parsed argument values |
+| `type` | `str` | `"console"` or `"javascript"` |
 
 ### Browsing context events
 
@@ -105,13 +105,19 @@ The handler receives a `LogEntryAddedEvent` with:
 | ----- | ---------- | ---------------- |
 | `browsingContext.contextCreated` | A new tab, window, or iframe is created | `BrowsingContextCreatedEvent` (`.context`, `.url`) |
 | `browsingContext.contextDestroyed` | A context is closed | `BrowsingContextDestroyedEvent` (`.context`) |
-| `browsingContext.navigationStarted` | Navigation begins | `BrowsingContextNavigatedEvent` (`.context`, `.url`, `.navigation`) |
+| `browsingContext.navigationStarted` | Navigation begins | `BrowsingContextNavigationStartedEvent` (`.context`, `.url`, `.navigation`) |
+| `browsingContext.navigationCommitted` | Navigation commits (response received) | `BrowsingContextNavigationCommittedEvent` (`.context`, `.url`, `.navigation`) |
 | `browsingContext.navigationCompleted` | Navigation completes | `BrowsingContextNavigationCompletedEvent` (`.context`, `.url`, `.navigation`) |
+| `browsingContext.navigationFailed` | Navigation fails | `BrowsingContextNavigationFailedEvent` (`.context`, `.url`, `.navigation`) |
+| `browsingContext.navigationAborted` | Navigation aborted | `BrowsingContextNavigationAbortedEvent` (`.context`, `.url`, `.navigation`) |
 | `browsingContext.fragmentNavigated` | Fragment navigation (#anchor) | `BrowsingContextFragmentNavigatedEvent` (`.context`, `.url`) |
 | `browsingContext.domContentLoaded` | DOM is parsed, resources still loading | `BrowsingContextDOMContentLoadedEvent` (`.context`, `.url`) |
 | `browsingContext.load` | Page finishes loading | `BrowsingContextLoadEvent` (`.context`, `.url`) |
 | `browsingContext.historyUpdated` | History changes (pushState, replaceState) | `BrowsingContextHistoryUpdatedEvent` (`.context`, `.url`) |
 | `browsingContext.userPromptOpened` | Dialog opens (alert/confirm/prompt) | `BrowsingContextUserPromptOpenedEvent` (`.context`, `.type`, `.message`) |
+| `browsingContext.userPromptClosed` | Dialog is resolved | `BrowsingContextUserPromptClosedEvent` (`.context`, `.accepted`, `.user_text`) |
+| `browsingContext.downloadWillBegin` | A download starts | `BrowsingContextDownloadWillBeginEvent` (`.context`, `.suggested_filename`, `.url`) |
+| `browsingContext.downloadEnd` | A download finishes | `BrowsingContextDownloadEndEvent` (`.context`, `.status`, `.cancel_reason`) |
 
 ```python
 async def on_context_created(event):
@@ -135,10 +141,8 @@ await client.session.subscribe([
 | `network.beforeRequestSent` | A request is about to be sent | `NetworkBeforeRequestSentEvent` (`.request`, `.is_blocked`, `.intercepts`) |
 | `network.responseStarted` | Response headers received | `NetworkResponseStartedEvent` (`.request`, `.response`) |
 | `network.responseCompleted` | A response finishes loading | `NetworkResponseCompletedEvent` (`.request`, `.response`) |
-| `network.dataReceived` | Response body data received | `NetworkDataReceivedEvent` (`.context`, `.request`, `.data`) |
 | `network.fetchError` | A request fails | `NetworkFetchErrorEvent` (`.request`, `.error_text`) |
 | `network.authRequired` | Authentication required | `NetworkAuthRequiredEvent` (`.request`, `.response`) |
-| `network.samplingStateChanged` | Network sampling mode changes | `NetworkSamplingStateChangedEvent` (`.context`, `.sampling`) |
 
 ```python
 async def on_request(event):
@@ -167,12 +171,6 @@ The `NetworkRequestData` model has: `.request` (ID), `.url`, `.method`,
 | `script.realmCreated` | A new realm is created |
 | `script.realmDestroyed` | A realm is destroyed |
 
-### Storage events
-
-| Event | Fired when |
-| ----- | ---------- |
-| `storage.cookieChanged` | A cookie is created, modified, or deleted |
-
 ## Convenience handlers
 
 `BiDiClient` provides shortcuts for the most common event types so you
@@ -187,14 +185,12 @@ don't have to type the full event name:
 | `client.on_request(h)` | `network.beforeRequestSent` |
 | `client.on_response(h)` | `network.responseCompleted` |
 | `client.on_fetch_error(h)` | `network.fetchError` |
-| `client.on_data_received(h)` | `network.dataReceived` |
 | `client.on_auth_required(h)` | `network.authRequired` |
 | `client.on_navigation_completed(h)` | `browsingContext.navigationCompleted` |
 | `client.on_fragment_navigated(h)` | `browsingContext.fragmentNavigated` |
 | `client.on_load(h)` | `browsingContext.load` |
 | `client.on_dom_content_loaded(h)` | `browsingContext.domContentLoaded` |
 | `client.on_history_updated(h)` | `browsingContext.historyUpdated` |
-| `client.on_sampling_state_changed(h)` | `network.samplingStateChanged` |
 | `client.on_realm_created(h)` | `script.realmCreated` |
 | `client.on_realm_destroyed(h)` | `script.realmDestroyed` |
 

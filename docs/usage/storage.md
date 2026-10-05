@@ -7,11 +7,11 @@ context.
 
 ## How cookies work in BiDi
 
-Cookies in WebDriver BiDi are scoped to a **browsing context** (a tab).
-When you get or set cookies, you specify which context to operate on.
-Cookies are shared across contexts that belong to the same user profile,
-but the BiDi API requires a context parameter to know which cookie store
-to access.
+Cookie commands take an optional `filter` (CookieFilter) and `partition`
+(PartitionDescriptor). Passing a browsing context scopes the operation
+via a `{"type": "context", "context": id}` partition — that's what the
+`context` argument of these methods does for you. Cookies are shared
+across contexts that belong to the same user profile.
 
 ## Get cookies
 
@@ -40,6 +40,18 @@ async with await client.browsing.open("https://example.com") as page:
     )
     if session_cookie:
         print(f"Session token: {session_cookie.value}")
+```
+
+### Filter and partition
+
+```python
+# Filter by name/domain (sent as the spec's CookieFilter)
+cookies = await client.storage.get_cookies(filter={"name": "session"})
+
+# Scope to a partition directly (e.g. a user context partition)
+cookies = await client.storage.get_cookies(
+    partition={"type": "storageKey", "userContext": "uc-1"}
+)
 ```
 
 ## Set a cookie
@@ -77,11 +89,11 @@ overwritten. Otherwise, a new cookie is created.
 | `path` | `str` | `"/"` | URL path the cookie applies to |
 | `http_only` | `bool` | `False` | If `True`, the cookie is not accessible via JavaScript (`document.cookie`) |
 | `secure` | `bool` | `False` | If `True`, the cookie is only sent over HTTPS |
-| `same_site` | `str \| None` | `None` | Cross-site policy: `"Strict"`, `"Lax"`, or `"None"` |
-| `expires` | `int \| None` | `None` | Expiration as Unix timestamp (seconds). `None` = session cookie |
-| `priority` | `str \| None` | `None` | Cookie priority: `"Low"`, `"Medium"`, `"High"` |
-| `same_party` | `bool \| None` | `None` | SameParty attribute (for third-party cookie groups) |
-| `source_scheme` | `str \| None` | `None` | Scheme the cookie was set over: `"Secure"` or `"NonSecure"` |
+| `same_site` | `str \| None` | `None` | Cross-site policy: `"strict"`, `"lax"`, or `"none"` |
+| `expires` | `int \| None` | `None` | Expiration as Unix timestamp (seconds, sent as `expiry`). `None` = session cookie |
+| `priority` | `str \| None` | `None` | Cookie priority reported by the browser |
+| `same_party` | `bool \| None` | `None` | SameParty attribute |
+| `source_scheme` | `str \| None` | `None` | Scheme the cookie was set over |
 | `source_port` | `int \| None` | `None` | Port the cookie was set over |
 
 ### Common patterns
@@ -165,31 +177,6 @@ path, and `delete_cookie` for simple name-based deletion.
 | --------- | ---- | ------- | ----------- |
 | `context` | `BrowsingContext \| str` | (required) | Context to delete from |
 | `name` | `str` | (required) | Name of the cookie to delete |
-
-## Cookie change events
-
-Subscribe to cookie changes in real time:
-
-```python
-async def on_cookie_changed(event):
-    if event.type == "added":
-        print(f"Cookie added: {event.cookie.name}={event.cookie.value}")
-    elif event.type == "deleted":
-        print(f"Cookie deleted: {event.cookie.name}")
-    elif event.type == "changed":
-        print(f"Cookie changed: {event.cookie.name}={event.cookie.value}")
-
-client.on("storage.cookieChanged", on_cookie_changed)
-await client.session.subscribe(["storage.cookieChanged"])
-```
-
-### Event fields
-
-| Field | Type | Description |
-| ----- | ---- | ----------- |
-| `context` | `str \| None` | Browsing context ID |
-| `type` | `str` | `"added"`, `"deleted"`, or `"changed"` |
-| `cookie` | `Cookie` | The cookie that was added, deleted, or changed |
 
 ## Use cases
 

@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-10-05
+
+### Changed — Breaking
+
+- `storage.get_cookies`/`delete_cookies`: `partition_key` renamed to `partition` (PartitionDescriptor per spec); `context` scoping now sent as `{"type": "context", "context": id}` partition instead of a top-level `context` param
+- `storage.set_cookie`: cookie `value` sent as BytesValue (`{"type": "string", "value": ...}`) per spec
+- `browsing.traverse_history`: `direction: "back"|"forward"` replaced by `delta: int`; returns `None` (spec returns empty result). `Page.back()`/`forward()` keep working unchanged
+- `browsing.screenshot`: `format` sent as ImageFormat object (`{"type": "image/jpeg", "quality": 0.0-1.0}`); `quality` only valid with `format="jpeg"`
+- `browsing.print`: `printBackground` renamed to `background` per spec
+- `browsing.set_viewport`: `context` now optional, `user_contexts` supported; new `reset_viewport()` sends explicit nulls to clear overrides
+- `permissions.set_permission`: `origin` is now required (per W3C Permissions); `contexts` removed; added `embedded_origin`/`user_context`
+- `emulation.set_geolocation`/`set_locale`/`set_timezone`: clearing an override now sends explicit `null` instead of omitting the param
+- `network.set_cache_behavior`: `cache_behavior` is required and `user_contexts` removed (not in spec)
+- `web_extension.install`: sends `extensionData` (ExtensionData union) per spec; accepts a path string or a full dict
+- `cdp.send_command`: `cmd` parameter renamed to `method`, optional `session` added; wire method is `cdp.sendCommand` (Chromium extension)
+- `cdp.get_session`: requires a `context` argument
+- `session.unsubscribe`: signature changed to `(events=None, contexts=None, subscriptions=None)`
+- `input.press_key`: friendly key names ("Enter", "Tab", "F1"–"F12", modifiers...) are translated to WebDriver key codepoints
+- `script.add_preload_script` now returns `AddPreloadScriptResult` (`ScriptAddPreloadScriptResult` removed — the spec result has no `channel` field)
+- `client.cdp` documented as Chromium-only, not part of the BiDi spec
+
+### Removed — non-spec APIs
+
+- `network.add_cache_override`, `remove_cache_override`, `set_cache_override` — use `network.setCacheBehavior`
+- `network.response_body` — use data collectors (`add_data_collector`/`get_data`)
+- `browsing.get_viewport` — the command does not exist in the spec
+- `log.clear` — the log module defines no commands, only `log.entryAdded`
+- `client.on_data_received`, `client.on_sampling_state_changed` — those events do not exist
+- `preload.*` wire commands — now an alias over `script.addPreloadScript`/`script.removePreloadScript`
+- Dead protocol models: `NavigateParams`, `EvaluateParams`, `ScreenshotParams`, `DeleteCookieParams`, `GetViewportParams`, `AddPreloadScriptParams`, `*CacheOverrideParams`, `ResponseBodyParams`, `InputParams`, `ScriptParams`, `KeyAction`/`PointerAction`/`WheelAction`, `Response`, `ErrorData`, `GetCookiesParams`, `GetTreeParams`
+- Public exports removed: `Viewport`, `GetViewportResult`, `AddCacheOverrideResult`, `ResponseBodyResult`, `ScriptAddPreloadScriptResult`, `NetworkDataReceivedEvent`, `NetworkSamplingStateChangedEvent`
+
+### Fixed
+
+- Error responses now parse the spec shape `{type:"error", error: "<code>", message}` — typed exceptions (`NoSuchFrameError`, `InvalidArgumentError`, ...) are reachable and keep the real code/message
+- `BiDiClient.capabilities` is populated from the `session.new` result instead of `session.status` — `browser_name`/`supports_*` now work
+- Receive loop tolerates non-object JSON messages without crashing into a reconnect
+- `_reconnecting` flag is reset on `connect()`
+- `evaluate`/`call_function`: added `result_ownership` — `handle` fields and `disown` are usable
+- `userPromptOpened.handler` literal corrected to `"ignore"` per spec
+- `ScriptRealmCreatedEvent.type` accepts `paint-worklet`/`audio-worklet`/`worklet`
+- `contextCreated` event models `clientWindow`/`hasPlannedNavigation`
+- `downloadEnd` uses spec `status` values `"complete"/"canceled"`
+- `MapValue`/`SetValue`/`TypedArrayValue`/`NodeListValue`/`HTMLCollectionValue` now parse nested RemoteValues
+- `ObjectValue` keys are coerced to `str` (RemoteValue keys are not hashable)
+- Integration tests locate msedgedriver via `EDGEDRIVER_PATH`/PATH/`bin/` and no longer taskkill user processes
+
 ## [1.8.2] - 2026-07-17
 
 ### Fixed — W3C WebDriver BiDi Spec Compliance
@@ -314,10 +361,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NameError: BrowsingContext` in `script.py` and `browsing.py` — `isinstance` with class under `TYPE_CHECKING`
 - `Navigation` validation error — `context` now optional (protocol does not always return it)
 - `RemoteValue.parse` now unwraps `{type: "success", result: {...}}` wrapper from `script.evaluate`
-- `screenshot` "invalid argument" — don't send `format` when it's the default `png`
+- `screenshot` "invalid argument" — do not send `format` when it's the default `png`
 - `wait_for_selector` rewritten with `script.evaluate` (driver bug with `callFunction` and primitive args)
 - `wait_for_function` unwraps `type: "success"` wrapper correctly
-- Integration tests migrated to EdgeDriver headless (does not affect user's Chrome)
+- Integration tests migrated to headless EdgeDriver (does not affect user's Chrome)
 - 23 integration tests passing, 118 unit tests passing
 
 ## [1.2.0] - 2025-07-03
@@ -326,7 +373,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `InputModule` — user input simulation (keyboard, mouse, scroll)
   - `perform_actions()` — executes action sequences with virtual devices
-  - `release_actions()` — cancels in-progress actions
+  - `release_actions()` — cancels ongoing actions
   - `set_files()` — selects files on `<input type="file">`
   - `click()` — click at coordinates (x, y) with configurable button
   - `double_click()` — double click at coordinates
@@ -378,5 +425,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exception hierarchy: `BiDiError`, `BiDiConnectionError`, `BiDiTimeoutError`, `CapabilityError`, `CommandError`, `InvalidArgumentError`, `NoSuchFrameError`, `JavaScriptError`
 - Cross-browser: Chrome, Firefox, Edge
 - Structured logging
-- CI: GitHub Actions with matrix Chrome + Firefox, Python 3.11/3.12/3.13
+- CI: GitHub Actions with Chrome + Firefox matrix, Python 3.11/3.12/3.13
 - Coverage > 90%

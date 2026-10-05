@@ -3,35 +3,39 @@
 The preload module injects JavaScript before page load. For full usage
 examples, see [Preload Scripts](../usage/preload.md).
 
+It is a convenience namespace over `script.addPreloadScript` /
+`script.removePreloadScript` — use `client.script` directly if you need
+`arguments` (channels) or a `sandbox`.
+
 ## Methods
 
-### add_preload_script
+### add_script
 
 Inject a function that runs before the page's own scripts:
 
 ```python
-result = await client.preload.add_preload_script(
-    function_declaration="() => { window.myFlag = true; }",
+script_id = await client.preload.add_script(
+    "() => { window.myFlag = true; }",
     contexts=["context-id-1"],
 )
-# result.script = "preload-script-id"
+# script_id = "preload-script-id"
 ```
 
 Preload scripts can also be scoped to specific user contexts:
 
 ```python
-result = await client.preload.add_preload_script(
-    function_declaration="() => { window.myFlag = true; }",
+script_id = await client.preload.add_script(
+    "() => { window.myFlag = true; }",
     user_contexts=["user-context-id-1"],
 )
 ```
 
-### remove_preload_script
+### remove_script
 
 Remove a previously added preload script:
 
 ```python
-await client.preload.remove_preload_script("preload-script-id")
+await client.preload.remove_script("preload-script-id")
 ```
 
 ## Reference

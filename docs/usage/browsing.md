@@ -101,7 +101,6 @@ possible (e.g., clicking a button that doesn't depend on images). Use
 | `context` | `str \| None` | The context ID that navigated |
 | `url` | `str` | The URL navigated to |
 | `navigation` | `str \| None` | A navigation ID (can be used to track the navigation in events) |
-| `status` | `str` | `"complete"` or `"pending"` |
 
 ## Reload
 
@@ -286,9 +285,17 @@ await client.browsing.set_viewport(
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
-| `context` | `BrowsingContext \| str` | (required) | Context to modify |
-| `viewport` | `ViewportSize \| dict \| None` | `None` | Viewport dimensions. `None` resets to default. |
-| `device_pixel_ratio` | `float \| None` | `None` | Device pixel ratio (e.g., `2.0` for retina). `None` resets to default. |
+| `context` | `BrowsingContext \| str \| None` | `None` | Context to modify (optional when `user_contexts` is given) |
+| `viewport` | `ViewportSize \| dict \| None` | `None` | Viewport dimensions |
+| `device_pixel_ratio` | `float \| None` | `None` | Device pixel ratio (e.g., `2.0` for retina) |
+| `user_contexts` | `list[str] \| None` | `None` | Apply to all contexts of these user contexts |
+
+To reset the overrides, the spec requires sending explicit `null`s —
+use `reset_viewport()`:
+
+```python
+await client.browsing.reset_viewport(ctx)
+```
 
 The `ViewportSize` model has two fields:
 
@@ -296,16 +303,6 @@ The `ViewportSize` model has two fields:
 | ----- | ---- | ----------- |
 | `width` | `int` | Viewport width in CSS pixels |
 | `height` | `int` | Viewport height in CSS pixels |
-
-### Get viewport
-
-Retrieve the current viewport and DPR:
-
-```python
-result = await client.browsing.get_viewport(ctx)
-print(f"Viewport: {result.viewport.width}x{result.viewport.height}")
-print(f"DPR: {result.device_pixel_ratio}")
-```
 
 ## Activate
 
@@ -355,9 +352,9 @@ tree = await client.browsing.get_tree(
 )
 ```
 
-This returns a nested dict representing the context hierarchy. Each node
-has a `context` (ID), `url`, `children` (list of child contexts), and
-`userContext` (the user context bucket).
+This returns a `GetTreeResult` whose `.contexts` is a list of
+`BrowsingContextInfo` nodes. Each node has `.context` (ID), `.url`,
+`.children` (child contexts), `.user_context`, and `.parent`.
 
 ## Events
 
@@ -372,15 +369,21 @@ Browsing contexts emit events that you can subscribe to:
 | `browsingContext.fragmentNavigated` | Fragment navigation (#anchor) occurred |
 | `browsingContext.domContentLoaded` | DOM parsed, resources still loading |
 | `browsingContext.load` | Page fully loaded (all resources) |
-| `browsingContext.historyUpdated` | History changed (pushState, replaceState) — Chrome-specific |
+| `browsingContext.historyUpdated` | History changed (pushState, replaceState) |
 | `browsingContext.userPromptOpened` | A dialog (alert/confirm/prompt) opened |
 
 ```python
-client.on("browsingContext.contextCreated", lambda e: print(f"New tab: {e.context}"))
-client.on("browsingContext.contextDestroyed", lambda e: print(f"Tab closed: {e.context}"))
-client.on("browsingContext.navigationCompleted", lambda e: print(f"Loaded: {e.url}"))
-client.on("browsingContext.historyUpdated", lambda e: print(f"History changed: {e.url}"))
-client.on("browsingContext.userPromptOpened", lambda e: print(f"Dialog: {e.type} — {e.message}"))
+async def on_created(e): print(f"New tab: {e.context}")
+async def on_destroyed(e): print(f"Tab closed: {e.context}")
+async def on_loaded(e): print(f"Loaded: {e.url}")
+async def on_history(e): print(f"History changed: {e.url}")
+async def on_prompt(e): print(f"Dialog: {e.type} — {e.message}")
+
+client.on("browsingContext.contextCreated", on_created)
+client.on("browsingContext.contextDestroyed", on_destroyed)
+client.on("browsingContext.navigationCompleted", on_loaded)
+client.on("browsingContext.historyUpdated", on_history)
+client.on("browsingContext.userPromptOpened", on_prompt)
 await client.session.subscribe([
     "browsingContext.contextCreated",
     "browsingContext.contextDestroyed",
@@ -390,14 +393,16 @@ await client.session.subscribe([
 ])
 ```
 
+Handlers must be `async` — the dispatcher awaits them.
+
 ### Convenience handlers
 
 ```python
-client.on_navigation_completed(lambda e: print(f"Nav complete: {e.url}"))
-client.on_fragment_navigated(lambda e: print(f"Fragment: {e.url}"))
-client.on_load(lambda e: print(f"Page loaded: {e.url}"))
-client.on_dom_content_loaded(lambda e: print(f"DOM ready: {e.url}"))
-client.on_history_updated(lambda e: print(f"History: {e.url}"))
+client.on_navigation_completed(on_loaded)
+client.on_fragment_navigated(on_fragment)
+client.on_load(on_loaded)
+client.on_dom_content_loaded(on_dom_ready)
+client.on_history_updated(on_history)
 ```
 
 See [Events](events.md) for the full event system documentation.
