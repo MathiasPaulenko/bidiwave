@@ -336,19 +336,20 @@ class TestAddDataCollector:
         mock_connection: MockConn,
     ) -> None:
         mock_connection.send_command.return_value = {"collector": "dc-2"}
+        # contexts and user_contexts are mutually exclusive per spec —
+        # passing both is invalid argument, so only contexts is sent here.
         await network_module.add_data_collector(
             data_types=["request", "response"],
             max_encoded_data_size=8192,
             collector_type="blob",
             contexts=["ctx-1"],
-            user_contexts=["uc-1"],
         )
         call_args = mock_connection.send_command.call_args
         assert call_args.args[1]["dataTypes"] == ["request", "response"]
         assert call_args.args[1]["maxEncodedDataSize"] == 8192
         assert call_args.args[1]["collectorType"] == "blob"
         assert call_args.args[1]["contexts"] == ["ctx-1"]
-        assert call_args.args[1]["userContexts"] == ["uc-1"]
+        assert "userContexts" not in call_args.args[1]
 
 
 class TestRemoveDataCollector:

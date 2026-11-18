@@ -195,12 +195,13 @@ class TestEmulationNetworkConditions:
         emulation_module: EmulationModule,
         mock_connection: MockConn,
     ) -> None:
+        # contexts and user_contexts are mutually exclusive per spec.
         await emulation_module.set_network_conditions(
-            offline=True, contexts=["ctx-1"], user_contexts=["uc-1"]
+            offline=True, contexts=["ctx-1"]
         )
         call_args = mock_connection.send_command.call_args
         assert call_args.args[1]["contexts"] == ["ctx-1"]
-        assert call_args.args[1]["userContexts"] == ["uc-1"]
+        assert "userContexts" not in call_args.args[1]
 
 
 class TestEmulationTimezone:
@@ -254,12 +255,13 @@ class TestEmulationUserAgent:
         emulation_module: EmulationModule,
         mock_connection: MockConn,
     ) -> None:
+        # contexts and user_contexts are mutually exclusive per spec.
         await emulation_module.set_user_agent(
-            "MyBot/1.0", contexts=["ctx-1"], user_contexts=["uc-1"]
+            "MyBot/1.0", contexts=["ctx-1"]
         )
         call_args = mock_connection.send_command.call_args
         assert call_args.args[1]["contexts"] == ["ctx-1"]
-        assert call_args.args[1]["userContexts"] == ["uc-1"]
+        assert "userContexts" not in call_args.args[1]
 
 
 class TestEmulationLocale:

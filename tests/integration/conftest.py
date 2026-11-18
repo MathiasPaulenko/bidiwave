@@ -89,8 +89,12 @@ def _create_webdriver_session(
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    resp = urllib.request.urlopen(req)
-    data: dict[str, Any] = json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data: dict[str, Any] = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")[:500]
+        pytest.fail(f"WebDriver session creation failed: HTTP {e.code} — {body}")
     return data["value"]["capabilities"]["webSocketUrl"]
 
 
