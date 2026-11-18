@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-11-26
+
+### Fixed — transport
+
+- `send_command` no longer leaks a pending future when params fail JSON serialization (command is serialized before the future is registered), and socket send failures surface as `BiDiConnectionError` instead of raw `websockets` exceptions
+- `connect()` wraps `InvalidURI`, `OSError` and handshake timeouts in `BiDiConnectionError`/`BiDiTimeoutError`
+- In-flight commands now fail fast with `BiDiConnectionError` when the socket drops or reconnects, instead of hanging until their timeout expires
+- The receive loop no longer crashes on malformed messages: non-dict payloads, non-string `method`/`error`/`message` fields, non-dict `result`/`params`, and deeply nested JSON are handled defensively
+- `close()` suppresses errors from `ws.close()` and cancels in-flight event dispatch tasks
+- `BiDiClient.connect()` closes the socket and re-raises if neither `session.new` nor `session.status` succeeds, instead of returning a broken client
+
+### Fixed — protocol & errors
+
+- `ClientConfig`/`TransportConfig` validate `timeout > 0` and `max_retries`/`retry_delay`/`retry_backoff >= 0`
+- `RemoteValue.parse` raises `ProtocolError` on non-dict input; `ObjectValue` parses remote-value keys instead of stringifying them; `NodeValue`/`LogEntryAddedEvent` accept population by field name
+- `detect_capabilities` tolerates non-dict capabilities and `browserName: None`
+- New `NoSuchNetworkCollectorError` mapped from the "no such network collector" error code
+- `BiDiTimeoutError` now also subclasses the builtin `TimeoutError`, so `wait_for_selector`/`wait_for_function` timeouts match the exception contract of `send_command`
+
+### Fixed — module validation (W3C spec)
+
+- `contexts` and `user_contexts` are now mutually exclusive everywhere the spec requires it: `session.subscribe`, `session.unsubscribe`, `emulation.*`, `network.*`, `browsing.set_viewport`/`reset_viewport`, `script.add_preload_script`, `preload.add_script`
+- `network.add_data_collector` rejects `max_encoded_data_size <= 0`; `continue_with_auth` requires credentials for `provideCredentials`
+- `emulation.set_geolocation` validates the `altitude`/`altitudeAccuracy` relationship
+- `session.unsubscribe` rejects combining `subscriptions` with `events`/`contexts` and requires one form
+- `browsing.screenshot` validates JPEG quality range and `print` validates scale; `wait_for_selector`/`wait_for_function` raise `ProtocolError` on malformed script results and `BiDiTimeoutError` on timeout
+- `input.set_files` accepts a SharedReference dict as well as a shared id string
+- `script` target construction no longer silently drops `sandbox` when `realm` is set
+
+### Fixed — convenience & logging
+
+- `Page.close()` only marks the page closed after the underlying close succeeds, so callers can retry after a failure
+- `browsing.open` cleanup no longer masks the original navigation error
+- `setup_logging` only manages handlers it owns on the `bidiwave` logger and is idempotent on repeated calls
+- Integration fixture: bounded `urlopen` timeouts and a clearer error when the WebDriver service is unreachable
+
 ## [2.0.0] - 2026-10-05
 
 ### Changed — Breaking

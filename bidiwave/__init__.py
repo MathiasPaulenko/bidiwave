@@ -141,7 +141,7 @@ from bidiwave.protocol.results import (
 )
 from bidiwave.transport.connection import TransportConfig
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
 __all__ = [
     "AddPreloadScriptResult",
