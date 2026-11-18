@@ -14,8 +14,11 @@ class BiDiConnectionError(BiDiError):
     """WebSocket connection error."""
 
 
-class BiDiTimeoutError(BiDiError):
-    """Timeout waiting for response or navigation."""
+class BiDiTimeoutError(BiDiError, TimeoutError):
+    """Timeout waiting for response or navigation.
+
+    Also a builtin ``TimeoutError`` so callers can catch either class.
+    """
 
 
 class CapabilityError(BiDiError):
@@ -141,6 +144,10 @@ class NoSuchInterceptError(CommandError):
     """No such intercept."""
 
 
+class NoSuchNetworkCollectorError(CommandError):
+    """No such network collector."""
+
+
 class NoSuchNodeError(CommandError):
     """No such node."""
 
@@ -185,6 +192,7 @@ ERROR_CODE_MAP: dict[str, type[CommandError]] = {
     "no such handle": NoSuchHandleError,
     "no such history entry": NoSuchHistoryEntryError,
     "no such intercept": NoSuchInterceptError,
+    "no such network collector": NoSuchNetworkCollectorError,
     "no such node": NoSuchNodeError,
     "no such request": NoSuchRequestError,
     "no such script": NoSuchScriptError,

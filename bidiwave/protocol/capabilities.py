@@ -30,13 +30,23 @@ def detect_capabilities(status_response: dict[str, Any]) -> Capabilities:
     of being assumed True, since we have no evidence the browser
     actually implements those modules.
     """
+    if not isinstance(status_response, dict):
+        status_response = {}
     result = status_response.get("result", status_response)
+    if not isinstance(result, dict):
+        result = {}
     caps_data = result.get("capabilities", result)
+    if not isinstance(caps_data, dict):
+        caps_data = {}
 
-    browser_name = caps_data.get("browserName", "")
-    browser_version = caps_data.get("browserVersion", "")
-    platform_name = caps_data.get("platformName", "")
-    vendor = caps_data.get("vendor", "")
+    def _text(key: str) -> str:
+        value = caps_data.get(key)
+        return value if isinstance(value, str) else ""
+
+    browser_name = _text("browserName")
+    browser_version = _text("browserVersion")
+    platform_name = _text("platformName")
+    vendor = _text("vendor")
 
     # All WebDriver BiDi implementations are required to support these
     # core modules, but we can only claim detection succeeded if we

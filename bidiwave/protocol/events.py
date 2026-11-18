@@ -29,7 +29,7 @@ class ScriptSource(BaseModel):
 class LogEntryAddedEvent(BaseModel):
     """log.entryAdded event — a console log from the browser."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     level: Literal["debug", "info", "warning", "error"]
     text: str

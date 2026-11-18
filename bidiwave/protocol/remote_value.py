@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from bidiwave.exceptions import JavaScriptError
+from bidiwave.exceptions import JavaScriptError, ProtocolError
 
 
 class RemoteValue(BaseModel):
@@ -18,15 +18,27 @@ class RemoteValue(BaseModel):
     @classmethod
     def parse(cls, data: dict[str, Any]) -> RemoteValue:
         """Factory that returns the correct subtype based on type."""
+        if not isinstance(data, dict):
+            raise ProtocolError(
+                f"Malformed remote value: expected object, got {type(data).__name__}"
+            )
         # script.evaluate/callFunction return {type: "success", result: {...}}
         if data.get("type") == "success":
             if "result" in data:
-                data = data["result"]
+                inner = data["result"]
+                if not isinstance(inner, dict):
+                    raise ProtocolError(
+                        f"Malformed remote value result: expected object, "
+                        f"got {type(inner).__name__}"
+                    )
+                data = inner
             else:
                 return UndefinedValue.model_validate({"type": "undefined"})
         # JS exception — raise immediately
         if data.get("type") == "exception":
             details = data.get("exceptionDetails", {})
+            if not isinstance(details, dict):
+                details = {}
             raise JavaScriptError(
                 "javascript error",
                 details.get("text", "Unknown JavaScript error"),
@@ -98,6 +110,18 @@ class NumberValue(RemoteValue):
     type: Literal["number"] = "number"
     value: int | float
 
+    @field_validator("value", mode="before")
+    @classmethod
+    def coerce_special(cls, v: Any) -> Any:
+        # Per spec, non-finite numbers travel as strings
+        # ("NaN", "Infinity", "-Infinity", "-0").
+        if isinstance(v, str):
+            try:
+                return float(v)
+            except ValueError:
+                return v
+        return v
+
 
 class BooleanValue(RemoteValue):
     type: Literal["boolean"] = "boolean"
@@ -133,9 +157,18 @@ class ObjectValue(RemoteValue):
                 if isinstance(pair, list) and len(pair) == 2:
                     key, val = pair
                     # Object keys can be RemoteValues in the wire format;
-                    # coerce non-string keys to a stable string form.
+                    # unwrap them to their primitive value when possible.
                     if not isinstance(key, str):
-                        key = str(key)
+                        if isinstance(key, dict) and key.get("type"):
+                            parsed_key = RemoteValue.parse(key)
+                            key_value = getattr(parsed_key, "value", None)
+                            key = (
+                                str(key_value)
+                                if key_value is not None
+                                else parsed_key.type
+                            )
+                        else:
+                            key = str(key)
                     if isinstance(val, dict) and val.get("type"):
                         result[key] = RemoteValue.parse(val)
                     elif isinstance(val, dict) and "value" in val:
@@ -187,6 +220,8 @@ class HandleValue(RemoteValue):
 
 class NodeValue(RemoteValue):
     """DOM node reference with sharedId."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     type: Literal["node"] = "node"
     shared_id: str | None = Field(default=None, alias="sharedId")
