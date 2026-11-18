@@ -166,7 +166,13 @@ class Page:
         if self._closed:
             return
         self._closed = True
-        await self._browsing.close(self._context)
+        try:
+            await self._browsing.close(self._context)
+        except Exception:
+            # Keep the page retryable — a failed close must not leave
+            # the object permanently marked as closed.
+            self._closed = False
+            raise
 
     async def activate(self) -> None:
         await self._browsing.activate(self._context)

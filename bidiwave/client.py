@@ -82,11 +82,14 @@ class BiDiClient:
         # already-established session — fall back to session.status then.
         try:
             await client.session.new()
-        except Exception:
+        except Exception as new_err:
             try:
                 await client.session.status()
-            except Exception as e:
-                logger.warning("session.status failed during connect: %s", e)
+            except Exception as status_err:
+                # No usable session — the client is useless; don't leak
+                # the open socket, and surface the original failure.
+                await connection.close()
+                raise new_err from status_err
         return client
 
     def _set_capabilities(self, result: dict[str, Any]) -> None:
@@ -219,6 +222,11 @@ class BiDiClient:
             accept: True to accept, False to dismiss.
             user_text: Text for prompts (optional).
         """
+        if not self._auto_prompt_subscribed:
+            # Subscribe first: if it fails, no internal state is mutated.
+            await self.session.subscribe(["browsingContext.userPromptOpened"])
+            self._auto_prompt_subscribed = True
+
         self._auto_prompt_accept = accept
         self._auto_prompt_text = user_text
 
@@ -237,9 +245,6 @@ class BiDiClient:
                     user_text=self._auto_prompt_text,
                 )
 
-        if not self._auto_prompt_subscribed:
-            await self.session.subscribe(["browsingContext.userPromptOpened"])
-            self._auto_prompt_subscribed = True
         self._auto_prompt_sub = self.on("browsingContext.userPromptOpened", _handle_prompt)
 
     async def disable_auto_prompt(self) -> None:
