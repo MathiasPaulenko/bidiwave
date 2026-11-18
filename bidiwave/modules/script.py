@@ -155,6 +155,8 @@ class ScriptModule:
         Returns:
             AddPreloadScriptResult with the script ID.
         """
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         params: dict[str, Any] = {
             "functionDeclaration": function_declaration,
         }
@@ -192,6 +194,8 @@ class ScriptModule:
         realm: str | None,
     ) -> dict[str, Any]:
         if realm is not None:
+            if sandbox is not None:
+                raise ValueError("sandbox cannot be combined with a realm target")
             return {"realm": realm}
         if context is None:
             raise ValueError("Either context or realm must be provided")

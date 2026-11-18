@@ -30,9 +30,10 @@ class SessionModule:
             }
         }
         result = await self._connection.send_command(SESSION_NEW, params)
+        session = Session.model_validate(result)
         if self.on_new is not None:
             self.on_new(result)
-        return Session.model_validate(result)
+        return session
 
     async def status(self) -> SessionStatus:
         result = await self._connection.send_command(SESSION_STATUS, {})
@@ -59,6 +60,8 @@ class SessionModule:
             Subscription result from the server (contains "subscription"
             with the subscription ID on supporting implementations).
         """
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         params: dict[str, Any] = {"events": events}
         if contexts is not None:
             params["contexts"] = contexts
@@ -78,7 +81,11 @@ class SessionModule:
         be given — the two forms are mutually exclusive per the spec.
         """
         if subscriptions is not None:
-            params: dict[str, Any] = {"subscriptions": subscriptions}
+            if events is not None or contexts is not None:
+                raise ValueError(
+                    "subscriptions cannot be combined with events or contexts"
+                )
+            params = {"subscriptions": subscriptions}
         else:
             if events is None:
                 raise ValueError("events or subscriptions must be provided")

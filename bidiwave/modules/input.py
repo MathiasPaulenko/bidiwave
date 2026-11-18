@@ -118,20 +118,22 @@ class InputModule:
     async def set_files(
         self,
         context: BrowsingContext | str,
-        element: str,
+        element: str | dict[str, Any],
         files: list[str],
     ) -> None:
         """Selects files on an <input type="file"> element.
 
         Args:
             context: BrowsingContext or context ID.
-            element: Shared ID of the file input element.
+            element: Shared ID of the file input element, or a
+                SharedReference dict (``{"sharedId": ..., "handle": ...}``).
             files: List of absolute file paths to select.
         """
         ctx_id = context.id if hasattr(context, "id") else context
+        element_ref = element if isinstance(element, dict) else {"sharedId": element}
         params: dict[str, Any] = {
             "context": ctx_id,
-            "element": {"sharedId": element},
+            "element": element_ref,
             "files": files,
         }
         await self._connection.send_command(INPUT_SET_FILES, params)

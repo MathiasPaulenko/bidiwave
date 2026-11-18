@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Literal
 
 from bidiwave.protocol.constants import (
@@ -21,6 +22,8 @@ from bidiwave.protocol.constants import (
 )
 from bidiwave.protocol.results import InterceptResult
 from bidiwave.transport.connection import Connection
+
+logger = logging.getLogger("bidiwave.network")
 
 InterceptPhase = Literal["beforeRequestSent", "responseStarted", "authRequired"]
 
@@ -228,6 +231,14 @@ class NetworkModule:
         """
         if action == "provideCredentials" and credentials is None:
             raise ValueError("credentials are required when action='provideCredentials'")
+        if action != "provideCredentials" and credentials is not None:
+            # Spec only permits credentials with provideCredentials — drop
+            # them but warn, since silently ignoring caller data hides bugs.
+            logger.warning(
+                "credentials ignored: only valid with action='provideCredentials', "
+                "got %r",
+                action,
+            )
         params: dict[str, Any] = {"request": request, "action": action}
         if credentials is not None and action == "provideCredentials":
             params["credentials"] = credentials
@@ -255,6 +266,8 @@ class NetworkModule:
             contexts: Context IDs to apply to. None = all.
             user_contexts: User context IDs to apply to. None = all.
         """
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         params: dict[str, Any] = {"headers": headers}
         if contexts is not None:
             params["contexts"] = contexts
@@ -302,6 +315,12 @@ class NetworkModule:
         Returns:
             Data collector ID.
         """
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
+        if max_encoded_data_size <= 0:
+            raise ValueError(
+                f"max_encoded_data_size must be > 0, got {max_encoded_data_size}"
+            )
         params: dict[str, Any] = {
             "dataTypes": data_types,
             "maxEncodedDataSize": max_encoded_data_size,

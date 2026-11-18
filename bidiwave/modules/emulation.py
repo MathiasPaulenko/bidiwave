@@ -55,11 +55,19 @@ class EmulationModule:
         """
         if coordinates is not None and error is not None:
             raise ValueError("coordinates and error are mutually exclusive")
+        if (
+            coordinates is not None
+            and "altitudeAccuracy" in coordinates
+            and "altitude" not in coordinates
+        ):
+            raise ValueError("altitude is required when altitudeAccuracy is set")
         # Spec requires exactly one of `coordinates` (or null) / `error`.
         if error is not None:
             params: dict[str, Any] = {"error": error}
         else:
             params = {"coordinates": coordinates}
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
@@ -86,6 +94,8 @@ class EmulationModule:
         params: dict[str, Any] = {
             "networkConditions": {"type": "offline"} if offline else None,
         }
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
@@ -109,6 +119,8 @@ class EmulationModule:
             user_contexts: User context IDs to apply to. None = all.
         """
         params: dict[str, Any] = {"timezone": timezone}
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
@@ -132,6 +144,8 @@ class EmulationModule:
             user_contexts: User context IDs to apply to. None = all.
         """
         params: dict[str, Any] = {"userAgent": user_agent}
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
@@ -153,6 +167,8 @@ class EmulationModule:
             user_contexts: User context IDs to apply to. None = all.
         """
         params: dict[str, Any] = {"locale": locale}
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:
@@ -177,6 +193,8 @@ class EmulationModule:
             user_contexts: User context IDs to apply to. None = all.
         """
         params: dict[str, Any] = {"screenOrientation": orientation}
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         if contexts is not None:
             params["contexts"] = contexts
         if user_contexts is not None:

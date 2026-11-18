@@ -60,6 +60,8 @@ class PreloadModule:
         Returns:
             Preload script ID for later removal.
         """
+        if contexts is not None and user_contexts is not None:
+            raise ValueError("contexts and user_contexts are mutually exclusive")
         params: dict[str, Any] = {
             "functionDeclaration": function_declaration,
         }

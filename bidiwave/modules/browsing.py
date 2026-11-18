@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
-from bidiwave.exceptions import JavaScriptError
+from bidiwave.exceptions import (
+    BiDiTimeoutError,
+    JavaScriptError,
+    ProtocolError,
+)
 from bidiwave.protocol.commands import ViewportSize
 from bidiwave.protocol.constants import (
     BROWSER_CLOSE,
@@ -226,6 +231,8 @@ class BrowsingModule:
             origin: "viewport" or "document".
         """
         ctx_id = context.id if hasattr(context, "id") else context
+        if quality is not None and not 0 <= quality <= 100:
+            raise ValueError(f"quality must be 0-100, got {quality}")
         params: dict[str, Any] = {"context": ctx_id}
         # Spec: format is an ImageFormat object, e.g. {"type": "image/jpeg",
         # "quality": 0.0-1.0}. quality is only allowed for jpeg.
@@ -282,25 +289,36 @@ class BrowsingModule:
             f" }}).observe(target, {{childList: true, subtree: true}});"
             f"}})"
         )
-        result = await asyncio.wait_for(
-            self._connection.send_command(
-                SCRIPT_EVALUATE,
-                {
-                    "target": {"context": ctx_id},
-                    "expression": expression,
-                    "awaitPromise": True,
-                },
-            ),
-            timeout=timeout,
-        )
+        try:
+            result = await asyncio.wait_for(
+                self._connection.send_command(
+                    SCRIPT_EVALUATE,
+                    {
+                        "target": {"context": ctx_id},
+                        "expression": expression,
+                        "awaitPromise": True,
+                    },
+                ),
+                timeout=timeout,
+            )
+        except TimeoutError as e:
+            raise BiDiTimeoutError(
+                f"Timed out after {timeout}s waiting for selector {selector!r}"
+            ) from e
         if result.get("type") == "exception":
             details = result.get("exceptionDetails", {})
+            if not isinstance(details, dict):
+                details = {}
             raise JavaScriptError(
                 "javascript error",
                 details.get("text", "Unknown JS error in wait_for_selector"),
             )
         # Unwrap script success wrapper
         inner = result.get("result", result)
+        if not isinstance(inner, dict):
+            raise ProtocolError(
+                f"Malformed script.evaluate result: {inner!r}"
+            )
         return inner.get("value") is True
 
     async def wait_for_function(
@@ -327,24 +345,35 @@ class BrowsingModule:
             f" check();"
             f"}})"
         )
-        result = await asyncio.wait_for(
-            self._connection.send_command(
-                SCRIPT_EVALUATE,
-                {
-                    "target": {"context": ctx_id},
-                    "expression": wrapped,
-                    "awaitPromise": True,
-                },
-            ),
-            timeout=timeout,
-        )
+        try:
+            result = await asyncio.wait_for(
+                self._connection.send_command(
+                    SCRIPT_EVALUATE,
+                    {
+                        "target": {"context": ctx_id},
+                        "expression": wrapped,
+                        "awaitPromise": True,
+                    },
+                ),
+                timeout=timeout,
+            )
+        except TimeoutError as e:
+            raise BiDiTimeoutError(
+                f"Timed out after {timeout}s waiting for function"
+            ) from e
         if result.get("type") == "exception":
             details = result.get("exceptionDetails", {})
+            if not isinstance(details, dict):
+                details = {}
             raise JavaScriptError(
                 "javascript error",
                 details.get("text", "Unknown JS error in wait_for_function"),
             )
         inner = result.get("result", result)
+        if not isinstance(inner, dict):
+            raise ProtocolError(
+                f"Malformed script.evaluate result: {inner!r}"
+            )
         return inner.get("value")
 
     async def reload(
@@ -426,6 +455,8 @@ class BrowsingModule:
             shrink_to_fit: Whether to shrink content to fit page.
         """
         ctx_id = context.id if hasattr(context, "id") else context
+        if not 0.1 <= scale <= 2.0:
+            raise ValueError(f"scale must be 0.1-2.0, got {scale}")
         params: dict[str, Any] = {
             "context": ctx_id,
             "background": background,
@@ -501,6 +532,8 @@ class BrowsingModule:
             user_contexts: Apply the override to all browsing contexts of
                 the given user contexts.
         """
+        if context is not None and user_contexts is not None:
+            raise ValueError("context and user_contexts are mutually exclusive")
         params: dict[str, Any] = {}
         if context is not None:
             ctx_id = context.id if hasattr(context, "id") else context
@@ -529,6 +562,8 @@ class BrowsingModule:
         parameter, so this sends ``{"viewport": null,
         "devicePixelRatio": null}``.
         """
+        if context is not None and user_contexts is not None:
+            raise ValueError("context and user_contexts are mutually exclusive")
         params: dict[str, Any] = {"viewport": None, "devicePixelRatio": None}
         if context is not None:
             ctx_id = context.id if hasattr(context, "id") else context
@@ -551,6 +586,8 @@ class BrowsingModule:
         try:
             await self.navigate(ctx, url, wait)
         except Exception:
-            await self.close(ctx)
+            # Cleanup must not mask the original navigation failure.
+            with contextlib.suppress(Exception):
+                await self.close(ctx)
             raise
         return Page(self, self._script_module, ctx)
