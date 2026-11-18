@@ -6,12 +6,17 @@ import logging
 from typing import Any
 
 import websockets
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from websockets.asyncio.client import ClientConnection
 
 from bidiwave.events.dispatcher import EventDispatcher
 from bidiwave.events.handlers import AsyncHandler
-from bidiwave.exceptions import BiDiConnectionError, BiDiTimeoutError, map_error
+from bidiwave.exceptions import (
+    BiDiConnectionError,
+    BiDiTimeoutError,
+    ProtocolError,
+    map_error,
+)
 from bidiwave.transport.correlation import Correlator
 from bidiwave.transport.serializer import deserialize_message, serialize_command
 
@@ -21,10 +26,10 @@ logger = logging.getLogger("bidiwave.transport")
 class TransportConfig(BaseModel):
     """Transport configuration."""
 
-    timeout: float = 30.0
-    max_retries: int = 3
-    retry_delay: float = 1.0
-    retry_backoff: float = 2.0
+    timeout: float = Field(default=30.0, gt=0)
+    max_retries: int = Field(default=3, ge=0)
+    retry_delay: float = Field(default=1.0, ge=0)
+    retry_backoff: float = Field(default=2.0, ge=0)
 
 
 class Connection:
@@ -53,10 +58,21 @@ class Connection:
         if self._ws is not None and not self._closed:
             raise BiDiConnectionError("Connection is already established")
         self._closed = False
-        self._ws = await asyncio.wait_for(
-            websockets.connect(self._url),
-            timeout=self._config.timeout,
-        )
+        try:
+            self._ws = await asyncio.wait_for(
+                websockets.connect(self._url),
+                timeout=self._config.timeout,
+            )
+        except TimeoutError as e:
+            raise BiDiTimeoutError(
+                f"Connection to {self._url} timed out after {self._config.timeout}s"
+            ) from e
+        except BiDiConnectionError:
+            raise
+        except Exception as e:
+            raise BiDiConnectionError(
+                f"Failed to connect to {self._url}: {e}"
+            ) from e
         self._receive_task = asyncio.create_task(self._receive_loop())
         logger.info("Connected to %s", self._url)
 
@@ -65,16 +81,23 @@ class Connection:
             raise BiDiConnectionError("Connection is closed")
         if self._reconnecting:
             raise BiDiConnectionError("Connection is reconnecting")
+        if not isinstance(params, dict):
+            raise TypeError(
+                f"params must be a dict, got {type(params).__name__}"
+            )
 
         command_id = self._correlator.next_id()
+        # Serialize before registering the future: if params aren't
+        # JSON-encodable the caller gets TypeError immediately without
+        # leaking a pending entry that would hang until close().
+        message = serialize_command(command_id, method, params)
         future = self._correlator.register(command_id)
 
-        message = serialize_command(command_id, method, params)
         try:
             await self._ws.send(message)
-        except Exception:
+        except Exception as e:
             self._correlator.reject(command_id, BiDiConnectionError("Failed to send command"))
-            raise
+            raise BiDiConnectionError(f"Failed to send {method}: {e}") from e
         logger.debug("→ [%d] %s", command_id, method)
 
         try:
@@ -134,13 +157,12 @@ class Connection:
 
     async def _receive_loop(self) -> None:
         assert self._ws is not None
-        reconnect_succeeded = False
         try:
             async for raw in self._ws:
                 try:
                     raw_str = raw.decode() if isinstance(raw, bytes) else raw
                     data = deserialize_message(raw_str)
-                except (ValueError, TypeError) as e:
+                except (ValueError, TypeError, RecursionError) as e:
                     logger.warning("Malformed message from browser: %s", e)
                     continue
                 if not isinstance(data, dict):
@@ -157,8 +179,22 @@ class Connection:
                         continue
 
                     if msg_type == "success":
-                        self._correlator.resolve(command_id, data.get("result", {}))
-                        logger.debug("← [%d] success", command_id)
+                        result = data.get("result", {})
+                        if not isinstance(result, dict):
+                            self._correlator.reject(
+                                command_id,
+                                ProtocolError(
+                                    f"Malformed result for command {command_id}: "
+                                    f"expected object, got {type(result).__name__}"
+                                ),
+                            )
+                            continue
+                        if not self._correlator.resolve(command_id, result):
+                            logger.warning(
+                                "Response for unknown command id: %r", command_id
+                            )
+                        else:
+                            logger.debug("← [%d] success", command_id)
                     else:
                         # Per W3C BiDi, `error` is the ErrorCode string and
                         # `message` is a sibling text field.
@@ -169,11 +205,20 @@ class Connection:
                         if not isinstance(message, str):
                             message = "Unknown error"
                         error = map_error(code, message)
-                        self._correlator.reject(command_id, error)
-                        logger.debug("← [%d] error: %s", command_id, message)
+                        if not self._correlator.reject(command_id, error):
+                            logger.warning(
+                                "Error response for unknown command id: %r",
+                                command_id,
+                            )
+                        else:
+                            logger.debug("← [%d] error: %s", command_id, message)
                 else:
                     method = data.get("method", "unknown")
+                    if not isinstance(method, str):
+                        method = "unknown"
                     params = data.get("params", {})
+                    if not isinstance(params, dict):
+                        params = {}
                     logger.debug("← event: %s", method)
                     task = asyncio.create_task(self._dispatcher.dispatch(method, params))
                     self._background_tasks.add(task)
@@ -187,14 +232,16 @@ class Connection:
                     except Exception as e:
                         logger.error("Disconnect handler error: %s", e)
 
-                reconnect_succeeded = await self._reconnect()
+                await self._reconnect()
         except Exception as e:
             logger.error("Receive loop crashed: %s: %s", type(e).__name__, e, exc_info=True)
             if not self._closed:
-                reconnect_succeeded = await self._reconnect()
+                await self._reconnect()
         finally:
-            if not reconnect_succeeded:
-                self._correlator.reject_all(BiDiConnectionError("Connection closed"))
+            # Responses to in-flight commands are lost with the old socket
+            # even when a reconnect succeeds — fail them fast instead of
+            # leaving callers hanging until their timeout expires.
+            self._correlator.reject_all(BiDiConnectionError("Connection closed"))
 
     def on_reconnect(self, handler: AsyncHandler) -> None:
         self._on_reconnect.append(handler)
@@ -215,5 +262,6 @@ class Connection:
             await asyncio.gather(*self._background_tasks, return_exceptions=True)
             self._background_tasks.clear()
         if self._ws:
-            await self._ws.close()
+            with contextlib.suppress(Exception):
+                await self._ws.close()
         logger.info("Connection closed")

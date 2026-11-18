@@ -20,15 +20,21 @@ class Correlator:
         self._pending[command_id] = fut
         return fut
 
-    def resolve(self, command_id: int, result: dict[str, Any]) -> None:
+    def resolve(self, command_id: int, result: dict[str, Any]) -> bool:
+        """Resolves the pending future for command_id. Returns False if unknown."""
         fut = self._pending.pop(command_id, None)
         if fut and not fut.done():
             fut.set_result(result)
+            return True
+        return False
 
-    def reject(self, command_id: int, error: Exception) -> None:
+    def reject(self, command_id: int, error: Exception) -> bool:
+        """Rejects the pending future for command_id. Returns False if unknown."""
         fut = self._pending.pop(command_id, None)
         if fut and not fut.done():
             fut.set_exception(error)
+            return True
+        return False
 
     def reject_all(self, error: Exception) -> None:
         for fut in self._pending.values():
